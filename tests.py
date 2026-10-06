@@ -3457,6 +3457,44 @@ def test_no_convoy_during_retreat():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.4
+def test_no_other_moves_during_retreat():
+    map = get_classic_map()
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.holland, map.england)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    german_army = add_army(map.ruhr, map.germany)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('F NTH H')
+    map.parse_order_string('A HOL H')
+    map.parse_order_string('F KIE S A RUH - HOL')
+    map.parse_order_string('A RUH - HOL')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Fleet Territory', english_fleet.territory, map.north_sea)
+    assert_not_equal('English Army Territory', english_army.territory, map.holland)
+    assert_equal('German Fleet Territory', german_fleet.territory, map.kiel)
+    assert_equal('German Army Territory', german_army.territory, map.holland)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('A HOL - BEL')
+    map.parse_order_string('F NTH - NRG')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army Territory', english_army.territory, map.belgium)
+    assert_equal('English Army Disbanded', english_army.disbanded, False)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -3654,6 +3692,7 @@ def main():
     run_test(test_no_supports_during_retreat)
     run_test(test_no_supports_from_retreating_unit)
     run_test(test_no_convoy_during_retreat)
+    run_test(test_no_other_moves_during_retreat)
     print()
 
     print(f'{passed}/{count} Tests Passed')

@@ -136,28 +136,32 @@ class Map:
         # Cannot queue an order from the wrong owner or that is blank
         if owner is not None and order.unit.owner != owner:
             if not self.silent_mode: print(f'{order.pretty_print()}: Cannot order a unit that is not your own!')
-            return
+            return False
         if order is None:
-            return
+            return False
 
         # If the order is not valid, reset it
         if not order.is_valid:
             order.unit.reset_order()
             if not self.silent_mode: print(f'{order.unit.pretty_print()} already has orders. Skipped {order.pretty_print()}')
-            return
+            return False
 
         # If the phase is a retreat phase, only allow advance orders acting on dislodged units
         if self.get_phase() == 'Spring Retreat' or self.get_phase() == 'Fall Retreat':
             dislodged = self.gather_dislodged()
             if order.name != 'Advance' or order.is_utilizing_convoy or order.unit not in dislodged:
-                return
+                return False
         
         self.queued_orders.append(order)
         if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
+        return True
 
     def resolve_retreat_orders(self):
         # Loop over all dislodged units
-        for dislodged in self.gather_dislodged():
+        all_dislodged = self.gather_dislodged()
+        for dislodged in all_dislodged:
+            dislodged.set_territory(None)
+
             # If the order is none, disband
             if dislodged.order is None:
                 dislodged.disband()
@@ -170,7 +174,9 @@ class Map:
 
             # If the order is retreating to a territory and is contested by another retreat, disband
             contested = False
-            for other_dislodged in self.gather_dislodged():
+            for other_dislodged in all_dislodged:
+                if other_dislodged == dislodged:
+                    continue
                 if other_dislodged.order is not None and other_dislodged.order.dest_territory == dislodged.order.dest_territory:
                     contested = True
                     break
@@ -297,8 +303,8 @@ class Map:
     def parse_order_string(self, order_string, owner=None):
         order = self._parse_order_string(order_string)
         if order is not None:
-            order.unit.set_order(order)
-            self.queue_order(order, owner)
+            if self.queue_order(order, owner):
+                order.unit.set_order(order)
 
     def _parse_order_string(self, order_string):
         # Helper functions

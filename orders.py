@@ -11,6 +11,8 @@ class Order:
         self.deactivated_supporters = []
 
         self.is_valid = self.validate()
+        if self.unit.dislodged_from is not None:
+            self.unit.territory = None
         if self.unit.order is not None:
             self.is_valid = False
 
