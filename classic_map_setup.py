@@ -143,7 +143,7 @@ def init_classic_map(map_object):
     # Norwegian Sea
     norwegian_sea = WaterTerritory('Norwegian Sea', 'NRG', owner=None)
     # Barents Sea
-    barents_sea = WaterTerritory('Brents Sea', 'BAR', owner=None)
+    barents_sea = WaterTerritory('Barents Sea', 'BAR', owner=None)
     # North Sea
     north_sea = WaterTerritory('North Sea', 'NTH', owner=None)
     # Gulf of Bothnia
@@ -383,6 +383,7 @@ def init_classic_map(map_object):
     # Norway *
     norway.set_adjacent(sweden)
     norway.set_adjacent(norwegian_sea)
+    norway.set_adjacent(barents_sea)
     norway.set_adjacent(north_sea)
     norway.set_adjacent(skagerrak)
     # Sweden *
