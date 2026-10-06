@@ -201,7 +201,7 @@ class Territory:
             winner = None
         return winner
 
-    def check_convoy_from(self, unit, start_territory, dest_territory, exclude=[]):
+    def check_convoy_from(self, unit, start_territory, dest_territory, exclude=[], force_owner=None):
         # Starting at start territory
         # Check all possible convoy routes of non-dislodged fleets convoying target unit to the destination
         # If all routes are blocked, return False
@@ -216,6 +216,8 @@ class Territory:
                 # Valid convoy unit must be convoying the unit to the destination
                 order = current_territory.unit.order
                 if order.name == 'Convoy' and order.convoying_unit == unit and order.dest_territory == dest_territory:
+                    if force_owner is not None and order.unit.owner != force_owner:
+                        continue
                     # Valid convoy unit must not be dislodged
                     hold_power = order.power
                     victor = self.get_victor(order.unit.territory)

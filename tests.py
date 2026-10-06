@@ -2364,7 +2364,7 @@ def test_dislodged_convoying_fleet_not_on_route():
     map.parse_order_string('F IRI C A LON - BEL')
     map.parse_order_string('F NAO S F MAO - IRI')
     map.parse_order_string('F MAO - IRI')
-    assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
 
     map.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -3263,6 +3263,28 @@ def test_the_two_unit_in_one_area_bug_with_double_convoy():
     assert_equal('French Army 1 Territory', french_army1.territory, map.london)
     assert_equal('French Army 2 Territory', french_army2.territory, map.wales)
 
+# 6.G.19
+def test_swapping_with_intent_of_unnecessary_convoy():
+    map = get_classic_map()
+    french_army = add_army(map.marseilles, map.france)
+    french_fleet = add_fleet(map.western_mediterranean, map.france)
+    italian_fleet = add_fleet(map.gulf_of_lyon, map.italy)
+    italian_army = add_army(map.spain, map.italy)
+
+    map.parse_order_string('A MAR - SPA')
+    map.parse_order_string('F WME C A MAR - SPA')
+    map.parse_order_string('F GOL C A MAR - SPA')
+    map.parse_order_string('A SPA - MAR')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army Territory', french_army.territory, map.marseilles)
+    assert_equal('French Fleet Territory', french_fleet.territory, map.western_mediterranean)
+    assert_equal('Italian Fleet Territory', italian_fleet.territory, map.gulf_of_lyon)
+    assert_equal('Italian Army Territory', italian_army.territory, map.spain)
+
 def main():
     global prefix, test_num
 
@@ -3449,6 +3471,7 @@ def main():
     run_test(test_the_two_unit_in_one_area_bug_moving_by_convoy)
     run_test(test_the_two_unit_in_one_area_bug_moving_over_land)
     run_test(test_the_two_unit_in_one_area_bug_with_double_convoy)
+    run_test(test_swapping_with_intent_of_unnecessary_convoy)
     print()
 
     print(f'{passed}/{count} Tests Passed')

@@ -212,11 +212,13 @@ class ConvoyOrder(Order):
 
         while len(traverse_list) > 0:
             territory = traverse_list.pop()
+            if self.dest_territory in territory.adjacents:
+                # Don't consider neighbors of this territory if found destination. They're illegal convoy locations
+                found_dest_territory = True
+                continue
             for adj in territory.adjacents:
                 if adj.unit == self.convoying_unit:
                     found_convoying_unit = True
-                if adj == self.dest_territory:
-                    found_dest_territory = True
                 if found_convoying_unit and found_dest_territory: return True
                 if isinstance(adj, WaterTerritory) and adj not in traversed and adj.unit is not None and adj.unit.type == 'Fleet':
                     traverse_list.append(adj)
@@ -226,7 +228,10 @@ class ConvoyOrder(Order):
 
     def activate(self):
         # If the convoyed unit is a friendly unit, infer that the intent of the order is to convoy, if not specified by order
+        # This is only possible if the entire convoy route is friendly fleets
         if self.convoying_unit.owner == self.unit.owner and self.convoying_unit.order.name == 'Advance' and self.convoying_unit.order.dest_territory == self.dest_territory:
+            # Check convoy using only friendly fleets
+            # if self.unit.territory.check_convoy_from(self.convoying_unit, self.convoying_unit.territory, self.dest_territory, force_owner=self.unit.owner):
             self.convoying_unit.order.is_utilizing_convoy = True
 
     def __str__(self):
