@@ -4144,6 +4144,51 @@ def test_convoy_to_an_adjacent_province_with_a_paradox():
     assert_not_equal('Russian Fleet 1 Territory', russian_fleet1.territory, map.skagerrak)
     assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, map.barents_sea)
 
+# 6.G.12
+def test_swapping_two_units_with_two_convoys():
+    map = get_classic_map()
+    english_army = add_unit('Army', map.liverpool, map.england)
+    english_fleet1 = add_unit('Fleet', map.north_atlantic_ocean, map.england)
+    english_fleet2 = add_unit('Fleet', map.norwegian_sea, map.england)
+    german_army = add_unit('Army', map.edinburgh, map.germany)
+    german_fleet1 = add_unit('Fleet', map.north_sea, map.germany)
+    german_fleet2 = add_unit('Fleet', map.english_channel, map.germany)
+    german_fleet3 = add_unit('Fleet', map.irish_sea, map.germany)
+
+    order1 = map.parse_order_string('A LVP - EDI via convoy')
+    order2 = map.parse_order_string('F NAO C A LVP - EDI')
+    order3 = map.parse_order_string('F NRG C A LVP - EDI')
+    order4 = map.parse_order_string('A EDI - LVP via convoy')
+    order5 = map.parse_order_string('F NTH C A EDI - LVP')
+    order6 = map.parse_order_string('F ENG C A EDI - LVP')
+    order7 = map.parse_order_string('F IRI C A EDI - LVP')
+    english_army.set_order(order1)
+    english_fleet1.set_order(order2)
+    english_fleet2.set_order(order3)
+    german_army.set_order(order4)
+    german_fleet1.set_order(order5)
+    german_fleet2.set_order(order6)
+    german_fleet3.set_order(order7)
+    map.queue_order(order1)
+    map.queue_order(order2)
+    map.queue_order(order3)
+    map.queue_order(order4)
+    map.queue_order(order5)
+    map.queue_order(order6)
+    map.queue_order(order7)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army Territory', english_army.territory, map.edinburgh)
+    assert_equal('English Fleet 1 Territory', english_fleet1.territory, map.north_atlantic_ocean)
+    assert_equal('English Fleet 2 Territory', english_fleet2.territory, map.norwegian_sea)
+    assert_equal('German Army Territory', german_army.territory, map.liverpool)
+    assert_equal('German Fleet 1 Territory', german_fleet1.territory, map.north_sea)
+    assert_equal('German Fleet 2 Territory', german_fleet2.territory, map.english_channel)
+    assert_equal('German Fleet 3 Territory', german_fleet3.territory, map.irish_sea)
+
 def main():
     global prefix, test_num
 
@@ -4323,6 +4368,7 @@ def main():
     run_test(test_swapped_or_dislodged)
     run_test(test_swapped_or_a_head_to_head_battle)
     run_test(test_convoy_to_an_adjacent_province_with_a_paradox)
+    run_test(test_swapping_two_units_with_two_convoys)
     print()
 
     print(f'{passed}/{count} Tests Passed')
