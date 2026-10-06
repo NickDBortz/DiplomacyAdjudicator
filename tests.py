@@ -3229,6 +3229,40 @@ def test_the_two_unit_in_one_area_bug_moving_over_land():
     assert_equal('Russian Army Territory', russian_army.territory, map.norway)
     assert_equal('Russian Fleet Territory', russian_fleet.territory, map.norwegian_sea)
 
+# 6.G.18
+def test_the_two_unit_in_one_area_bug_with_double_convoy():
+    map = get_classic_map()
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army1 = add_army(map.holland, map.england)
+    english_army2 = add_army(map.yorkshire, map.england)
+    english_army3 = add_army(map.london, map.england)
+    english_army4 = add_army(map.ruhr, map.england)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    french_army1 = add_army(map.belgium, map.france)
+    french_army2 = add_army(map.wales, map.france)
+
+    map.parse_order_string('F NTH C A LON - BEL')
+    map.parse_order_string('A HOL S A LON - BEL')
+    map.parse_order_string('A YOR - LON')
+    map.parse_order_string('A LON - BEL')
+    map.parse_order_string('A RUH S A LON - BEL')
+    map.parse_order_string('F ENG C A BEL - LON')
+    map.parse_order_string('A BEL - LON')
+    map.parse_order_string('A WAL S A BEL - LON')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 8)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Fleet Territory', english_fleet.territory, map.north_sea)
+    assert_equal('English Army 1 Territory', english_army1.territory, map.holland)
+    assert_equal('English Army 2 Territory', english_army2.territory, map.yorkshire)
+    assert_equal('English Army 3 Territory', english_army3.territory, map.belgium)
+    assert_equal('English Army 4 Territory', english_army4.territory, map.ruhr)
+    assert_equal('French Fleet Territory', french_fleet.territory, map.english_channel)
+    assert_equal('French Army 1 Territory', french_army1.territory, map.london)
+    assert_equal('French Army 2 Territory', french_army2.territory, map.wales)
+
 def main():
     global prefix, test_num
 
@@ -3414,6 +3448,7 @@ def main():
     run_test(test_bounce_and_dislodge_with_double_convoy)
     run_test(test_the_two_unit_in_one_area_bug_moving_by_convoy)
     run_test(test_the_two_unit_in_one_area_bug_moving_over_land)
+    run_test(test_the_two_unit_in_one_area_bug_with_double_convoy)
     print()
 
     print(f'{passed}/{count} Tests Passed')
