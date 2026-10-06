@@ -10,10 +10,9 @@ class Order:
         self.supporters = []
         self.deactivated_supporters = []
 
+        self.is_valid = self.validate()
         if self.unit.order is not None:
             self.is_valid = False
-        else:
-            self.is_valid = self.validate()
 
     def validate(self):
         # Default invalid

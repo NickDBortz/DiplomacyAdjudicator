@@ -223,7 +223,13 @@ class Map:
             if dest_territory is not None and dest_territory.unit is not None and dest_territory.unit.owner == friendly_country and dest_territory.unit.order.name != 'Advance':
                 order.supported_order.cut_support(order)
 
-    def parse_order_string(self, order_string):
+    def parse_order_string(self, order_string, owner=None):
+        order = self._parse_order_string(order_string)
+        if order is not None:
+            order.unit.set_order(order)
+            self.queue_order(order, owner)
+
+    def _parse_order_string(self, order_string):
         # Helper functions
         def expect_unit_type(split_order_string, idx):
             if idx < 0 or idx >= len(split_order_string):
@@ -297,7 +303,7 @@ class Map:
                 return AdvanceOrder(unit, dest_territory, coast, is_via_convoy)
             elif order_type == 'S':
                 supported_order_string = ' '.join(split_order_string[idx:])
-                supported_order = self.parse_order_string(supported_order_string)
+                supported_order = self._parse_order_string(supported_order_string)
                 if not isinstance(supported_order, Order):
                     raise Exception()
                 return SupportOrder(unit, supported_order)
@@ -307,7 +313,7 @@ class Map:
                 if unit_type != 'Fleet':
                     raise Exception()
                 advance_order_string = ' '.join(split_order_string[idx:])
-                advance_order = self.parse_order_string(advance_order_string)
+                advance_order = self._parse_order_string(advance_order_string)
                 if not isinstance(advance_order, AdvanceOrder):
                     raise Exception()
                 return ConvoyOrder(unit, advance_order.unit, advance_order.dest_territory)
