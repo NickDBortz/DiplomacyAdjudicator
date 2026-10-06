@@ -3285,6 +3285,31 @@ def test_swapping_with_intent_of_unnecessary_convoy():
     assert_equal('Italian Fleet Territory', italian_fleet.territory, map.gulf_of_lyon)
     assert_equal('Italian Army Territory', italian_army.territory, map.spain)
 
+# 6.G.20
+def test_explicit_convoy_to_adjacent_province_disrupted():
+    map = get_classic_map()
+    french_fleet1 = add_fleet(map.brest, map.france)
+    french_army1 = add_army(map.picardy, map.france)
+    french_army2 = add_army(map.burgundy, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+    english_fleet = add_fleet(map.english_channel, map.england)
+
+    map.parse_order_string('F BRE - ENG')
+    map.parse_order_string('A PIC - BEL via convoy')
+    map.parse_order_string('A BUR S A PIC - BEL')
+    map.parse_order_string('F MAO S F BRE - ENG')
+    map.parse_order_string('F ENG C A PIC - BEL')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet 1 Territory', french_fleet1.territory, map.english_channel)
+    assert_equal('French Army 1 Territory', french_army1.territory, map.picardy)
+    assert_equal('French Army 2 Territory', french_army2.territory, map.burgundy)
+    assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.mid_atlantic_ocean)
+    assert_not_equal('English Fleet Territory', english_fleet.territory, map.english_channel)
+
 def main():
     global prefix, test_num
 
@@ -3472,6 +3497,7 @@ def main():
     run_test(test_the_two_unit_in_one_area_bug_moving_over_land)
     run_test(test_the_two_unit_in_one_area_bug_with_double_convoy)
     run_test(test_swapping_with_intent_of_unnecessary_convoy)
+    run_test(test_explicit_convoy_to_adjacent_province_disrupted)
     print()
 
     print(f'{passed}/{count} Tests Passed')
