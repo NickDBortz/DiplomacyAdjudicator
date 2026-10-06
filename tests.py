@@ -4028,6 +4028,36 @@ def test_explicit_convoy_that_isnt_there():
     assert_equal('English Fleet Territory', english_fleet.territory, map.helgoland_bight)
     assert_equal('English Army Territory', english_army.territory, map.kiel)
 
+# 6.G.9
+def test_swapped_or_dislodged():
+    map = get_classic_map()
+    english_army = add_unit('Army', map.norway, map.england)
+    english_fleet1 = add_unit('Fleet', map.skagerrak, map.england)
+    english_fleet2 = add_unit('Fleet', map.finland, map.england)
+    russian_army = add_unit('Army', map.sweden, map.russia)
+
+    order1 = map.parse_order_string('A NOR - SWE')
+    order2 = map.parse_order_string('F SKA C A NOR - SWE')
+    order3 = map.parse_order_string('F FIN S A NOR - SWE')
+    order4 = map.parse_order_string('A SWE - NOR')
+    english_army.set_order(order1)
+    english_fleet1.set_order(order2)
+    english_fleet2.set_order(order3)
+    russian_army.set_order(order4)
+    map.queue_order(order1)
+    map.queue_order(order2)
+    map.queue_order(order3)
+    map.queue_order(order4)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army Territory', english_army.territory, map.sweden)
+    assert_equal('English Fleet 1 Territory', english_fleet1.territory, map.skagerrak)
+    assert_equal('English Fleet 2 Territory', english_fleet2.territory, map.finland)
+    assert_equal('Russian Army Territory', russian_army.territory, map.norway)
+
 def main():
     global prefix, test_num
 
@@ -4204,6 +4234,7 @@ def main():
     run_test(test_swapping_with_unintended_intent)
     run_test(test_swapping_with_illegal_intent)
     run_test(test_explicit_convoy_that_isnt_there)
+    run_test(test_swapped_or_dislodged)
     print()
 
     print(f'{passed}/{count} Tests Passed')
