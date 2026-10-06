@@ -165,8 +165,14 @@ def get_test_map():
 def get_classic_map(begin_empty=True):
     return Map(silent_mode=True, use_test_map=False, begin_empty=begin_empty)
 
-def add_unit(unit_type, territory, owner, coast=None):
-    unit = Unit(owner, unit_type, territory)
+def add_army(territory, owner):
+    unit = Unit(owner, 'Army', territory)
+    territory.set_unit(unit)
+    owner.add_unit(unit)
+    return unit
+
+def add_fleet(territory, owner, coast=None):
+    unit = Unit(owner, 'Fleet', territory)
     territory.set_unit(unit, coast=coast)
     owner.add_unit(unit)
     return unit
@@ -257,7 +263,7 @@ def test_parse_convoy_order():
 # 6.A.1
 def test_advance_not_neighbor():
     map = get_classic_map()
-    unit = add_unit('Fleet', map.north_sea, map.england)
+    unit = add_fleet(map.north_sea, map.england)
     advance_order = map.parse_order_string('F NTH - PIC')
     unit.set_order(advance_order)
     map.queue_order(advance_order)
@@ -266,7 +272,7 @@ def test_advance_not_neighbor():
 # 6.A.2
 def test_move_army_to_sea():
     map = get_classic_map()
-    unit = add_unit('Army', map.liverpool, map.england)
+    unit = add_army(map.liverpool, map.england)
     advance_order = map.parse_order_string('A LVP - IRI')
     unit.set_order(advance_order)
     map.queue_order(advance_order)
@@ -275,7 +281,7 @@ def test_move_army_to_sea():
 # 6.A.3
 def test_move_fleet_to_land():
     map = get_classic_map()
-    unit = add_unit('Fleet', map.kiel, map.germany)
+    unit = add_fleet(map.kiel, map.germany)
     advance_order = map.parse_order_string('F KIE - MUN')
     unit.set_order(advance_order)
     map.queue_order(advance_order)
@@ -284,7 +290,7 @@ def test_move_fleet_to_land():
 # 6.A.4
 def test_move_to_own_territory():
     map = get_classic_map()
-    unit = add_unit('Fleet', map.kiel, map.germany)
+    unit = add_fleet(map.kiel, map.germany)
     advance_order = map.parse_order_string('F KIE - KIE')
     unit.set_order(advance_order)
     map.queue_order(advance_order)
@@ -293,11 +299,11 @@ def test_move_to_own_territory():
 # 6.A.5
 def test_move_to_own_territory_with_convoy():
     map = get_classic_map()
-    english_unit1 = add_unit('Fleet', map.north_sea, map.england)
-    english_unit2 = add_unit('Army', map.yorkshire, map.england)
-    english_unit3 = add_unit('Army', map.liverpool, map.england)
-    german_unit1 = add_unit('Fleet', map.london, map.germany)
-    german_unit2 = add_unit('Army', map.wales, map.germany)
+    english_unit1 = add_fleet(map.north_sea, map.england)
+    english_unit2 = add_army(map.yorkshire, map.england)
+    english_unit3 = add_army(map.liverpool, map.england)
+    german_unit1 = add_fleet(map.london, map.germany)
+    german_unit2 = add_army(map.wales, map.germany)
 
     order1 = map.parse_order_string('F NTH C A YOR - YOR')
     order2 = map.parse_order_string('A YOR - YOR')
@@ -332,7 +338,7 @@ def test_move_to_own_territory_with_convoy():
 # 6.A.6
 def test_ordering_other_countrys_unit():
     map = get_classic_map()
-    unit = add_unit('Fleet', map.london, map.england)
+    unit = add_fleet(map.london, map.england)
     order = map.parse_order_string('F LON - NTH')
     unit.set_order(order)
     map.queue_order(order, owner=map.germany)
@@ -341,8 +347,8 @@ def test_ordering_other_countrys_unit():
 # 6.A.7
 def test_only_convoy_armies():
     map = get_classic_map()
-    unit1 = add_unit('Fleet', map.london, map.england)
-    unit2 = add_unit('Fleet', map.north_sea, map.england)
+    unit1 = add_fleet(map.london, map.england)
+    unit2 = add_fleet(map.north_sea, map.england)
 
     order1 = map.parse_order_string('F LON - BEL')
     order2 = map.parse_order_string('F NTH C A LON - BEL')
@@ -361,10 +367,10 @@ def test_only_convoy_armies():
 # 6.A.8
 def test_support_hold_yourself_fails():
     map = get_classic_map()
-    italy_unit1 = add_unit('Army', map.venice, map.italy)
-    italy_unit2 = add_unit('Army', map.tyrolia, map.italy)
+    italy_unit1 = add_army(map.venice, map.italy)
+    italy_unit2 = add_army(map.tyrolia, map.italy)
 
-    austria_fleet = add_unit('Fleet', map.trieste, map.austria_hungary)
+    austria_fleet = add_fleet(map.trieste, map.austria_hungary)
 
     order1 = map.parse_order_string('A VEN - TRI')
     order2 = map.parse_order_string('A TYR S A VEN - TRI')
@@ -387,7 +393,7 @@ def test_support_hold_yourself_fails():
 # 6.A.9
 def test_fleets_must_follow_coast_if_not_sea():
     map = get_classic_map()
-    fleet = add_unit('Fleet', map.rome, map.italy)
+    fleet = add_fleet(map.rome, map.italy)
     order = map.parse_order_string('F ROM - VEN')
     fleet.set_order(order)
     map.queue_order(order)
@@ -396,10 +402,10 @@ def test_fleets_must_follow_coast_if_not_sea():
 # 6.A.10
 def test_support_unreachable_territory_impossible():
     map = get_classic_map()
-    austria_army = add_unit('Army', map.venice, map.austria_hungary)
+    austria_army = add_army(map.venice, map.austria_hungary)
 
-    italy_fleet = add_unit('Fleet', map.rome, map.italy)
-    italy_army = add_unit('Army', map.apulia, map.italy)
+    italy_fleet = add_fleet(map.rome, map.italy)
+    italy_army = add_army(map.apulia, map.italy)
 
     order1 = map.parse_order_string('A VEN H')
     order2 = map.parse_order_string('F ROM S A APU - VEN')
@@ -422,9 +428,9 @@ def test_support_unreachable_territory_impossible():
 # 6.A.11
 def test_simple_bounce():
     map = get_classic_map()
-    austria_army = add_unit('Army', map.vienna, map.austria_hungary)
+    austria_army = add_army(map.vienna, map.austria_hungary)
 
-    italy_army = add_unit('Army', map.venice, map.italy)
+    italy_army = add_army(map.venice, map.italy)
 
     order1 = map.parse_order_string('A VIE - TYR')
     order2 = map.parse_order_string('A VEN - TYR')
@@ -443,11 +449,11 @@ def test_simple_bounce():
 # 6.A.12
 def test_triple_bounce():
     map = get_classic_map()
-    austria_army = add_unit('Army', map.vienna, map.austria_hungary)
+    austria_army = add_army(map.vienna, map.austria_hungary)
 
-    german_army = add_unit('Army', map.munich, map.germany)
+    german_army = add_army(map.munich, map.germany)
 
-    italy_army = add_unit('Army', map.venice, map.italy)
+    italy_army = add_army(map.venice, map.italy)
 
     order1 = map.parse_order_string('A VIE - TYR')
     order2 = map.parse_order_string('A MUN - TYR')
@@ -471,7 +477,7 @@ def test_triple_bounce():
 # 6.B.1
 def test_move_unspecified_coast_when_necessary():
     map = get_classic_map()
-    french_fleet = add_unit('Fleet', map.portugal, map.france)
+    french_fleet = add_fleet(map.portugal, map.france)
 
     order = map.parse_order_string('F POR - SPA')
     french_fleet.set_order(order)
@@ -481,7 +487,7 @@ def test_move_unspecified_coast_when_necessary():
 # 6.B.2
 def test_move_unspecified_coast_when_not_necessary():
     map = get_classic_map()
-    french_fleet = add_unit('Fleet', map.gascony, map.france)
+    french_fleet = add_fleet(map.gascony, map.france)
 
     order = map.parse_order_string('F GAS - SPA')
     french_fleet.set_order(order)
@@ -496,7 +502,7 @@ def test_move_unspecified_coast_when_not_necessary():
 # 6.B.3
 def test_move_wrong_coast_when_not_necessary():
     map = get_classic_map()
-    french_fleet = add_unit('Fleet', map.gascony, map.france)
+    french_fleet = add_fleet(map.gascony, map.france)
 
     order = map.parse_order_string('F GAS - SPA(sc)')
     french_fleet.set_order(order)
@@ -506,9 +512,9 @@ def test_move_wrong_coast_when_not_necessary():
 # 6.B.4
 def test_support_to_unreachable_coast_allowed():
     map = get_classic_map()
-    french_fleet1 = add_unit('Fleet', map.gascony, map.france)
-    french_fleet2 = add_unit('Fleet', map.marseilles, map.france)
-    italian_fleet = add_unit('Fleet', map.western_mediterranean, map.italy)
+    french_fleet1 = add_fleet(map.gascony, map.france)
+    french_fleet2 = add_fleet(map.marseilles, map.france)
+    italian_fleet = add_fleet(map.western_mediterranean, map.italy)
 
     order1 = map.parse_order_string('F GAS - SPA(nc)')
     order2 = map.parse_order_string('F MAR S F GAS - SPA(nc)')
@@ -531,9 +537,9 @@ def test_support_to_unreachable_coast_allowed():
 # 6.B.5
 def test_support_from_unreachable_coast_not_allowed():
     map = get_classic_map()
-    french_fleet1 = add_unit('Fleet', map.marseilles, map.france)
-    french_fleet2 = add_unit('Fleet', map.spain, map.france, coast=0)
-    italian_fleet = add_unit('Fleet', map.gulf_of_lyon, map.italy)
+    french_fleet1 = add_fleet(map.marseilles, map.france)
+    french_fleet2 = add_fleet(map.spain, map.france, coast=0)
+    italian_fleet = add_fleet(map.gulf_of_lyon, map.italy)
 
     order1 = map.parse_order_string('F MAR - GOL')
     order2 = map.parse_order_string('F SPA S F MAR - GOL')
@@ -556,11 +562,11 @@ def test_support_from_unreachable_coast_not_allowed():
 # 6.B.6
 def test_support_cut_from_other_coast():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.irish_sea, map.england)
-    english_fleet2 = add_unit('Fleet', map.north_atlantic_ocean, map.england)
-    french_fleet1 = add_unit('Fleet', map.spain, map.france, coast=0)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
-    italian_fleet = add_unit('Fleet', map.gulf_of_lyon, map.italy)
+    english_fleet1 = add_fleet(map.irish_sea, map.england)
+    english_fleet2 = add_fleet(map.north_atlantic_ocean, map.england)
+    french_fleet1 = add_fleet(map.spain, map.france, coast=0)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+    italian_fleet = add_fleet(map.gulf_of_lyon, map.italy)
 
     order1 = map.parse_order_string('F IRI S F NAO - MAO')
     order2 = map.parse_order_string('F NAO - MAO')
@@ -591,10 +597,10 @@ def test_support_cut_from_other_coast():
 # 6.B.7
 def test_support_own_unit_with_unspecified_coast():
     map = get_classic_map()
-    french_fleet1 = add_unit('Fleet', map.portugal, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
-    italian_fleet1 = add_unit('Fleet', map.gulf_of_lyon, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.western_mediterranean, map.italy)
+    french_fleet1 = add_fleet(map.portugal, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+    italian_fleet1 = add_fleet(map.gulf_of_lyon, map.italy)
+    italian_fleet2 = add_fleet(map.western_mediterranean, map.italy)
 
     order1 = map.parse_order_string('F POR S F MAO - SPA')
     order2 = map.parse_order_string('F MAO - SPA(nc)')
@@ -621,10 +627,10 @@ def test_support_own_unit_with_unspecified_coast():
 # 6.B.8
 def test_support_with_unspecified_coast_when_only_one_coast_possible():
     map = get_classic_map()
-    french_fleet1 = add_unit('Fleet', map.portugal, map.france)
-    french_fleet2 = add_unit('Fleet', map.gascony, map.france)
-    italian_fleet1 = add_unit('Fleet', map.gulf_of_lyon, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.western_mediterranean, map.italy)
+    french_fleet1 = add_fleet(map.portugal, map.france)
+    french_fleet2 = add_fleet(map.gascony, map.france)
+    italian_fleet1 = add_fleet(map.gulf_of_lyon, map.italy)
+    italian_fleet2 = add_fleet(map.western_mediterranean, map.italy)
 
     order1 = map.parse_order_string('F POR S F GAS - SPA')
     order2 = map.parse_order_string('F GAS - SPA(nc)')
@@ -651,10 +657,10 @@ def test_support_with_unspecified_coast_when_only_one_coast_possible():
 # 6.B.9
 def test_support_with_wrong_coast():
     map = get_classic_map()
-    french_fleet1 = add_unit('Fleet', map.portugal, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
-    italian_fleet1 = add_unit('Fleet', map.gulf_of_lyon, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.western_mediterranean, map.italy)
+    french_fleet1 = add_fleet(map.portugal, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+    italian_fleet1 = add_fleet(map.gulf_of_lyon, map.italy)
+    italian_fleet2 = add_fleet(map.western_mediterranean, map.italy)
 
     order1 = map.parse_order_string('F POR S F MAO - SPA(nc)')
     order2 = map.parse_order_string('F MAO - SPA(sc)')
@@ -684,7 +690,7 @@ def test_support_with_wrong_coast():
 # 6.B.11
 def test_coast_cannot_be_ordered_to_change():
     map = get_classic_map()
-    french_fleet = add_unit('Fleet', map.spain, map.france, coast=0)
+    french_fleet = add_fleet(map.spain, map.france, coast=0)
 
     order = map.parse_order_string('F SPA - GOL')
     french_fleet.set_order(order)
@@ -694,7 +700,7 @@ def test_coast_cannot_be_ordered_to_change():
 # 6.B.12
 def test_army_movement_with_coastal_specifications():
     map = get_classic_map()
-    french_army = add_unit('Army', map.gascony, map.france)
+    french_army = add_army(map.gascony, map.france)
 
     order = map.parse_order_string('A GAS - SPA(nc)')
     french_army.set_order(order)
@@ -709,8 +715,8 @@ def test_army_movement_with_coastal_specifications():
 # 6.B.13
 def test_coastal_crawl_not_allowed():
     map = get_classic_map()
-    turkish_fleet1 = add_unit('Fleet', map.bulgaria, map.turkey, coast=1)
-    turkish_fleet2 = add_unit('Fleet', map.constantinople, map.turkey)
+    turkish_fleet1 = add_fleet(map.bulgaria, map.turkey, coast=1)
+    turkish_fleet2 = add_fleet(map.constantinople, map.turkey)
 
     order1 = map.parse_order_string('F BUL - CON')
     order2 = map.parse_order_string('F CON - BUL(nc)')
@@ -736,10 +742,10 @@ def test_building_unspecified_coast():
 # 6.B.15
 def test_support_foreign_unit_unspecified_coast():
     map = get_classic_map()
-    french_fleet = add_unit('Fleet', map.portugal, map.france)
-    english_fleet = add_unit('Fleet', map.mid_atlantic_ocean, map.england)
-    italian_fleet1 = add_unit('Fleet', map.gulf_of_lyon, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.western_mediterranean, map.italy)
+    french_fleet = add_fleet(map.portugal, map.france)
+    english_fleet = add_fleet(map.mid_atlantic_ocean, map.england)
+    italian_fleet1 = add_fleet(map.gulf_of_lyon, map.italy)
+    italian_fleet2 = add_fleet(map.western_mediterranean, map.italy)
 
     order1 = map.parse_order_string('F POR S F MAO - SPA')
     order2 = map.parse_order_string('F MAO - SPA(nc)')
@@ -767,9 +773,9 @@ def test_support_foreign_unit_unspecified_coast():
 # 6.C.1
 def test_three_army_circular_movement():
     map = get_classic_map()
-    turkish_fleet = add_unit('Fleet', map.ankara, map.turkey)
-    turkish_army1 = add_unit('Army', map.constantinople, map.turkey)
-    turkish_army2 = add_unit('Army', map.smyrna, map.turkey)
+    turkish_fleet = add_fleet(map.ankara, map.turkey)
+    turkish_army1 = add_army(map.constantinople, map.turkey)
+    turkish_army2 = add_army(map.smyrna, map.turkey)
 
     order1 = map.parse_order_string('F ANK - CON')
     order2 = map.parse_order_string('A CON - SMY')
@@ -792,10 +798,10 @@ def test_three_army_circular_movement():
 # 6.C.2
 def test_three_army_circular_movement_with_support():
     map = get_classic_map()
-    turkish_fleet = add_unit('Fleet', map.ankara, map.turkey)
-    turkish_army1 = add_unit('Army', map.constantinople, map.turkey)
-    turkish_army2 = add_unit('Army', map.smyrna, map.turkey)
-    turkish_army3 = add_unit('Army', map.bulgaria, map.turkey)
+    turkish_fleet = add_fleet(map.ankara, map.turkey)
+    turkish_army1 = add_army(map.constantinople, map.turkey)
+    turkish_army2 = add_army(map.smyrna, map.turkey)
+    turkish_army3 = add_army(map.bulgaria, map.turkey)
 
     order1 = map.parse_order_string('F ANK - CON')
     order2 = map.parse_order_string('A CON - SMY')
@@ -822,10 +828,10 @@ def test_three_army_circular_movement_with_support():
 # 6.C.3
 def test_disrupted_three_army_circular_movement():
     map = get_classic_map()
-    turkish_fleet = add_unit('Fleet', map.ankara, map.turkey)
-    turkish_army1 = add_unit('Army', map.constantinople, map.turkey)
-    turkish_army2 = add_unit('Army', map.smyrna, map.turkey)
-    turkish_army3 = add_unit('Army', map.bulgaria, map.turkey)
+    turkish_fleet = add_fleet(map.ankara, map.turkey)
+    turkish_army1 = add_army(map.constantinople, map.turkey)
+    turkish_army2 = add_army(map.smyrna, map.turkey)
+    turkish_army3 = add_army(map.bulgaria, map.turkey)
 
     order1 = map.parse_order_string('F ANK - CON')
     order2 = map.parse_order_string('A CON - SMY')
@@ -852,13 +858,13 @@ def test_disrupted_three_army_circular_movement():
 # 6.C.4
 def test_circular_movement_with_attacked_convoy():
     map = get_classic_map()
-    austrian_army1 = add_unit('Army', map.trieste, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.serbia, map.austria_hungary)
-    turkish_army = add_unit('Army', map.bulgaria, map.turkey)
-    turkish_fleet1 = add_unit('Fleet', map.aegean_sea, map.turkey)
-    turkish_fleet2 = add_unit('Fleet', map.ionian_sea, map.turkey)
-    turkish_fleet3 = add_unit('Fleet', map.adriatic_sea, map.turkey)
-    italian_fleet = add_unit('Fleet', map.naples, map.italy)
+    austrian_army1 = add_army(map.trieste, map.austria_hungary)
+    austrian_army2 = add_army(map.serbia, map.austria_hungary)
+    turkish_army = add_army(map.bulgaria, map.turkey)
+    turkish_fleet1 = add_fleet(map.aegean_sea, map.turkey)
+    turkish_fleet2 = add_fleet(map.ionian_sea, map.turkey)
+    turkish_fleet3 = add_fleet(map.adriatic_sea, map.turkey)
+    italian_fleet = add_fleet(map.naples, map.italy)
 
     order1 = map.parse_order_string('A TRI - SER')
     order2 = map.parse_order_string('A SER - BUL')
@@ -897,14 +903,14 @@ def test_circular_movement_with_attacked_convoy():
 # 6.C.5
 def test_disrupted_circular_movement_dislodged_convoy():
     map = get_classic_map()
-    austrian_army1 = add_unit('Army', map.trieste, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.serbia, map.austria_hungary)
-    turkish_army = add_unit('Army', map.bulgaria, map.turkey)
-    turkish_fleet1 = add_unit('Fleet', map.aegean_sea, map.turkey)
-    turkish_fleet2 = add_unit('Fleet', map.ionian_sea, map.turkey)
-    turkish_fleet3 = add_unit('Fleet', map.adriatic_sea, map.turkey)
-    italian_fleet1 = add_unit('Fleet', map.naples, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.tunis, map.italy)
+    austrian_army1 = add_army(map.trieste, map.austria_hungary)
+    austrian_army2 = add_army(map.serbia, map.austria_hungary)
+    turkish_army = add_army(map.bulgaria, map.turkey)
+    turkish_fleet1 = add_fleet(map.aegean_sea, map.turkey)
+    turkish_fleet2 = add_fleet(map.ionian_sea, map.turkey)
+    turkish_fleet3 = add_fleet(map.adriatic_sea, map.turkey)
+    italian_fleet1 = add_fleet(map.naples, map.italy)
+    italian_fleet2 = add_fleet(map.tunis, map.italy)
 
     order1 = map.parse_order_string('A TRI - SER')
     order2 = map.parse_order_string('A SER - BUL')
@@ -947,10 +953,10 @@ def test_disrupted_circular_movement_dislodged_convoy():
 # 6.C.6
 def test_two_armies_two_convoys():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
-    french_army = add_unit('Army', map.belgium, map.france)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    french_army = add_army(map.belgium, map.france)
 
     order1 = map.parse_order_string('F NTH C A LON - BEL')
     order2 = map.parse_order_string('A LON - BEL')
@@ -977,11 +983,11 @@ def test_two_armies_two_convoys():
 # 6.C.7
 def test_disrupted_unit_swap():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
-    french_army1 = add_unit('Army', map.belgium, map.france)
-    french_army2 = add_unit('Army', map.burgundy, map.france)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    french_army1 = add_army(map.belgium, map.france)
+    french_army2 = add_army(map.burgundy, map.france)
 
     order1 = map.parse_order_string('F NTH C A LON - BEL')
     order2 = map.parse_order_string('A LON - BEL')
@@ -1012,11 +1018,11 @@ def test_disrupted_unit_swap():
 # 6.C.8
 def test_no_self_dislodgement_in_disrupted_circular_movement():
     map = get_classic_map()
-    turkish_fleet = add_unit('Fleet', map.constantinople, map.turkey)
-    turkish_army1 = add_unit('Army', map.bulgaria, map.turkey)
-    turkish_army2 = add_unit('Army', map.smyrna, map.turkey)
-    russian_fleet = add_unit('Fleet', map.black_sea, map.russia)
-    austrian_army = add_unit('Army', map.serbia, map.austria_hungary)
+    turkish_fleet = add_fleet(map.constantinople, map.turkey)
+    turkish_army1 = add_army(map.bulgaria, map.turkey)
+    turkish_army2 = add_army(map.smyrna, map.turkey)
+    russian_fleet = add_fleet(map.black_sea, map.russia)
+    austrian_army = add_army(map.serbia, map.austria_hungary)
 
     order1 = map.parse_order_string('F CON - BLA')
     order2 = map.parse_order_string('A BUL - CON')
@@ -1047,11 +1053,11 @@ def test_no_self_dislodgement_in_disrupted_circular_movement():
 # 6.C.9
 def test_no_help_in_dislodgement_of_own_unit_in_disrupted_circular_movement():
     map = get_classic_map()
-    turkish_fleet = add_unit('Fleet', map.constantinople, map.turkey)
-    turkish_army = add_unit('Army', map.smyrna, map.turkey)
-    russian_fleet = add_unit('Fleet', map.black_sea, map.russia)
-    austrian_army1 = add_unit('Army', map.serbia, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.bulgaria, map.austria_hungary)
+    turkish_fleet = add_fleet(map.constantinople, map.turkey)
+    turkish_army = add_army(map.smyrna, map.turkey)
+    russian_fleet = add_fleet(map.black_sea, map.russia)
+    austrian_army1 = add_army(map.serbia, map.austria_hungary)
+    austrian_army2 = add_army(map.bulgaria, map.austria_hungary)
 
     order1 = map.parse_order_string('F CON - BLA')
     order2 = map.parse_order_string('A SMY S A BUL - CON')
@@ -1083,10 +1089,10 @@ def test_no_help_in_dislodgement_of_own_unit_in_disrupted_circular_movement():
 # 6.D.1
 def test_supported_hold_can_prevent_dislodgement():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.adriatic_sea, map.austria_hungary)
-    austrian_army = add_unit('Army', map.trieste, map.austria_hungary)
-    italian_army1 = add_unit('Army', map.venice, map.italy)
-    italian_army2 = add_unit('Army', map.tyrolia, map.italy)
+    austrian_fleet = add_fleet(map.adriatic_sea, map.austria_hungary)
+    austrian_army = add_army(map.trieste, map.austria_hungary)
+    italian_army1 = add_army(map.venice, map.italy)
+    italian_army2 = add_army(map.tyrolia, map.italy)
 
     order1 = map.parse_order_string('F ADR S A TRI - VEN')
     order2 = map.parse_order_string('A TRI - VEN')
@@ -1113,11 +1119,11 @@ def test_supported_hold_can_prevent_dislodgement():
 # 6.D.2
 def test_move_cuts_support_on_hold():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.adriatic_sea, map.austria_hungary)
-    austrian_army1 = add_unit('Army', map.trieste, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.vienna, map.austria_hungary)
-    italian_army1 = add_unit('Army', map.venice, map.italy)
-    italian_army2 = add_unit('Army', map.tyrolia, map.italy)
+    austrian_fleet = add_fleet(map.adriatic_sea, map.austria_hungary)
+    austrian_army1 = add_army(map.trieste, map.austria_hungary)
+    austrian_army2 = add_army(map.vienna, map.austria_hungary)
+    italian_army1 = add_army(map.venice, map.italy)
+    italian_army2 = add_army(map.tyrolia, map.italy)
 
     order1 = map.parse_order_string('F ADR S A TRI - VEN')
     order2 = map.parse_order_string('A TRI - VEN')
@@ -1148,10 +1154,10 @@ def test_move_cuts_support_on_hold():
 # 6.D.3
 def test_move_cuts_support_on_move():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.adriatic_sea, map.austria_hungary)
-    austrian_army = add_unit('Army', map.trieste, map.austria_hungary)
-    italian_army = add_unit('Army', map.venice, map.italy)
-    italian_fleet = add_unit('Fleet', map.ionian_sea, map.italy)
+    austrian_fleet = add_fleet(map.adriatic_sea, map.austria_hungary)
+    austrian_army = add_army(map.trieste, map.austria_hungary)
+    italian_army = add_army(map.venice, map.italy)
+    italian_fleet = add_fleet(map.ionian_sea, map.italy)
 
     order1 = map.parse_order_string('F ADR S A TRI - VEN')
     order2 = map.parse_order_string('A TRI - VEN')
@@ -1178,10 +1184,10 @@ def test_move_cuts_support_on_move():
 # 6.D.4
 def test_support_to_hold_on_unit_supporting_hold_allowed():
     map = get_classic_map()
-    german_army = add_unit('Army', map.berlin, map.germany)
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    russian_fleet = add_unit('Fleet', map.baltic_sea, map.russia)
-    russian_army = add_unit('Army', map.prussia, map.russia)
+    german_army = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    russian_fleet = add_fleet(map.baltic_sea, map.russia)
+    russian_army = add_army(map.prussia, map.russia)
 
     order1 = map.parse_order_string('A BER S F KIE H')
     order2 = map.parse_order_string('F KIE S A BER H')
@@ -1208,11 +1214,11 @@ def test_support_to_hold_on_unit_supporting_hold_allowed():
 # 6.D.5
 def test_support_to_hold_on_unit_supporting_move_allowed():
     map = get_classic_map()
-    german_army1 = add_unit('Army', map.berlin, map.germany)
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    german_army2 = add_unit('Army', map.munich, map.germany)
-    russian_fleet = add_unit('Fleet', map.baltic_sea, map.russia)
-    russian_army = add_unit('Army', map.prussia, map.russia)
+    german_army1 = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    german_army2 = add_army(map.munich, map.germany)
+    russian_fleet = add_fleet(map.baltic_sea, map.russia)
+    russian_army = add_army(map.prussia, map.russia)
 
     order1 = map.parse_order_string('A BER S A MUN - SIL')
     order2 = map.parse_order_string('F KIE S A BER H')
@@ -1243,11 +1249,11 @@ def test_support_to_hold_on_unit_supporting_move_allowed():
 # 6.D.6
 def test_support_to_hold_on_convoying_unit_allowed():
     map = get_classic_map()
-    german_army = add_unit('Army', map.berlin, map.germany)
-    german_fleet1 = add_unit('Fleet', map.baltic_sea, map.germany)
-    german_fleet2 = add_unit('Fleet', map.prussia, map.germany)
-    russian_fleet1 = add_unit('Fleet', map.livonia, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.gulf_of_bothnia, map.russia)
+    german_army = add_army(map.berlin, map.germany)
+    german_fleet1 = add_fleet(map.baltic_sea, map.germany)
+    german_fleet2 = add_fleet(map.prussia, map.germany)
+    russian_fleet1 = add_fleet(map.livonia, map.russia)
+    russian_fleet2 = add_fleet(map.gulf_of_bothnia, map.russia)
 
     order1 = map.parse_order_string('A BER - SWE')
     order2 = map.parse_order_string('F BAL C A BER - SWE')
@@ -1278,11 +1284,11 @@ def test_support_to_hold_on_convoying_unit_allowed():
 # 6.D.7
 def test_support_to_hold_on_moving_unit_not_allowed():
     map = get_classic_map()
-    german_fleet1 = add_unit('Fleet', map.baltic_sea, map.germany)
-    german_fleet2 = add_unit('Fleet', map.prussia, map.germany)
-    russian_fleet1 = add_unit('Fleet', map.livonia, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.gulf_of_bothnia, map.russia)
-    russian_army = add_unit('Army', map.finland, map.russia)
+    german_fleet1 = add_fleet(map.baltic_sea, map.germany)
+    german_fleet2 = add_fleet(map.prussia, map.germany)
+    russian_fleet1 = add_fleet(map.livonia, map.russia)
+    russian_fleet2 = add_fleet(map.gulf_of_bothnia, map.russia)
+    russian_army = add_army(map.finland, map.russia)
 
     order1 = map.parse_order_string('F BAL - SWE')
     order2 = map.parse_order_string('F PRU S F BAL H')
@@ -1313,11 +1319,11 @@ def test_support_to_hold_on_moving_unit_not_allowed():
 # 6.D.8
 def test_failed_convoy_cannot_receive_hold_support():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.ionian_sea, map.austria_hungary)
-    austrian_army1 = add_unit('Army', map.serbia, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.albania, map.austria_hungary)
-    turkish_army1 = add_unit('Army', map.greece, map.turkey)
-    turkish_army2 = add_unit('Army', map.bulgaria, map.turkey)
+    austrian_fleet = add_fleet(map.ionian_sea, map.austria_hungary)
+    austrian_army1 = add_army(map.serbia, map.austria_hungary)
+    austrian_army2 = add_army(map.albania, map.austria_hungary)
+    turkish_army1 = add_army(map.greece, map.turkey)
+    turkish_army2 = add_army(map.bulgaria, map.turkey)
 
     order1 = map.parse_order_string('F ION H')
     order2 = map.parse_order_string('A SER S A ALB - GRE')
@@ -1348,10 +1354,10 @@ def test_failed_convoy_cannot_receive_hold_support():
 # 6.D.9
 def test_support_to_move_on_holding_unit_not_allowed():
     map = get_classic_map()
-    italian_army1 = add_unit('Army', map.venice, map.italy)
-    italian_army2 = add_unit('Army', map.tyrolia, map.italy)
-    austrian_army1 = add_unit('Army', map.albania, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.trieste, map.austria_hungary)
+    italian_army1 = add_army(map.venice, map.italy)
+    italian_army2 = add_army(map.tyrolia, map.italy)
+    austrian_army1 = add_army(map.albania, map.austria_hungary)
+    austrian_army2 = add_army(map.trieste, map.austria_hungary)
 
     order1 = map.parse_order_string('A VEN - TRI')
     order2 = map.parse_order_string('A TYR S A VEN - TRI')
@@ -1378,9 +1384,9 @@ def test_support_to_move_on_holding_unit_not_allowed():
 # 6.D.10
 def test_self_dislodgement_prohibited():
     map = get_classic_map()
-    german_army1 = add_unit('Army', map.berlin, map.germany)
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    german_army2 = add_unit('Army', map.munich, map.germany)
+    german_army1 = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    german_army2 = add_army(map.munich, map.germany)
 
     order1 = map.parse_order_string('A BER H')
     order2 = map.parse_order_string('F KIE - BER')
@@ -1403,10 +1409,10 @@ def test_self_dislodgement_prohibited():
 # 6.D.11
 def test_no_self_dislodgement_of_returning_unit():
     map = get_classic_map()
-    german_army1 = add_unit('Army', map.berlin, map.germany)
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    german_army2 = add_unit('Army', map.munich, map.germany)
-    russian_army = add_unit('Army', map.warsaw, map.russia)
+    german_army1 = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    german_army2 = add_army(map.munich, map.germany)
+    russian_army = add_army(map.warsaw, map.russia)
 
     order1 = map.parse_order_string('A BER - PRU')
     order2 = map.parse_order_string('F KIE - BER')
@@ -1433,9 +1439,9 @@ def test_no_self_dislodgement_of_returning_unit():
 # 6.D.12
 def test_supporting_foreign_unit_to_dislodge_own_unit_prohibited():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.trieste, map.austria_hungary)
-    austrian_army = add_unit('Army', map.vienna, map.austria_hungary)
-    italian_army = add_unit('Army', map.venice, map.italy)
+    austrian_fleet = add_fleet(map.trieste, map.austria_hungary)
+    austrian_army = add_army(map.vienna, map.austria_hungary)
+    italian_army = add_army(map.venice, map.italy)
 
     order1 = map.parse_order_string('F TRI H')
     order2 = map.parse_order_string('A VIE S A VEN - TRI')
@@ -1458,10 +1464,10 @@ def test_supporting_foreign_unit_to_dislodge_own_unit_prohibited():
 # 6.D.13
 def test_supporting_foreign_unit_to_dislodge_returning_own_unit_prohibited():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.trieste, map.austria_hungary)
-    austrian_army = add_unit('Army', map.vienna, map.austria_hungary)
-    italian_army = add_unit('Army', map.venice, map.italy)
-    italian_fleet = add_unit('Fleet', map.apulia, map.italy)
+    austrian_fleet = add_fleet(map.trieste, map.austria_hungary)
+    austrian_army = add_army(map.vienna, map.austria_hungary)
+    italian_army = add_army(map.venice, map.italy)
+    italian_fleet = add_fleet(map.apulia, map.italy)
 
     order1 = map.parse_order_string('F TRI - ADR')
     order2 = map.parse_order_string('A VIE S A VEN - TRI')
@@ -1488,11 +1494,11 @@ def test_supporting_foreign_unit_to_dislodge_returning_own_unit_prohibited():
 # 6.D.14
 def test_supporting_foreign_unit_not_enough_to_prevent_dislodgement():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.trieste, map.austria_hungary)
-    austrian_army = add_unit('Army', map.vienna, map.austria_hungary)
-    italian_army1 = add_unit('Army', map.venice, map.italy)
-    italian_army2 = add_unit('Army', map.tyrolia, map.italy)
-    italian_fleet = add_unit('Fleet', map.adriatic_sea, map.italy)
+    austrian_fleet = add_fleet(map.trieste, map.austria_hungary)
+    austrian_army = add_army(map.vienna, map.austria_hungary)
+    italian_army1 = add_army(map.venice, map.italy)
+    italian_army2 = add_army(map.tyrolia, map.italy)
+    italian_fleet = add_fleet(map.adriatic_sea, map.italy)
 
     order1 = map.parse_order_string('F TRI - ADR')
     order2 = map.parse_order_string('A VIE S A VEN - TRI')
@@ -1523,9 +1529,9 @@ def test_supporting_foreign_unit_not_enough_to_prevent_dislodgement():
 # 6.D.15
 def test_defender_cannot_cut_support_for_attack_on_itself():
     map = get_classic_map()
-    russian_fleet1 = add_unit('Fleet', map.constantinople, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.black_sea, map.russia)
-    turkish_fleet = add_unit('Fleet', map.ankara, map.turkey)
+    russian_fleet1 = add_fleet(map.constantinople, map.russia)
+    russian_fleet2 = add_fleet(map.black_sea, map.russia)
+    turkish_fleet = add_fleet(map.ankara, map.turkey)
 
     order1 = map.parse_order_string('F CON S F BLA - ANK')
     order2 = map.parse_order_string('F BLA - ANK')
@@ -1548,10 +1554,10 @@ def test_defender_cannot_cut_support_for_attack_on_itself():
 # 6.D.16
 def test_convoying_unit_dislodging_unit_of_same_power_allowed():
     map = get_classic_map()
-    english_army = add_unit('Army', map.london, map.england)
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
-    french_army = add_unit('Army', map.belgium, map.france)
+    english_army = add_army(map.london, map.england)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    french_army = add_army(map.belgium, map.france)
 
     order1 = map.parse_order_string('A LON H')
     order2 = map.parse_order_string('F NTH C A BEL - LON')
@@ -1578,11 +1584,11 @@ def test_convoying_unit_dislodging_unit_of_same_power_allowed():
 # 6.D.17
 def test_dislodgement_cuts_support():
     map = get_classic_map()
-    russian_fleet1 = add_unit('Fleet', map.constantinople, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.black_sea, map.russia)
-    turkish_fleet = add_unit('Fleet', map.ankara, map.turkey)
-    turkish_army1 = add_unit('Army', map.smyrna, map.turkey)
-    turkish_army2 = add_unit('Army', map.armenia, map.turkey)
+    russian_fleet1 = add_fleet(map.constantinople, map.russia)
+    russian_fleet2 = add_fleet(map.black_sea, map.russia)
+    turkish_fleet = add_fleet(map.ankara, map.turkey)
+    turkish_army1 = add_army(map.smyrna, map.turkey)
+    turkish_army2 = add_army(map.armenia, map.turkey)
 
     order1 = map.parse_order_string('F CON S F BLA - ANK')
     order2 = map.parse_order_string('F BLA - ANK')
@@ -1613,12 +1619,12 @@ def test_dislodgement_cuts_support():
 # 6.D.18
 def test_surviving_unit_will_sustain_support():
     map = get_classic_map()
-    russian_fleet1 = add_unit('Fleet', map.constantinople, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.black_sea, map.russia)
-    russian_army = add_unit('Army', map.bulgaria, map.russia)
-    turkish_fleet = add_unit('Fleet', map.ankara, map.turkey)
-    turkish_army1 = add_unit('Army', map.smyrna, map.turkey)
-    turkish_army2 = add_unit('Army', map.armenia, map.turkey)
+    russian_fleet1 = add_fleet(map.constantinople, map.russia)
+    russian_fleet2 = add_fleet(map.black_sea, map.russia)
+    russian_army = add_army(map.bulgaria, map.russia)
+    turkish_fleet = add_fleet(map.ankara, map.turkey)
+    turkish_army1 = add_army(map.smyrna, map.turkey)
+    turkish_army2 = add_army(map.armenia, map.turkey)
 
     order1 = map.parse_order_string('F CON S F BLA - ANK')
     order2 = map.parse_order_string('F BLA - ANK')
@@ -1653,10 +1659,10 @@ def test_surviving_unit_will_sustain_support():
 # 6.D.19
 def test_even_when_surviving_is_in_alternative_way():
     map = get_classic_map()
-    russian_fleet1 = add_unit('Fleet', map.constantinople, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.black_sea, map.russia)
-    russian_army = add_unit('Army', map.smyrna, map.russia)
-    turkish_fleet = add_unit('Fleet', map.ankara, map.turkey)
+    russian_fleet1 = add_fleet(map.constantinople, map.russia)
+    russian_fleet2 = add_fleet(map.black_sea, map.russia)
+    russian_army = add_army(map.smyrna, map.russia)
+    turkish_fleet = add_fleet(map.ankara, map.turkey)
 
     order1 = map.parse_order_string('F CON S F BLA - ANK')
     order2 = map.parse_order_string('F BLA - ANK')
@@ -1683,10 +1689,10 @@ def test_even_when_surviving_is_in_alternative_way():
 # 6.D.20
 def test_unit_cannot_cut_support_of_its_own_country():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.london, map.england)
-    english_fleet2 = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.yorkshire, map.england)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
+    english_fleet1 = add_fleet(map.london, map.england)
+    english_fleet2 = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.yorkshire, map.england)
+    french_fleet = add_fleet(map.english_channel, map.france)
 
     order1 = map.parse_order_string('F LON S F NTH - ENG')
     order2 = map.parse_order_string('F NTH - ENG')
@@ -1713,12 +1719,12 @@ def test_unit_cannot_cut_support_of_its_own_country():
 # 6.D.21
 def test_dislodging_dows_not_cancel_a_support_cut():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.trieste, map.austria_hungary)
-    italian_army1 = add_unit('Army', map.venice, map.italy)
-    italian_army2 = add_unit('Army', map.tyrolia, map.italy)
-    german_army = add_unit('Army', map.munich, map.germany)
-    russian_army1 = add_unit('Army', map.silesia, map.russia)
-    russian_army2 = add_unit('Army', map.berlin, map.russia)
+    austrian_fleet = add_fleet(map.trieste, map.austria_hungary)
+    italian_army1 = add_army(map.venice, map.italy)
+    italian_army2 = add_army(map.tyrolia, map.italy)
+    german_army = add_army(map.munich, map.germany)
+    russian_army1 = add_army(map.silesia, map.russia)
+    russian_army2 = add_army(map.berlin, map.russia)
 
     order1 = map.parse_order_string('F TRI H')
     order2 = map.parse_order_string('A VEN - TRI')
@@ -1753,10 +1759,10 @@ def test_dislodging_dows_not_cancel_a_support_cut():
 # 6.D.22
 def test_impossible_fleet_move_cannot_be_supported():
     map = get_classic_map()
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    german_army = add_unit('Army', map.burgundy, map.germany)
-    russian_army1 = add_unit('Army', map.munich, map.russia)
-    russian_army2 = add_unit('Army', map.berlin, map.russia)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    german_army = add_army(map.burgundy, map.germany)
+    russian_army1 = add_army(map.munich, map.russia)
+    russian_army2 = add_army(map.berlin, map.russia)
 
     order1 = map.parse_order_string('F KIE - MUN')
     order2 = map.parse_order_string('A BUR S F KIE - MUN')
@@ -1783,10 +1789,10 @@ def test_impossible_fleet_move_cannot_be_supported():
 # 6.D.23
 def test_impossible_coast_move_cannot_be_supported():
     map = get_classic_map()
-    italian_fleet1 = add_unit('Fleet', map.gulf_of_lyon, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.western_mediterranean, map.italy)
-    french_fleet1 = add_unit('Fleet', map.spain, map.france, coast=0)
-    french_fleet2 = add_unit('Fleet', map.marseilles, map.france)
+    italian_fleet1 = add_fleet(map.gulf_of_lyon, map.italy)
+    italian_fleet2 = add_fleet(map.western_mediterranean, map.italy)
+    french_fleet1 = add_fleet(map.spain, map.france, coast=0)
+    french_fleet2 = add_fleet(map.marseilles, map.france)
 
     order1 = map.parse_order_string('F GOL - SPA(sc)')
     order2 = map.parse_order_string('F WME S F GOL - SPA(sc)')
@@ -1813,11 +1819,11 @@ def test_impossible_coast_move_cannot_be_supported():
 # 6.D.24
 def test_impossible_army_move_cannot_be_supported():
     map = get_classic_map()
-    french_army = add_unit('Army', map.marseilles, map.france)
-    french_fleet = add_unit('Fleet', map.spain, map.france, coast=1)
-    italian_fleet = add_unit('Fleet', map.gulf_of_lyon, map.italy)
-    turkish_fleet1 = add_unit('Fleet', map.tyrrhenian_sea, map.turkey)
-    turkish_fleet2 = add_unit('Fleet', map.western_mediterranean, map.turkey)
+    french_army = add_army(map.marseilles, map.france)
+    french_fleet = add_fleet(map.spain, map.france, coast=1)
+    italian_fleet = add_fleet(map.gulf_of_lyon, map.italy)
+    turkish_fleet1 = add_fleet(map.tyrrhenian_sea, map.turkey)
+    turkish_fleet2 = add_fleet(map.western_mediterranean, map.turkey)
 
     order1 = map.parse_order_string('A MAR - GOL')
     order2 = map.parse_order_string('F SPA S A MAR - GOL')
@@ -1848,10 +1854,10 @@ def test_impossible_army_move_cannot_be_supported():
 # 6.D.25
 def test_failing_hold_support_can_be_supported():
     map = get_classic_map()
-    german_army = add_unit('Army', map.berlin, map.germany)
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    russian_fleet = add_unit('Fleet', map.baltic_sea, map.russia)
-    russian_army = add_unit('Army', map.prussia, map.russia)
+    german_army = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    russian_fleet = add_fleet(map.baltic_sea, map.russia)
+    russian_army = add_army(map.prussia, map.russia)
 
     order1 = map.parse_order_string('A BER S A PRU H')
     order2 = map.parse_order_string('F KIE S A BER H')
@@ -1878,10 +1884,10 @@ def test_failing_hold_support_can_be_supported():
 # 6.D.26
 def test_failing_move_support_can_be_supported():
     map = get_classic_map()
-    german_army = add_unit('Army', map.berlin, map.germany)
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    russian_fleet = add_unit('Fleet', map.baltic_sea, map.russia)
-    russian_army = add_unit('Army', map.prussia, map.russia)
+    german_army = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    russian_fleet = add_fleet(map.baltic_sea, map.russia)
+    russian_army = add_army(map.prussia, map.russia)
 
     order1 = map.parse_order_string('A BER S A PRU - SIL')
     order2 = map.parse_order_string('F KIE S A BER H')
@@ -1908,11 +1914,11 @@ def test_failing_move_support_can_be_supported():
 # 6.D.27
 def test_failing_convoy_can_be_supported():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.sweden, map.england)
-    english_fleet2 = add_unit('Fleet', map.denmark, map.england)
-    german_army = add_unit('Army', map.berlin, map.germany)
-    russian_fleet1 = add_unit('Fleet', map.baltic_sea, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.prussia, map.russia)
+    english_fleet1 = add_fleet(map.sweden, map.england)
+    english_fleet2 = add_fleet(map.denmark, map.england)
+    german_army = add_army(map.berlin, map.germany)
+    russian_fleet1 = add_fleet(map.baltic_sea, map.russia)
+    russian_fleet2 = add_fleet(map.prussia, map.russia)
 
     order1 = map.parse_order_string('F SWE - BAL')
     order2 = map.parse_order_string('F DEN S F SWE - BAL')
@@ -1943,10 +1949,10 @@ def test_failing_convoy_can_be_supported():
 # 6.D.28
 def test_impossible_move_and_support():
     map = get_classic_map()
-    austrian_army = add_unit('Army', map.budapest, map.austria_hungary)
-    russian_fleet = add_unit('Fleet', map.rumania, map.russia)
-    turkish_fleet = add_unit('Fleet', map.black_sea, map.turkey)
-    turkish_army = add_unit('Army', map.bulgaria, map.turkey)
+    austrian_army = add_army(map.budapest, map.austria_hungary)
+    russian_fleet = add_fleet(map.rumania, map.russia)
+    turkish_fleet = add_fleet(map.black_sea, map.turkey)
+    turkish_army = add_army(map.bulgaria, map.turkey)
 
     order1 = map.parse_order_string('A BUD S F RUM H')
     order2 = map.parse_order_string('F RUM - HOL')
@@ -1973,10 +1979,10 @@ def test_impossible_move_and_support():
 # 6.D.29
 def test_move_to_impossible_coast_and_support():
     map = get_classic_map()
-    austrian_army = add_unit('Army', map.budapest, map.austria_hungary)
-    russian_fleet = add_unit('Fleet', map.rumania, map.russia)
-    turkish_fleet = add_unit('Fleet', map.black_sea, map.turkey)
-    turkish_army = add_unit('Army', map.bulgaria, map.turkey)
+    austrian_army = add_army(map.budapest, map.austria_hungary)
+    russian_fleet = add_fleet(map.rumania, map.russia)
+    turkish_fleet = add_fleet(map.black_sea, map.turkey)
+    turkish_army = add_army(map.bulgaria, map.turkey)
 
     order1 = map.parse_order_string('A BUD S F RUM H')
     order2 = map.parse_order_string('F RUM - BUL(sc)')
@@ -2003,10 +2009,10 @@ def test_move_to_impossible_coast_and_support():
 # 6.D.30
 def test_move_without_coast_and_support():
     map = get_classic_map()
-    italian_fleet = add_unit('Fleet', map.aegean_sea, map.italy)
-    russian_fleet = add_unit('Fleet', map.constantinople, map.russia)
-    turkish_fleet = add_unit('Fleet', map.black_sea, map.turkey)
-    turkish_army = add_unit('Army', map.bulgaria, map.turkey)
+    italian_fleet = add_fleet(map.aegean_sea, map.italy)
+    russian_fleet = add_fleet(map.constantinople, map.russia)
+    turkish_fleet = add_fleet(map.black_sea, map.turkey)
+    turkish_army = add_army(map.bulgaria, map.turkey)
 
     order1 = map.parse_order_string('F AEG S F CON H')
     order2 = map.parse_order_string('F CON - BUL')
@@ -2033,8 +2039,8 @@ def test_move_without_coast_and_support():
 # 6.D.31
 def test_tricky_impossible_support():
     map = get_classic_map()
-    austrian_army = add_unit('Army', map.rumania, map.austria_hungary)
-    turkish_fleet = add_unit('Fleet', map.black_sea, map.turkey)
+    austrian_army = add_army(map.rumania, map.austria_hungary)
+    turkish_fleet = add_fleet(map.black_sea, map.turkey)
 
     order1 = map.parse_order_string('A RUM - ARM')
     order2 = map.parse_order_string('F BLA S A RUM - ARM')
@@ -2053,10 +2059,10 @@ def test_tricky_impossible_support():
 # 6.D.32
 def test_missing_fleet():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.edinburgh, map.england)
-    english_army = add_unit('Army', map.liverpool, map.england)
-    french_fleet = add_unit('Fleet', map.london, map.france)
-    german_army = add_unit('Army', map.yorkshire, map.germany)
+    english_fleet = add_fleet(map.edinburgh, map.england)
+    english_army = add_army(map.liverpool, map.england)
+    french_fleet = add_fleet(map.london, map.france)
+    german_army = add_army(map.yorkshire, map.germany)
 
     order1 = map.parse_order_string('F EDI S A LVP - YOR')
     order2 = map.parse_order_string('A LVP - YOR')
@@ -2083,10 +2089,10 @@ def test_missing_fleet():
 # 6.D.33
 def test_unwanted_support_allowed():
     map = get_classic_map()
-    austrian_army1 = add_unit('Army', map.serbia, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.vienna, map.austria_hungary)
-    russian_army = add_unit('Army', map.galicia, map.russia)
-    turkish_army = add_unit('Army', map.bulgaria, map.turkey)
+    austrian_army1 = add_army(map.serbia, map.austria_hungary)
+    austrian_army2 = add_army(map.vienna, map.austria_hungary)
+    russian_army = add_army(map.galicia, map.russia)
+    turkish_army = add_army(map.bulgaria, map.turkey)
 
     order1 = map.parse_order_string('A SER - BUD')
     order2 = map.parse_order_string('A VIE - BUD')
@@ -2113,12 +2119,12 @@ def test_unwanted_support_allowed():
 # 6.D.34
 def test_support_targeting_own_area_not_allowed():
     map = get_classic_map()
-    german_army1 = add_unit('Army', map.berlin, map.germany)
-    german_army2 = add_unit('Army', map.silesia, map.germany)
-    german_fleet = add_unit('Fleet', map.baltic_sea, map.germany)
-    italian_army = add_unit('Army', map.prussia, map.italy)
-    russian_army1 = add_unit('Army', map.warsaw, map.russia)
-    russian_army2 = add_unit('Army', map.livonia, map.russia)
+    german_army1 = add_army(map.berlin, map.germany)
+    german_army2 = add_army(map.silesia, map.germany)
+    german_fleet = add_fleet(map.baltic_sea, map.germany)
+    italian_army = add_army(map.prussia, map.italy)
+    russian_army1 = add_army(map.warsaw, map.russia)
+    russian_army2 = add_army(map.livonia, map.russia)
 
     order1 = map.parse_order_string('A BER - PRU')
     order2 = map.parse_order_string('A SIL S A BER - PRU')
@@ -2154,10 +2160,10 @@ def test_support_targeting_own_area_not_allowed():
 # 6.E.1
 def test_dislodged_unit_has_no_effect_on_attackers_area():
     map = get_classic_map()
-    german_army1 = add_unit('Army', map.berlin, map.germany)
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    german_army2 = add_unit('Army', map.silesia, map.germany)
-    russian_army = add_unit('Army', map.prussia, map.russia)
+    german_army1 = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    german_army2 = add_army(map.silesia, map.germany)
+    russian_army = add_army(map.prussia, map.russia)
 
     order1 = map.parse_order_string('A BER - PRU')
     order2 = map.parse_order_string('F KIE - BER')
@@ -2184,9 +2190,9 @@ def test_dislodged_unit_has_no_effect_on_attackers_area():
 # 6.E.2
 def test_no_self_dislodgement_in_head_to_head_battle():
     map = get_classic_map()
-    german_army1 = add_unit('Army', map.berlin, map.germany)
-    german_fleet = add_unit('Fleet', map.kiel, map.germany)
-    german_army2 = add_unit('Army', map.munich, map.germany)
+    german_army1 = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    german_army2 = add_army(map.munich, map.germany)
 
     order1 = map.parse_order_string('A BER - KIE')
     order2 = map.parse_order_string('F KIE - BER')
@@ -2209,9 +2215,9 @@ def test_no_self_dislodgement_in_head_to_head_battle():
 # 6.E.3
 def test_no_help_in_dislodging_own_unit():
     map = get_classic_map()
-    german_army1 = add_unit('Army', map.berlin, map.germany)
-    german_army2 = add_unit('Army', map.munich, map.germany)
-    english_fleet = add_unit('Fleet', map.kiel, map.england)
+    german_army1 = add_army(map.berlin, map.germany)
+    german_army2 = add_army(map.munich, map.germany)
+    english_fleet = add_fleet(map.kiel, map.england)
 
     order1 = map.parse_order_string('A BER - KIE')
     order2 = map.parse_order_string('A MUN S F KIE - BER')
@@ -2234,16 +2240,16 @@ def test_no_help_in_dislodging_own_unit():
 # 6.E.4
 def test_non_dislodged_loser_still_has_effect():
     map = get_classic_map()
-    german_fleet1 = add_unit('Fleet', map.holland, map.germany)
-    german_fleet2 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    german_fleet3 = add_unit('Fleet', map.skagerrak, map.germany)
-    french_fleet1 = add_unit('Fleet', map.north_sea, map.france)
-    french_fleet2 = add_unit('Fleet', map.belgium, map.france)
-    english_fleet1 = add_unit('Fleet', map.edinburgh, map.england)
-    english_fleet2 = add_unit('Fleet', map.yorkshire, map.england)
-    english_fleet3 = add_unit('Fleet', map.norwegian_sea, map.england)
-    austrian_army1 = add_unit('Army', map.kiel, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.ruhr, map.austria_hungary)
+    german_fleet1 = add_fleet(map.holland, map.germany)
+    german_fleet2 = add_fleet(map.helgoland_bight, map.germany)
+    german_fleet3 = add_fleet(map.skagerrak, map.germany)
+    french_fleet1 = add_fleet(map.north_sea, map.france)
+    french_fleet2 = add_fleet(map.belgium, map.france)
+    english_fleet1 = add_fleet(map.edinburgh, map.england)
+    english_fleet2 = add_fleet(map.yorkshire, map.england)
+    english_fleet3 = add_fleet(map.norwegian_sea, map.england)
+    austrian_army1 = add_army(map.kiel, map.austria_hungary)
+    austrian_army2 = add_army(map.ruhr, map.austria_hungary)
 
     order1 = map.parse_order_string('F HOL - NTH')
     order2 = map.parse_order_string('F HEL S F HOL - NTH')
@@ -2294,17 +2300,17 @@ def test_non_dislodged_loser_still_has_effect():
 # 6.E.5
 def test_loser_dislodged_by_another_army_still_has_effect():
     map = get_classic_map()
-    german_fleet1 = add_unit('Fleet', map.holland, map.germany)
-    german_fleet2 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    german_fleet3 = add_unit('Fleet', map.skagerrak, map.germany)
-    french_fleet1 = add_unit('Fleet', map.north_sea, map.france)
-    french_fleet2 = add_unit('Fleet', map.belgium, map.france)
-    english_fleet1 = add_unit('Fleet', map.edinburgh, map.england)
-    english_fleet2 = add_unit('Fleet', map.yorkshire, map.england)
-    english_fleet3 = add_unit('Fleet', map.norwegian_sea, map.england)
-    english_fleet4 = add_unit('Fleet', map.london, map.england)
-    austrian_army1 = add_unit('Army', map.kiel, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.ruhr, map.austria_hungary)
+    german_fleet1 = add_fleet(map.holland, map.germany)
+    german_fleet2 = add_fleet(map.helgoland_bight, map.germany)
+    german_fleet3 = add_fleet(map.skagerrak, map.germany)
+    french_fleet1 = add_fleet(map.north_sea, map.france)
+    french_fleet2 = add_fleet(map.belgium, map.france)
+    english_fleet1 = add_fleet(map.edinburgh, map.england)
+    english_fleet2 = add_fleet(map.yorkshire, map.england)
+    english_fleet3 = add_fleet(map.norwegian_sea, map.england)
+    english_fleet4 = add_fleet(map.london, map.england)
+    austrian_army1 = add_army(map.kiel, map.austria_hungary)
+    austrian_army2 = add_army(map.ruhr, map.austria_hungary)
 
     order1 = map.parse_order_string('F HOL - NTH')
     order2 = map.parse_order_string('F HEL S F HOL - NTH')
@@ -2359,13 +2365,13 @@ def test_loser_dislodged_by_another_army_still_has_effect():
 # 6.E.6
 def test_not_dislodge_because_of_own_support_still_in_effect():
     map = get_classic_map()
-    german_fleet1 = add_unit('Fleet', map.holland, map.germany)
-    german_fleet2 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    french_fleet1 = add_unit('Fleet', map.north_sea, map.france)
-    french_fleet2 = add_unit('Fleet', map.belgium, map.france)
-    french_fleet3 = add_unit('Fleet', map.english_channel, map.france)
-    austrian_army1 = add_unit('Army', map.kiel, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.ruhr, map.austria_hungary)
+    german_fleet1 = add_fleet(map.holland, map.germany)
+    german_fleet2 = add_fleet(map.helgoland_bight, map.germany)
+    french_fleet1 = add_fleet(map.north_sea, map.france)
+    french_fleet2 = add_fleet(map.belgium, map.france)
+    french_fleet3 = add_fleet(map.english_channel, map.france)
+    austrian_army1 = add_army(map.kiel, map.austria_hungary)
+    austrian_army2 = add_army(map.ruhr, map.austria_hungary)
 
     order1 = map.parse_order_string('F HOL - NTH')
     order2 = map.parse_order_string('F HEL S F HOL - NTH')
@@ -2404,12 +2410,12 @@ def test_not_dislodge_because_of_own_support_still_in_effect():
 # 6.E.7
 def test_no_self_dislodgement_with_beleaguered_garrison():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.north_sea, map.england)
-    english_fleet2 = add_unit('Fleet', map.yorkshire, map.england)
-    german_fleet1 = add_unit('Fleet', map.holland, map.germany)
-    german_fleet2 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    russian_fleet1 = add_unit('Fleet', map.skagerrak, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.norway, map.russia)
+    english_fleet1 = add_fleet(map.north_sea, map.england)
+    english_fleet2 = add_fleet(map.yorkshire, map.england)
+    german_fleet1 = add_fleet(map.holland, map.germany)
+    german_fleet2 = add_fleet(map.helgoland_bight, map.germany)
+    russian_fleet1 = add_fleet(map.skagerrak, map.russia)
+    russian_fleet2 = add_fleet(map.norway, map.russia)
 
     order1 = map.parse_order_string('F NTH H')
     order2 = map.parse_order_string('F YOR S F NOR - NTH')
@@ -2444,12 +2450,12 @@ def test_no_self_dislodgement_with_beleaguered_garrison():
 # 6.E.8
 def test_no_self_dislodgement_with_beleaguered_garrison_and_head_to_head_battle():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.north_sea, map.england)
-    english_fleet2 = add_unit('Fleet', map.yorkshire, map.england)
-    german_fleet1 = add_unit('Fleet', map.holland, map.germany)
-    german_fleet2 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    russian_fleet1 = add_unit('Fleet', map.skagerrak, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.norway, map.russia)
+    english_fleet1 = add_fleet(map.north_sea, map.england)
+    english_fleet2 = add_fleet(map.yorkshire, map.england)
+    german_fleet1 = add_fleet(map.holland, map.germany)
+    german_fleet2 = add_fleet(map.helgoland_bight, map.germany)
+    russian_fleet1 = add_fleet(map.skagerrak, map.russia)
+    russian_fleet2 = add_fleet(map.norway, map.russia)
 
     order1 = map.parse_order_string('F NTH - NOR')
     order2 = map.parse_order_string('F YOR S F NOR - NTH')
@@ -2484,12 +2490,12 @@ def test_no_self_dislodgement_with_beleaguered_garrison_and_head_to_head_battle(
 # 6.E.9
 def test_almost_self_dislodgement_with_beleaguered_garrison():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.north_sea, map.england)
-    english_fleet2 = add_unit('Fleet', map.yorkshire, map.england)
-    german_fleet1 = add_unit('Fleet', map.holland, map.germany)
-    german_fleet2 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    russian_fleet1 = add_unit('Fleet', map.skagerrak, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.norway, map.russia)
+    english_fleet1 = add_fleet(map.north_sea, map.england)
+    english_fleet2 = add_fleet(map.yorkshire, map.england)
+    german_fleet1 = add_fleet(map.holland, map.germany)
+    german_fleet2 = add_fleet(map.helgoland_bight, map.germany)
+    russian_fleet1 = add_fleet(map.skagerrak, map.russia)
+    russian_fleet2 = add_fleet(map.norway, map.russia)
 
     order1 = map.parse_order_string('F NTH - NRG')
     order2 = map.parse_order_string('F YOR S F NOR - NTH')
@@ -2524,13 +2530,13 @@ def test_almost_self_dislodgement_with_beleaguered_garrison():
 # 6.E.10
 def test_almost_circular_movement_with_no_self_dislodgement_with_beleaguered_garrison():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.north_sea, map.england)
-    english_fleet2 = add_unit('Fleet', map.yorkshire, map.england)
-    german_fleet1 = add_unit('Fleet', map.holland, map.germany)
-    german_fleet2 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    german_fleet3 = add_unit('Fleet', map.denmark, map.germany)
-    russian_fleet1 = add_unit('Fleet', map.skagerrak, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.norway, map.russia)
+    english_fleet1 = add_fleet(map.north_sea, map.england)
+    english_fleet2 = add_fleet(map.yorkshire, map.england)
+    german_fleet1 = add_fleet(map.holland, map.germany)
+    german_fleet2 = add_fleet(map.helgoland_bight, map.germany)
+    german_fleet3 = add_fleet(map.denmark, map.germany)
+    russian_fleet1 = add_fleet(map.skagerrak, map.russia)
+    russian_fleet2 = add_fleet(map.norway, map.russia)
 
     order1 = map.parse_order_string('F NTH - DEN')
     order2 = map.parse_order_string('F YOR S F NOR - NTH')
@@ -2569,13 +2575,13 @@ def test_almost_circular_movement_with_no_self_dislodgement_with_beleaguered_gar
 # 6.E.11
 def test_no_self_dislodgement_with_beleaguered_garrison_unit_swap_with_adjacent_convoying_and_two_coasts():
     map = get_classic_map()
-    french_army = add_unit('Army', map.spain, map.france)
-    french_fleet1 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
-    french_fleet2 = add_unit('Fleet', map.gulf_of_lyon, map.france)
-    german_army1 = add_unit('Army', map.marseilles, map.germany)
-    german_army2 = add_unit('Army', map.gascony, map.germany)
-    italian_fleet1 = add_unit('Fleet', map.portugal, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.western_mediterranean, map.italy)
+    french_army = add_army(map.spain, map.france)
+    french_fleet1 = add_fleet(map.mid_atlantic_ocean, map.france)
+    french_fleet2 = add_fleet(map.gulf_of_lyon, map.france)
+    german_army1 = add_army(map.marseilles, map.germany)
+    german_army2 = add_army(map.gascony, map.germany)
+    italian_fleet1 = add_fleet(map.portugal, map.italy)
+    italian_fleet2 = add_fleet(map.western_mediterranean, map.italy)
 
     order1 = map.parse_order_string('A SPA - POR via convoy')
     order2 = map.parse_order_string('F MAO C A SPA - POR')
@@ -2614,11 +2620,11 @@ def test_no_self_dislodgement_with_beleaguered_garrison_unit_swap_with_adjacent_
 # 6.E.12
 def test_support_on_attack_on_own_unit_can_be_used_for_other_means():
     map = get_classic_map()
-    austrian_army1 = add_unit('Army', map.budapest, map.austria_hungary)
-    austrian_army2 = add_unit('Army', map.serbia, map.austria_hungary)
-    italian_army = add_unit('Army', map.vienna, map.italy)
-    russian_army1 = add_unit('Army', map.galicia, map.russia)
-    russian_army2 = add_unit('Army', map.rumania, map.russia)
+    austrian_army1 = add_army(map.budapest, map.austria_hungary)
+    austrian_army2 = add_army(map.serbia, map.austria_hungary)
+    italian_army = add_army(map.vienna, map.italy)
+    russian_army1 = add_army(map.galicia, map.russia)
+    russian_army2 = add_army(map.rumania, map.russia)
 
     order1 = map.parse_order_string('A BUD - RUM')
     order2 = map.parse_order_string('A SER S A VIE - BUD')
@@ -2649,13 +2655,13 @@ def test_support_on_attack_on_own_unit_can_be_used_for_other_means():
 # 6.E.13
 def test_three_way_beleaguered_garrison():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.edinburgh, map.england)
-    english_fleet2 = add_unit('Fleet', map.yorkshire, map.england)
-    french_fleet1 = add_unit('Fleet', map.belgium, map.france)
-    french_fleet2 = add_unit('Fleet', map.english_channel, map.france)
-    german_fleet = add_unit('Fleet', map.north_sea, map.germany)
-    russian_fleet1 = add_unit('Fleet', map.norwegian_sea, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.norway, map.russia)
+    english_fleet1 = add_fleet(map.edinburgh, map.england)
+    english_fleet2 = add_fleet(map.yorkshire, map.england)
+    french_fleet1 = add_fleet(map.belgium, map.france)
+    french_fleet2 = add_fleet(map.english_channel, map.france)
+    german_fleet = add_fleet(map.north_sea, map.germany)
+    russian_fleet1 = add_fleet(map.norwegian_sea, map.russia)
+    russian_fleet2 = add_fleet(map.norway, map.russia)
 
     order1 = map.parse_order_string('F EDI S F YOR - NTH')
     order2 = map.parse_order_string('F YOR - NTH')
@@ -2694,8 +2700,8 @@ def test_three_way_beleaguered_garrison():
 # 6.E.14
 def test_illegal_head_to_head_battle_can_still_defend():
     map = get_classic_map()
-    english_army = add_unit('Army', map.liverpool, map.england)
-    russian_fleet = add_unit('Fleet', map.edinburgh, map.russia)
+    english_army = add_army(map.liverpool, map.england)
+    russian_fleet = add_fleet(map.edinburgh, map.russia)
 
     order1 = map.parse_order_string('A LVP - EDI')
     order2 = map.parse_order_string('F EDI - LVP')
@@ -2714,16 +2720,16 @@ def test_illegal_head_to_head_battle_can_still_defend():
 # 6.E.15
 def test_the_friendly_head_to_head_battle():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.holland, map.england)
-    english_army = add_unit('Army', map.ruhr, map.england)
-    french_army1 = add_unit('Army', map.kiel, map.france)
-    french_army2 = add_unit('Army', map.munich, map.france)
-    french_army3 = add_unit('Army', map.silesia, map.france)
-    german_army = add_unit('Army', map.berlin, map.germany)
-    german_fleet1 = add_unit('Fleet', map.denmark, map.germany)
-    german_fleet2 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    russian_fleet = add_unit('Fleet', map.baltic_sea, map.russia)
-    russian_army = add_unit('Army', map.prussia, map.russia)
+    english_fleet = add_fleet(map.holland, map.england)
+    english_army = add_army(map.ruhr, map.england)
+    french_army1 = add_army(map.kiel, map.france)
+    french_army2 = add_army(map.munich, map.france)
+    french_army3 = add_army(map.silesia, map.france)
+    german_army = add_army(map.berlin, map.germany)
+    german_fleet1 = add_fleet(map.denmark, map.germany)
+    german_fleet2 = add_fleet(map.helgoland_bight, map.germany)
+    russian_fleet = add_fleet(map.baltic_sea, map.russia)
+    russian_army = add_army(map.prussia, map.russia)
 
     order1 = map.parse_order_string('F HOL S A RUH - KIE')
     order2 = map.parse_order_string('A RUH - KIE')
@@ -2775,10 +2781,10 @@ def test_the_friendly_head_to_head_battle():
 # 6.F.1
 def test_no_convoy_in_coastal_areas():
     map = get_classic_map()
-    turkish_army = add_unit('Army', map.greece, map.turkey)
-    turkish_fleet1 = add_unit('Fleet', map.aegean_sea, map.turkey)
-    turkish_fleet2 = add_unit('Fleet', map.constantinople, map.turkey)
-    turkish_fleet3 = add_unit('Fleet', map.black_sea, map.turkey)
+    turkish_army = add_army(map.greece, map.turkey)
+    turkish_fleet1 = add_fleet(map.aegean_sea, map.turkey)
+    turkish_fleet2 = add_fleet(map.constantinople, map.turkey)
+    turkish_fleet3 = add_fleet(map.black_sea, map.turkey)
 
     order1 = map.parse_order_string('A GRE - SEV')
     order2 = map.parse_order_string('F AEG C A GRE - SEV')
@@ -2805,9 +2811,9 @@ def test_no_convoy_in_coastal_areas():
 # 6.F.2
 def test_an_army_being_convoyed_can_bounce_as_normal():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.english_channel, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    french_army = add_unit('Army', map.paris, map.france)
+    english_fleet = add_fleet(map.english_channel, map.england)
+    english_army = add_army(map.london, map.england)
+    french_army = add_army(map.paris, map.france)
 
     order1 = map.parse_order_string('F ENG C A LON - BRE')
     order2 = map.parse_order_string('A LON - BRE')
@@ -2830,10 +2836,10 @@ def test_an_army_being_convoyed_can_bounce_as_normal():
 # 6.F.3
 def test_an_army_being_convoyed_can_receive_support():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.english_channel, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    english_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.england)
-    french_army = add_unit('Army', map.paris, map.france)
+    english_fleet1 = add_fleet(map.english_channel, map.england)
+    english_army = add_army(map.london, map.england)
+    english_fleet2 = add_fleet(map.mid_atlantic_ocean, map.england)
+    french_army = add_army(map.paris, map.france)
 
     order1 = map.parse_order_string('F ENG C A LON - BRE')
     order2 = map.parse_order_string('A LON - BRE')
@@ -2860,9 +2866,9 @@ def test_an_army_being_convoyed_can_receive_support():
 # 6.F.4
 def test_an_attacked_convoy_is_not_disrupted():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    german_fleet = add_unit('Fleet', map.skagerrak, map.germany)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    german_fleet = add_fleet(map.skagerrak, map.germany)
 
     order1 = map.parse_order_string('F NTH C A LON - HOL')
     order2 = map.parse_order_string('A LON - HOL')
@@ -2885,12 +2891,12 @@ def test_an_attacked_convoy_is_not_disrupted():
 # 6.F.5
 def test_beleaguered_convoy_is_not_disrupted():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    french_fleet1 = add_unit('Fleet', map.english_channel, map.france)
-    french_fleet2 = add_unit('Fleet', map.belgium, map.france)
-    german_fleet1 = add_unit('Fleet', map.skagerrak, map.germany)
-    german_fleet2 = add_unit('Fleet', map.denmark, map.germany)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    french_fleet1 = add_fleet(map.english_channel, map.france)
+    french_fleet2 = add_fleet(map.belgium, map.france)
+    german_fleet1 = add_fleet(map.skagerrak, map.germany)
+    german_fleet2 = add_fleet(map.denmark, map.germany)
 
     order1 = map.parse_order_string('F NTH C A LON - HOL')
     order2 = map.parse_order_string('A LON - HOL')
@@ -2925,14 +2931,14 @@ def test_beleaguered_convoy_is_not_disrupted():
 # 6.F.6
 def test_dislodged_convoy_does_not_cut_support():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    german_army1 = add_unit('Army', map.holland, map.germany)
-    german_army2 = add_unit('Army', map.belgium, map.germany)
-    german_fleet1 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    german_fleet2 = add_unit('Fleet', map.skagerrak, map.germany)
-    french_army1 = add_unit('Army', map.picardy, map.france)
-    french_army2 = add_unit('Army', map.burgundy, map.france)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    german_army1 = add_army(map.holland, map.germany)
+    german_army2 = add_army(map.belgium, map.germany)
+    german_fleet1 = add_fleet(map.helgoland_bight, map.germany)
+    german_fleet2 = add_fleet(map.skagerrak, map.germany)
+    french_army1 = add_army(map.picardy, map.france)
+    french_army2 = add_army(map.burgundy, map.france)
 
     order1 = map.parse_order_string('F NTH C A LON - HOL')
     order2 = map.parse_order_string('A LON - HOL')
@@ -2975,10 +2981,10 @@ def test_dislodged_convoy_does_not_cut_support():
 # 6.F.7
 def test_dislodged_convoy_does_not_cause_contested_area():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    german_fleet1 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    german_fleet2 = add_unit('Fleet', map.skagerrak, map.germany)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    german_fleet1 = add_fleet(map.helgoland_bight, map.germany)
+    german_fleet2 = add_fleet(map.skagerrak, map.germany)
 
     order1 = map.parse_order_string('F NTH C A LON - HOL')
     order2 = map.parse_order_string('A LON - HOL')
@@ -3005,11 +3011,11 @@ def test_dislodged_convoy_does_not_cause_contested_area():
 # 6.F.8
 def test_dislodged_convoy_does_not_cause_a_bounce():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    german_fleet1 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    german_fleet2 = add_unit('Fleet', map.skagerrak, map.germany)
-    german_army = add_unit('Army', map.belgium, map.germany)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    german_fleet1 = add_fleet(map.helgoland_bight, map.germany)
+    german_fleet2 = add_fleet(map.skagerrak, map.germany)
+    german_army = add_army(map.belgium, map.germany)
 
     order1 = map.parse_order_string('F NTH C A LON - HOL')
     order2 = map.parse_order_string('A LON - HOL')
@@ -3040,11 +3046,11 @@ def test_dislodged_convoy_does_not_cause_a_bounce():
 # 6.F.9
 def test_dislodge_of_multi_route_convoy():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.english_channel, map.england)
-    english_fleet2 = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    french_fleet1 = add_unit('Fleet', map.brest, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
+    english_fleet1 = add_fleet(map.english_channel, map.england)
+    english_fleet2 = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    french_fleet1 = add_fleet(map.brest, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
 
     order1 = map.parse_order_string('F ENG C A LON - BEL')
     order2 = map.parse_order_string('F NTH C A LON - BEL')
@@ -3075,11 +3081,11 @@ def test_dislodge_of_multi_route_convoy():
 # 6.F.10
 def test_dislodge_of_multi_route_convoy_with_foreign_fleet():
     map = get_classic_map()
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    german_fleet = add_unit('Fleet', map.english_channel, map.germany)
-    french_fleet1 = add_unit('Fleet', map.brest, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    german_fleet = add_fleet(map.english_channel, map.germany)
+    french_fleet1 = add_fleet(map.brest, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
 
     order1 = map.parse_order_string('F NTH C A LON - BEL')
     order2 = map.parse_order_string('A LON - BEL')
@@ -3110,11 +3116,11 @@ def test_dislodge_of_multi_route_convoy_with_foreign_fleet():
 # 6.F.11
 def test_dislodge_of_multi_route_convoy_with_only_foreign_fleets():
     map = get_classic_map()
-    english_army = add_unit('Army', map.london, map.england)
-    german_fleet = add_unit('Fleet', map.english_channel, map.germany)
-    russian_fleet = add_unit('Fleet', map.north_sea, map.russia)
-    french_fleet1 = add_unit('Fleet', map.brest, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
+    english_army = add_army(map.london, map.england)
+    german_fleet = add_fleet(map.english_channel, map.germany)
+    russian_fleet = add_fleet(map.north_sea, map.russia)
+    french_fleet1 = add_fleet(map.brest, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
 
     order1 = map.parse_order_string('A LON - BEL')
     order2 = map.parse_order_string('F ENG C A LON - BEL')
@@ -3145,11 +3151,11 @@ def test_dislodge_of_multi_route_convoy_with_only_foreign_fleets():
 # 6.F.12
 def test_dislodged_convoying_fleet_not_on_route():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.english_channel, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    english_fleet2 = add_unit('Fleet', map.irish_sea, map.england)
-    french_fleet1 = add_unit('Fleet', map.north_atlantic_ocean, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
+    english_fleet1 = add_fleet(map.english_channel, map.england)
+    english_army = add_army(map.london, map.england)
+    english_fleet2 = add_fleet(map.irish_sea, map.england)
+    french_fleet1 = add_fleet(map.north_atlantic_ocean, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
 
     order1 = map.parse_order_string('F ENG C A LON - BEL')
     order2 = map.parse_order_string('A LON - BEL')
@@ -3180,11 +3186,11 @@ def test_dislodged_convoying_fleet_not_on_route():
 # 6.F.13
 def test_the_unwanted_alternative():
     map = get_classic_map()
-    english_army = add_unit('Army', map.london, map.england)
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
-    german_fleet1 = add_unit('Fleet', map.holland, map.germany)
-    german_fleet2 = add_unit('Fleet', map.denmark, map.germany)
+    english_army = add_army(map.london, map.england)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    german_fleet1 = add_fleet(map.holland, map.germany)
+    german_fleet2 = add_fleet(map.denmark, map.germany)
 
     order1 = map.parse_order_string('A LON - BEL')
     order2 = map.parse_order_string('F NTH C A LON - BEL')
@@ -3215,10 +3221,10 @@ def test_the_unwanted_alternative():
 # 6.F.14
 def test_simple_convoy_paradox():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.london, map.england)
-    english_fleet2 = add_unit('Fleet', map.wales, map.england)
-    french_army = add_unit('Army', map.brest, map.france)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
+    english_fleet1 = add_fleet(map.london, map.england)
+    english_fleet2 = add_fleet(map.wales, map.england)
+    french_army = add_army(map.brest, map.france)
+    french_fleet = add_fleet(map.english_channel, map.france)
 
     order1 = map.parse_order_string('F LON S F WAL - ENG')
     order2 = map.parse_order_string('F WAL - ENG')
@@ -3245,13 +3251,13 @@ def test_simple_convoy_paradox():
 # 6.F.15
 def test_simple_convoy_paradox_with_additional_convoy():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.london, map.england)
-    english_fleet2 = add_unit('Fleet', map.wales, map.england)
-    french_army = add_unit('Army', map.brest, map.france)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
-    italian_fleet1 = add_unit('Fleet', map.irish_sea, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.italy)
-    italian_army = add_unit('Army', map.north_africa, map.italy)
+    english_fleet1 = add_fleet(map.london, map.england)
+    english_fleet2 = add_fleet(map.wales, map.england)
+    french_army = add_army(map.brest, map.france)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    italian_fleet1 = add_fleet(map.irish_sea, map.italy)
+    italian_fleet2 = add_fleet(map.mid_atlantic_ocean, map.italy)
+    italian_army = add_army(map.north_africa, map.italy)
 
     order1 = map.parse_order_string('F LON S F WAL - ENG')
     order2 = map.parse_order_string('F WAL - ENG')
@@ -3290,12 +3296,12 @@ def test_simple_convoy_paradox_with_additional_convoy():
 # 6.F.16
 def test_pandins_paradox():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.london, map.england)
-    english_fleet2 = add_unit('Fleet', map.wales, map.england)
-    french_army = add_unit('Army', map.brest, map.france)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
-    german_fleet1 = add_unit('Fleet', map.north_sea, map.germany)
-    german_fleet2 = add_unit('Fleet', map.belgium, map.germany)
+    english_fleet1 = add_fleet(map.london, map.england)
+    english_fleet2 = add_fleet(map.wales, map.england)
+    french_army = add_army(map.brest, map.france)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    german_fleet1 = add_fleet(map.north_sea, map.germany)
+    german_fleet2 = add_fleet(map.belgium, map.germany)
 
     order1 = map.parse_order_string('F LON S F WAL - ENG')
     order2 = map.parse_order_string('F WAL - ENG')
@@ -3330,13 +3336,13 @@ def test_pandins_paradox():
 # 6.F.17
 def test_pandins_extended_paradox():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.london, map.england)
-    english_fleet2 = add_unit('Fleet', map.wales, map.england)
-    french_army = add_unit('Army', map.brest, map.france)
-    french_fleet1 = add_unit('Fleet', map.english_channel, map.france)
-    french_fleet2 = add_unit('Fleet', map.yorkshire, map.france)
-    german_fleet1 = add_unit('Fleet', map.north_sea, map.germany)
-    german_fleet2 = add_unit('Fleet', map.belgium, map.germany)
+    english_fleet1 = add_fleet(map.london, map.england)
+    english_fleet2 = add_fleet(map.wales, map.england)
+    french_army = add_army(map.brest, map.france)
+    french_fleet1 = add_fleet(map.english_channel, map.france)
+    french_fleet2 = add_fleet(map.yorkshire, map.france)
+    german_fleet1 = add_fleet(map.north_sea, map.germany)
+    german_fleet2 = add_fleet(map.belgium, map.germany)
 
     order1 = map.parse_order_string('F LON S F WAL - ENG')
     order2 = map.parse_order_string('F WAL - ENG')
@@ -3375,12 +3381,12 @@ def test_pandins_extended_paradox():
 # 6.F.18
 def test_betrayal_paradox():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.london, map.england)
-    english_fleet2 = add_unit('Fleet', map.english_channel, map.england)
-    french_fleet = add_unit('Fleet', map.belgium, map.france)
-    german_fleet1 = add_unit('Fleet', map.helgoland_bight, map.germany)
-    german_fleet2 = add_unit('Fleet', map.skagerrak, map.germany)
+    english_fleet1 = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.london, map.england)
+    english_fleet2 = add_fleet(map.english_channel, map.england)
+    french_fleet = add_fleet(map.belgium, map.france)
+    german_fleet1 = add_fleet(map.helgoland_bight, map.germany)
+    german_fleet2 = add_fleet(map.skagerrak, map.germany)
 
     order1 = map.parse_order_string('F NTH C A LON - BEL')
     order2 = map.parse_order_string('A LON - BEL')
@@ -3415,11 +3421,11 @@ def test_betrayal_paradox():
 # 6.F.19
 def test_multi_route_convoy_disruption_paradox():
     map = get_classic_map()
-    french_army = add_unit('Army', map.tunis, map.france)
-    french_fleet1 = add_unit('Fleet', map.tyrrhenian_sea, map.france)
-    french_fleet2 = add_unit('Fleet', map.ionian_sea, map.france)
-    italian_fleet1 = add_unit('Fleet', map.naples, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.rome, map.italy)
+    french_army = add_army(map.tunis, map.france)
+    french_fleet1 = add_fleet(map.tyrrhenian_sea, map.france)
+    french_fleet2 = add_fleet(map.ionian_sea, map.france)
+    italian_fleet1 = add_fleet(map.naples, map.italy)
+    italian_fleet2 = add_fleet(map.rome, map.italy)
 
     order1 = map.parse_order_string('A TUN - NAP')
     order2 = map.parse_order_string('F TYS C A TUN - NAP')
@@ -3450,12 +3456,12 @@ def test_multi_route_convoy_disruption_paradox():
 # 6.F.20
 def test_unwanted_multi_route_convoy_paradox():
     map = get_classic_map()
-    french_army = add_unit('Army', map.tunis, map.france)
-    french_fleet = add_unit('Fleet', map.tyrrhenian_sea, map.france)
-    italian_fleet1 = add_unit('Fleet', map.naples, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.ionian_sea, map.italy)
-    turkish_fleet1 = add_unit('Fleet', map.aegean_sea, map.turkey)
-    turkish_fleet2 = add_unit('Fleet', map.eastern_mediterranean, map.turkey)
+    french_army = add_army(map.tunis, map.france)
+    french_fleet = add_fleet(map.tyrrhenian_sea, map.france)
+    italian_fleet1 = add_fleet(map.naples, map.italy)
+    italian_fleet2 = add_fleet(map.ionian_sea, map.italy)
+    turkish_fleet1 = add_fleet(map.aegean_sea, map.turkey)
+    turkish_fleet2 = add_fleet(map.eastern_mediterranean, map.turkey)
 
     order1 = map.parse_order_string('A TUN - NAP')
     order2 = map.parse_order_string('F TYS C A TUN - NAP')
@@ -3490,14 +3496,14 @@ def test_unwanted_multi_route_convoy_paradox():
 # 6.F.21
 def test_dads_army_convoy():
     map = get_classic_map()
-    russian_army1 = add_unit('Army', map.edinburgh, map.russia)
-    russian_fleet = add_unit('Fleet', map.norwegian_sea, map.russia)
-    russian_army2 = add_unit('Army', map.norway, map.russia)
-    french_fleet1 = add_unit('Fleet', map.irish_sea, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
-    english_army = add_unit('Army', map.liverpool, map.england)
-    english_fleet1 = add_unit('Fleet', map.north_atlantic_ocean, map.england)
-    english_fleet2 = add_unit('Fleet', map.clyde, map.england)
+    russian_army1 = add_army(map.edinburgh, map.russia)
+    russian_fleet = add_fleet(map.norwegian_sea, map.russia)
+    russian_army2 = add_army(map.norway, map.russia)
+    french_fleet1 = add_fleet(map.irish_sea, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+    english_army = add_army(map.liverpool, map.england)
+    english_fleet1 = add_fleet(map.north_atlantic_ocean, map.england)
+    english_fleet2 = add_fleet(map.clyde, map.england)
 
     order1 = map.parse_order_string('A EDI S A NOR - CLY')
     order2 = map.parse_order_string('F NRG C A NOR - CLY')
@@ -3540,14 +3546,14 @@ def test_dads_army_convoy():
 # 6.F.22
 def test_second_order_paradox_with_two_resolutions():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.edinburgh, map.england)
-    english_fleet2 = add_unit('Fleet', map.london, map.england)
-    french_army = add_unit('Army', map.brest, map.france)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
-    german_fleet1 = add_unit('Fleet', map.belgium, map.germany)
-    german_fleet2 = add_unit('Fleet', map.picardy, map.germany)
-    russian_army = add_unit('Army', map.norway, map.russia)
-    russian_fleet = add_unit('Fleet', map.north_sea, map.russia)
+    english_fleet1 = add_fleet(map.edinburgh, map.england)
+    english_fleet2 = add_fleet(map.london, map.england)
+    french_army = add_army(map.brest, map.france)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    german_fleet1 = add_fleet(map.belgium, map.germany)
+    german_fleet2 = add_fleet(map.picardy, map.germany)
+    russian_army = add_army(map.norway, map.russia)
+    russian_fleet = add_fleet(map.north_sea, map.russia)
 
     order1 = map.parse_order_string('F EDI - NTH')
     order2 = map.parse_order_string('F LON S F EDI - NTH')
@@ -3590,16 +3596,16 @@ def test_second_order_paradox_with_two_resolutions():
 # 6.F.23
 def test_second_order_paradox_with_two_exclusive_convoys():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.edinburgh, map.england)
-    english_fleet2 = add_unit('Fleet', map.yorkshire, map.england)
-    french_army = add_unit('Army', map.brest, map.france)
-    french_fleet = add_unit('Fleet', map.english_channel, map.france)
-    german_fleet1 = add_unit('Fleet', map.belgium, map.germany)
-    german_fleet2 = add_unit('Fleet', map.london, map.germany)
-    italian_fleet1 = add_unit('Fleet', map.mid_atlantic_ocean, map.italy)
-    italian_fleet2 = add_unit('Fleet', map.irish_sea, map.italy)
-    russian_army = add_unit('Army', map.norway, map.russia)
-    russian_fleet = add_unit('Fleet', map.north_sea, map.russia)
+    english_fleet1 = add_fleet(map.edinburgh, map.england)
+    english_fleet2 = add_fleet(map.yorkshire, map.england)
+    french_army = add_army(map.brest, map.france)
+    french_fleet = add_fleet(map.english_channel, map.france)
+    german_fleet1 = add_fleet(map.belgium, map.germany)
+    german_fleet2 = add_fleet(map.london, map.germany)
+    italian_fleet1 = add_fleet(map.mid_atlantic_ocean, map.italy)
+    italian_fleet2 = add_fleet(map.irish_sea, map.italy)
+    russian_army = add_army(map.norway, map.russia)
+    russian_fleet = add_fleet(map.north_sea, map.russia)
 
     order1 = map.parse_order_string('F EDI - NTH')
     order2 = map.parse_order_string('F YOR S F EDI - NTH')
@@ -3650,15 +3656,15 @@ def test_second_order_paradox_with_two_exclusive_convoys():
 # 6.F.24
 def test_second_order_paradox_with_no_resolution():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.edinburgh, map.england)
-    english_fleet2 = add_unit('Fleet', map.london, map.england)
-    english_fleet3 = add_unit('Fleet', map.irish_sea, map.england)
-    english_fleet4 = add_unit('Fleet', map.mid_atlantic_ocean, map.england)
-    french_army = add_unit('Army', map.brest, map.france)
-    french_fleet1 = add_unit('Fleet', map.english_channel, map.france)
-    french_fleet2 = add_unit('Fleet', map.belgium, map.france)
-    russian_army = add_unit('Army', map.norway, map.russia)
-    russian_fleet = add_unit('Fleet', map.north_sea, map.russia)
+    english_fleet1 = add_fleet(map.edinburgh, map.england)
+    english_fleet2 = add_fleet(map.london, map.england)
+    english_fleet3 = add_fleet(map.irish_sea, map.england)
+    english_fleet4 = add_fleet(map.mid_atlantic_ocean, map.england)
+    french_army = add_army(map.brest, map.france)
+    french_fleet1 = add_fleet(map.english_channel, map.france)
+    french_fleet2 = add_fleet(map.belgium, map.france)
+    russian_army = add_army(map.norway, map.russia)
+    russian_fleet = add_fleet(map.north_sea, map.russia)
 
     order1 = map.parse_order_string('F EDI - NTH')
     order2 = map.parse_order_string('F LON S F EDI - NTH')
@@ -3705,18 +3711,18 @@ def test_second_order_paradox_with_no_resolution():
 # 6.F.25
 def test_cut_support_last():
     map = get_classic_map()
-    german_army1 = add_unit('Army', map.ruhr, map.germany)
-    german_army2 = add_unit('Army', map.holland, map.germany)
-    german_army3 = add_unit('Army', map.denmark, map.germany)
-    german_fleet = add_unit('Fleet', map.skagerrak, map.germany)
-    german_army4 = add_unit('Army', map.finland, map.germany)
-    english_army1 = add_unit('Army', map.yorkshire, map.england)
-    english_fleet1 = add_unit('Fleet', map.north_sea, map.england)
-    english_fleet2 = add_unit('Fleet', map.helgoland_bight, map.england)
-    english_army2 = add_unit('Army', map.belgium, map.england)
-    russian_fleet1 = add_unit('Fleet', map.norwegian_sea, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.norway, map.russia)
-    russian_fleet3 = add_unit('Fleet', map.sweden, map.russia)
+    german_army1 = add_army(map.ruhr, map.germany)
+    german_army2 = add_army(map.holland, map.germany)
+    german_army3 = add_army(map.denmark, map.germany)
+    german_fleet = add_fleet(map.skagerrak, map.germany)
+    german_army4 = add_army(map.finland, map.germany)
+    english_army1 = add_army(map.yorkshire, map.england)
+    english_fleet1 = add_fleet(map.north_sea, map.england)
+    english_fleet2 = add_fleet(map.helgoland_bight, map.england)
+    english_army2 = add_army(map.belgium, map.england)
+    russian_fleet1 = add_fleet(map.norwegian_sea, map.russia)
+    russian_fleet2 = add_fleet(map.norway, map.russia)
+    russian_fleet3 = add_fleet(map.sweden, map.russia)
 
     order1 = map.parse_order_string('A RUH - BEL')
     order2 = map.parse_order_string('A HOL S A RUH - BEL')
@@ -3776,9 +3782,9 @@ def test_cut_support_last():
 # 6.G.1
 def test_two_units_can_swap_provinces_by_convoy():
     map = get_classic_map()
-    english_army = add_unit('Army', map.norway, map.england)
-    english_fleet = add_unit('Fleet', map.skagerrak, map.england)
-    russian_army = add_unit('Army', map.sweden, map.russia)
+    english_army = add_army(map.norway, map.england)
+    english_fleet = add_fleet(map.skagerrak, map.england)
+    russian_army = add_army(map.sweden, map.russia)
 
     order1 = map.parse_order_string('A NOR - SWE')
     order2 = map.parse_order_string('F SKA C A NOR - SWE')
@@ -3801,9 +3807,9 @@ def test_two_units_can_swap_provinces_by_convoy():
 # 6.G.2
 def test_kidnapping_an_army():
     map = get_classic_map()
-    english_army = add_unit('Army', map.norway, map.england)
-    russian_fleet = add_unit('Fleet', map.sweden, map.russia)
-    german_fleet = add_unit('Fleet', map.skagerrak, map.germany)
+    english_army = add_army(map.norway, map.england)
+    russian_fleet = add_fleet(map.sweden, map.russia)
+    german_fleet = add_fleet(map.skagerrak, map.germany)
 
     order1 = map.parse_order_string('A NOR - SWE')
     order2 = map.parse_order_string('F SWE - NOR')
@@ -3826,11 +3832,11 @@ def test_kidnapping_an_army():
 # 6.G.3
 def test_unwanted_disrupted_convoy_to_adjacent_province():
     map = get_classic_map()
-    french_fleet1 = add_unit('Fleet', map.brest, map.france)
-    french_army1 = add_unit('Army', map.picardy, map.france)
-    french_army2 = add_unit('Army', map.burgundy, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
-    english_fleet = add_unit('Fleet', map.english_channel, map.england)
+    french_fleet1 = add_fleet(map.brest, map.france)
+    french_army1 = add_army(map.picardy, map.france)
+    french_army2 = add_army(map.burgundy, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+    english_fleet = add_fleet(map.english_channel, map.england)
 
     order1 = map.parse_order_string('F BRE - ENG')
     order2 = map.parse_order_string('A PIC - BEL')
@@ -3861,12 +3867,12 @@ def test_unwanted_disrupted_convoy_to_adjacent_province():
 # 6.G.4
 def test_unwanted_disrupted_convoy_to_adjacent_province_and_opposite_move():
     map = get_classic_map()
-    french_fleet1 = add_unit('Fleet', map.brest, map.france)
-    french_army1 = add_unit('Army', map.picardy, map.france)
-    french_army2 = add_unit('Army', map.burgundy, map.france)
-    french_fleet2 = add_unit('Fleet', map.mid_atlantic_ocean, map.france)
-    english_fleet = add_unit('Fleet', map.english_channel, map.england)
-    english_army = add_unit('Army', map.belgium, map.england)
+    french_fleet1 = add_fleet(map.brest, map.france)
+    french_army1 = add_army(map.picardy, map.france)
+    french_army2 = add_army(map.burgundy, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+    english_fleet = add_fleet(map.english_channel, map.england)
+    english_army = add_army(map.belgium, map.england)
 
     order1 = map.parse_order_string('F BRE - ENG')
     order2 = map.parse_order_string('A PIC - BEL')
@@ -3901,10 +3907,10 @@ def test_unwanted_disrupted_convoy_to_adjacent_province_and_opposite_move():
 # 6.G.5
 def test_swapping_with_multiple_fleets_with_one_own_fleet():
     map = get_classic_map()
-    italian_army = add_unit('Army', map.rome, map.italy)
-    italian_fleet = add_unit('Fleet', map.tyrrhenian_sea, map.italy)
-    turkish_army = add_unit('Army', map.apulia, map.turkey)
-    turkish_fleet = add_unit('Fleet', map.ionian_sea, map.turkey)
+    italian_army = add_army(map.rome, map.italy)
+    italian_fleet = add_fleet(map.tyrrhenian_sea, map.italy)
+    turkish_army = add_army(map.apulia, map.turkey)
+    turkish_fleet = add_fleet(map.ionian_sea, map.turkey)
 
     order1 = map.parse_order_string('A ROM - APU')
     order2 = map.parse_order_string('F TYS C A APU - ROM')
@@ -3931,13 +3937,13 @@ def test_swapping_with_multiple_fleets_with_one_own_fleet():
 # 6.G.6
 def test_swapping_with_unintended_intent():
     map = get_classic_map()
-    english_army = add_unit('Army', map.liverpool, map.england)
-    english_fleet = add_unit('Fleet', map.english_channel, map.england)
-    german_army = add_unit('Army', map.edinburgh, map.germany)
-    french_fleet1 = add_unit('Fleet', map.irish_sea, map.france)
-    french_fleet2 = add_unit('Fleet', map.north_sea, map.france)
-    russian_fleet1 = add_unit('Fleet', map.norwegian_sea, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.north_atlantic_ocean, map.russia)
+    english_army = add_army(map.liverpool, map.england)
+    english_fleet = add_fleet(map.english_channel, map.england)
+    german_army = add_army(map.edinburgh, map.germany)
+    french_fleet1 = add_fleet(map.irish_sea, map.france)
+    french_fleet2 = add_fleet(map.north_sea, map.france)
+    russian_fleet1 = add_fleet(map.norwegian_sea, map.russia)
+    russian_fleet2 = add_fleet(map.north_atlantic_ocean, map.russia)
 
     order1 = map.parse_order_string('A LVP - EDI')
     order2 = map.parse_order_string('F ENG C A LVP - EDI')
@@ -3976,10 +3982,10 @@ def test_swapping_with_unintended_intent():
 # 6.G.7
 def test_swapping_with_illegal_intent():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.skagerrak, map.england)
-    english_fleet2 = add_unit('Fleet', map.norway, map.england)
-    russian_army = add_unit('Army', map.sweden, map.russia)
-    russian_fleet = add_unit('Fleet', map.gulf_of_bothnia, map.russia)
+    english_fleet1 = add_fleet(map.skagerrak, map.england)
+    english_fleet2 = add_fleet(map.norway, map.england)
+    russian_army = add_army(map.sweden, map.russia)
+    russian_fleet = add_fleet(map.gulf_of_bothnia, map.russia)
 
     order1 = map.parse_order_string('F SKA C A SWE - NOR')
     order2 = map.parse_order_string('F NOR - SWE')
@@ -4006,9 +4012,9 @@ def test_swapping_with_illegal_intent():
 # 6.G.8
 def test_explicit_convoy_that_isnt_there():
     map = get_classic_map()
-    french_army = add_unit('Army', map.belgium, map.france)
-    english_fleet = add_unit('Fleet', map.north_sea, map.england)
-    english_army = add_unit('Army', map.holland, map.england)
+    french_army = add_army(map.belgium, map.france)
+    english_fleet = add_fleet(map.north_sea, map.england)
+    english_army = add_army(map.holland, map.england)
 
     order1 = map.parse_order_string('A BEL - HOL via convoy')
     order2 = map.parse_order_string('F NTH - HEL')
@@ -4031,10 +4037,10 @@ def test_explicit_convoy_that_isnt_there():
 # 6.G.9
 def test_swapped_or_dislodged():
     map = get_classic_map()
-    english_army = add_unit('Army', map.norway, map.england)
-    english_fleet1 = add_unit('Fleet', map.skagerrak, map.england)
-    english_fleet2 = add_unit('Fleet', map.finland, map.england)
-    russian_army = add_unit('Army', map.sweden, map.russia)
+    english_army = add_army(map.norway, map.england)
+    english_fleet1 = add_fleet(map.skagerrak, map.england)
+    english_fleet2 = add_fleet(map.finland, map.england)
+    russian_army = add_army(map.sweden, map.russia)
 
     order1 = map.parse_order_string('A NOR - SWE')
     order2 = map.parse_order_string('F SKA C A NOR - SWE')
@@ -4061,14 +4067,14 @@ def test_swapped_or_dislodged():
 # 6.G.10
 def test_swapped_or_a_head_to_head_battle():
     map = get_classic_map()
-    english_army = add_unit('Army', map.norway, map.england)
-    english_fleet1 = add_unit('Fleet', map.denmark, map.england)
-    english_fleet2 = add_unit('Fleet', map.finland, map.england)
-    german_fleet = add_unit('Fleet', map.skagerrak, map.germany)
-    russian_army = add_unit('Army', map.sweden, map.russia)
-    russian_fleet = add_unit('Fleet', map.barents_sea, map.russia)
-    french_fleet1 = add_unit('Fleet', map.norwegian_sea, map.france)
-    french_fleet2 = add_unit('Fleet', map.north_sea, map.france)
+    english_army = add_army(map.norway, map.england)
+    english_fleet1 = add_fleet(map.denmark, map.england)
+    english_fleet2 = add_fleet(map.finland, map.england)
+    german_fleet = add_fleet(map.skagerrak, map.germany)
+    russian_army = add_army(map.sweden, map.russia)
+    russian_fleet = add_fleet(map.barents_sea, map.russia)
+    french_fleet1 = add_fleet(map.norwegian_sea, map.france)
+    french_fleet2 = add_fleet(map.north_sea, map.france)
 
     order1 = map.parse_order_string('A NOR - SWE via convoy')
     order2 = map.parse_order_string('F DEN S A NOR - SWE')
@@ -4112,11 +4118,11 @@ def test_swapped_or_a_head_to_head_battle():
 # 6.G.11
 def test_convoy_to_an_adjacent_province_with_a_paradox():
     map = get_classic_map()
-    english_fleet1 = add_unit('Fleet', map.norway, map.england)
-    english_fleet2 = add_unit('Fleet', map.north_sea, map.england)
-    russian_army = add_unit('Army', map.sweden, map.russia)
-    russian_fleet1 = add_unit('Fleet', map.skagerrak, map.russia)
-    russian_fleet2 = add_unit('Fleet', map.barents_sea, map.russia)
+    english_fleet1 = add_fleet(map.norway, map.england)
+    english_fleet2 = add_fleet(map.north_sea, map.england)
+    russian_army = add_army(map.sweden, map.russia)
+    russian_fleet1 = add_fleet(map.skagerrak, map.russia)
+    russian_fleet2 = add_fleet(map.barents_sea, map.russia)
 
     order1 = map.parse_order_string('F NOR S F NTH - SKA')
     order2 = map.parse_order_string('F NTH - SKA')
@@ -4147,13 +4153,13 @@ def test_convoy_to_an_adjacent_province_with_a_paradox():
 # 6.G.12
 def test_swapping_two_units_with_two_convoys():
     map = get_classic_map()
-    english_army = add_unit('Army', map.liverpool, map.england)
-    english_fleet1 = add_unit('Fleet', map.north_atlantic_ocean, map.england)
-    english_fleet2 = add_unit('Fleet', map.norwegian_sea, map.england)
-    german_army = add_unit('Army', map.edinburgh, map.germany)
-    german_fleet1 = add_unit('Fleet', map.north_sea, map.germany)
-    german_fleet2 = add_unit('Fleet', map.english_channel, map.germany)
-    german_fleet3 = add_unit('Fleet', map.irish_sea, map.germany)
+    english_army = add_army(map.liverpool, map.england)
+    english_fleet1 = add_fleet(map.north_atlantic_ocean, map.england)
+    english_fleet2 = add_fleet(map.norwegian_sea, map.england)
+    german_army = add_army(map.edinburgh, map.germany)
+    german_fleet1 = add_fleet(map.north_sea, map.germany)
+    german_fleet2 = add_fleet(map.english_channel, map.germany)
+    german_fleet3 = add_fleet(map.irish_sea, map.germany)
 
     order1 = map.parse_order_string('A LVP - EDI via convoy')
     order2 = map.parse_order_string('F NAO C A LVP - EDI')
@@ -4192,10 +4198,10 @@ def test_swapping_two_units_with_two_convoys():
 # 6.G.13
 def test_support_cut_on_attack_on_itself_via_convoy():
     map = get_classic_map()
-    austrian_fleet = add_unit('Fleet', map.adriatic_sea, map.austria_hungary)
-    austrian_army = add_unit('Army', map.trieste, map.austria_hungary)
-    italian_army = add_unit('Army', map.venice, map.italy)
-    italian_fleet = add_unit('Fleet', map.albania, map.italy)
+    austrian_fleet = add_fleet(map.adriatic_sea, map.austria_hungary)
+    austrian_army = add_army(map.trieste, map.austria_hungary)
+    italian_army = add_army(map.venice, map.italy)
+    italian_fleet = add_fleet(map.albania, map.italy)
 
     order1 = map.parse_order_string('F ADR C A TRI - VEN')
     order2 = map.parse_order_string('A TRI - VEN via convoy')
@@ -4218,6 +4224,56 @@ def test_support_cut_on_attack_on_itself_via_convoy():
     assert_not_equal('Austrian Army Territory', austrian_army.territory, map.trieste)
     assert_equal('Italian Army Territory', italian_army.territory, map.venice)
     assert_equal('Italian Fleet Territory', italian_fleet.territory, map.trieste)
+
+# 6.G.14
+def test_bounce_by_convoy_to_adjacent_province():
+    map = get_classic_map()
+    english_army = add_army(map.norway, map.england)
+    english_fleet1 = add_fleet(map.denmark, map.england)
+    english_fleet2 = add_fleet(map.finland, map.england)
+    french_fleet1 = add_fleet(map.norwegian_sea, map.france)
+    french_fleet2 = add_fleet(map.north_sea, map.france)
+    german_fleet = add_fleet(map.skagerrak, map.germany)
+    russian_army = add_army(map.sweden, map.russia)
+    russian_fleet = add_fleet(map.barents_sea, map.russia)
+
+    order1 = map.parse_order_string('A NOR - SWE')
+    order2 = map.parse_order_string('F DEN S A NOR - SWE')
+    order3 = map.parse_order_string('F FIN S A NOR - SWE')
+    order4 = map.parse_order_string('F NRG - NOR')
+    order5 = map.parse_order_string('F NTH S F NRG - NOR')
+    order6 = map.parse_order_string('F SKA C A SWE - NOR')
+    order7 = map.parse_order_string('A SWE - NOR via convoy')
+    order8 = map.parse_order_string('F BAR S A SWE - NOR')
+    english_army.set_order(order1)
+    english_fleet1.set_order(order2)
+    english_fleet2.set_order(order3)
+    french_fleet1.set_order(order4)
+    french_fleet2.set_order(order5)
+    german_fleet.set_order(order6)
+    russian_army.set_order(order7)
+    russian_fleet.set_order(order8)
+    map.queue_order(order1)
+    map.queue_order(order2)
+    map.queue_order(order3)
+    map.queue_order(order4)
+    map.queue_order(order5)
+    map.queue_order(order6)
+    map.queue_order(order7)
+    map.queue_order(order8)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 8)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army Territory', english_army.territory, map.sweden)
+    assert_equal('English Fleet 1 Territory', english_fleet1.territory, map.denmark)
+    assert_equal('English Fleet 2 Territory', english_fleet2.territory, map.finland)
+    assert_equal('French Fleet 1 Territory', french_fleet1.territory, map.norwegian_sea)
+    assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.north_sea)
+    assert_equal('German Fleet Territory', german_fleet.territory, map.skagerrak)
+    assert_not_equal('Russian Army Territory', russian_army.territory, map.sweden)
+    assert_equal('Russian Fleet Territory', russian_fleet.territory, map.barents_sea)
 
 def main():
     global prefix, test_num
@@ -4400,6 +4456,7 @@ def main():
     run_test(test_convoy_to_an_adjacent_province_with_a_paradox)
     run_test(test_swapping_two_units_with_two_convoys)
     run_test(test_support_cut_on_attack_on_itself_via_convoy)
+    run_test(test_bounce_by_convoy_to_adjacent_province)
     print()
 
     print(f'{passed}/{count} Tests Passed')
