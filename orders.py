@@ -4,6 +4,7 @@ class Order:
     def __init__(self, name, unit):
         self.name = name
         self.unit = unit 
+        self.unit_territory = unit.territory
 
         self.power = 0
         self.passive_power = 0

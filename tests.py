@@ -3495,6 +3495,40 @@ def test_no_other_moves_during_retreat():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.5
+def test_unit_may_not_retreat_to_area_from_which_it_is_attacked():
+    map = get_classic_map()
+    russian_fleet1 = add_fleet(map.constantinople, map.russia)
+    russian_fleet2 = add_fleet(map.black_sea, map.russia)
+    turkish_fleet = add_fleet(map.ankara, map.turkey)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('F CON S F BLA - ANK')
+    map.parse_order_string('F BLA - ANK')
+    map.parse_order_string('F ANK H')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, map.constantinople)
+    assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, map.ankara)
+    assert_not_equal('Turkish Fleet Territory', turkish_fleet.territory, map.ankara)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('F ANK - BLA')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Turkish Fleet Territory', turkish_fleet.territory, None)
+    assert_equal('Turkish Fleet Disbanded', turkish_fleet.disbanded, True)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -3693,6 +3727,7 @@ def main():
     run_test(test_no_supports_from_retreating_unit)
     run_test(test_no_convoy_during_retreat)
     run_test(test_no_other_moves_during_retreat)
+    run_test(test_unit_may_not_retreat_to_area_from_which_it_is_attacked)
     print()
 
     print(f'{passed}/{count} Tests Passed')

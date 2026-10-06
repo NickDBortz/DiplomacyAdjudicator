@@ -172,6 +172,21 @@ class Map:
                 dislodged.disband()
                 continue
 
+            # If the order is retreating to a territory that was contested during the order phase, disband
+            if len(dislodged.order.dest_territory.contesting) > 0:
+                dislodged.disband()
+                continue
+
+            # If the order is retreating to the territory it was attacked from, disband
+            found_attacker = False
+            for contesting_order in dislodged.dislodged_from.contesting:
+                if contesting_order.unit_territory == dislodged.order.dest_territory:
+                    found_attacker = True
+                    break
+            if found_attacker:
+                dislodged.disband()
+                continue
+
             # If the order is retreating to a territory and is contested by another retreat, disband
             contested = False
             for other_dislodged in all_dislodged:
@@ -189,6 +204,10 @@ class Map:
             dislodged.dislodge_to = None
             dislodged.set_territory(dislodged.order.dest_territory)
             dislodged.reset_order()
+
+        # Clear the contesting of each territory
+        for territory in self.territories:
+            territory.contesting.clear()
 
     def resolve_orders(self):
         # If this is the retreat phase, resolve retreat orders
