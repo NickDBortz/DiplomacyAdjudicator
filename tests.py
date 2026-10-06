@@ -3168,7 +3168,7 @@ def test_bounce_and_dislodge_with_double_convoy():
     assert_not_equal('French Army Territory', french_army.territory, map.belgium)
 
 # 6.G.16
-def test_the_two_unit_in_one_area_bug_moving_over_land():
+def test_the_two_unit_in_one_area_bug_moving_by_convoy():
     map = get_classic_map()
     english_army1 = add_army(map.norway, map.england)
     english_army2 = add_army(map.denmark, map.england)
@@ -3197,6 +3197,37 @@ def test_the_two_unit_in_one_area_bug_moving_over_land():
     assert_equal('Russian Army Territory', russian_army.territory, map.norway)
     assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, map.skagerrak)
     assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, map.norwegian_sea)
+
+# 6.G.17
+def test_the_two_unit_in_one_area_bug_moving_over_land():
+    map = get_classic_map()
+    english_army1 = add_army(map.norway, map.england)
+    english_army2 = add_army(map.denmark, map.england)
+    english_fleet1 = add_fleet(map.baltic_sea, map.england)
+    english_fleet2 = add_fleet(map.skagerrak, map.england)
+    english_fleet3 = add_fleet(map.north_sea, map.england)
+    russian_army = add_army(map.sweden, map.russia)
+    russian_fleet = add_fleet(map.norwegian_sea, map.russia)
+
+    map.parse_order_string('A NOR - SWE via convoy')
+    map.parse_order_string('A DEN S A NOR - SWE')
+    map.parse_order_string('F BAL S A NOR - SWE')
+    map.parse_order_string('F SKA C A NOR - SWE')
+    map.parse_order_string('F NTH - NOR')
+    map.parse_order_string('A SWE - NOR')
+    map.parse_order_string('F NRG S A SWE - NOR')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army 2 Territory', english_army1.territory, map.sweden)
+    assert_equal('English Army 2 Territory', english_army2.territory, map.denmark)
+    assert_equal('English Fleet 1 Territory', english_fleet1.territory, map.baltic_sea)
+    assert_equal('English Fleet 2 Territory', english_fleet2.territory, map.skagerrak)
+    assert_equal('English Fleet 3 Territory', english_fleet3.territory, map.north_sea)
+    assert_equal('Russian Army Territory', russian_army.territory, map.norway)
+    assert_equal('Russian Fleet Territory', russian_fleet.territory, map.norwegian_sea)
 
 def main():
     global prefix, test_num
@@ -3381,6 +3412,7 @@ def main():
     run_test(test_support_cut_on_attack_on_itself_via_convoy)
     run_test(test_bounce_by_convoy_to_adjacent_province)
     run_test(test_bounce_and_dislodge_with_double_convoy)
+    run_test(test_the_two_unit_in_one_area_bug_moving_by_convoy)
     run_test(test_the_two_unit_in_one_area_bug_moving_over_land)
     print()
 
