@@ -4189,6 +4189,36 @@ def test_swapping_two_units_with_two_convoys():
     assert_equal('German Fleet 2 Territory', german_fleet2.territory, map.english_channel)
     assert_equal('German Fleet 3 Territory', german_fleet3.territory, map.irish_sea)
 
+# 6.G.13
+def test_support_cut_on_attack_on_itself_via_convoy():
+    map = get_classic_map()
+    austrian_fleet = add_unit('Fleet', map.adriatic_sea, map.austria_hungary)
+    austrian_army = add_unit('Army', map.trieste, map.austria_hungary)
+    italian_army = add_unit('Army', map.venice, map.italy)
+    italian_fleet = add_unit('Fleet', map.albania, map.italy)
+
+    order1 = map.parse_order_string('F ADR C A TRI - VEN')
+    order2 = map.parse_order_string('A TRI - VEN via convoy')
+    order3 = map.parse_order_string('A VEN S F ALB - TRI')
+    order4 = map.parse_order_string('F ALB - TRI')
+    austrian_fleet.set_order(order1)
+    austrian_army.set_order(order2)
+    italian_army.set_order(order3)
+    italian_fleet.set_order(order4)
+    map.queue_order(order1)
+    map.queue_order(order2)
+    map.queue_order(order3)
+    map.queue_order(order4)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Austrian Fleet Territory', austrian_fleet.territory, map.adriatic_sea)
+    assert_not_equal('Austrian Army Territory', austrian_army.territory, map.trieste)
+    assert_equal('Italian Army Territory', italian_army.territory, map.venice)
+    assert_equal('Italian Fleet Territory', italian_fleet.territory, map.trieste)
+
 def main():
     global prefix, test_num
 
@@ -4369,6 +4399,7 @@ def main():
     run_test(test_swapped_or_a_head_to_head_battle)
     run_test(test_convoy_to_an_adjacent_province_with_a_paradox)
     run_test(test_swapping_two_units_with_two_convoys)
+    run_test(test_support_cut_on_attack_on_itself_via_convoy)
     print()
 
     print(f'{passed}/{count} Tests Passed')
