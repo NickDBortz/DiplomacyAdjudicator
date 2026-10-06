@@ -70,6 +70,9 @@ class AdvanceOrder(Order):
         return other.unit == self.unit and other.dest_territory == self.dest_territory and (other.coast == self.coast if other.coast is not None else True)
 
     def validate(self):
+        if self.unit.territory is None:
+            self.unit.territory = self.unit.dislodged_from
+
         if self.dest_territory == self.unit.territory or not self.unit.can_traverse(self.dest_territory, self.coast):
             return False
         

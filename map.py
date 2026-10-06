@@ -102,6 +102,19 @@ class Map:
         self.guess_based = False
         self.recursion_hits = 0
 
+        self.resolution_phases = ['Spring', 'Spring Retreat', 'Fall', 'Fall Retreat', 'Build']
+        self.resolution_phase = 0
+        self.year = 1800 # Set to what it should be
+
+    def advance_phase(self):
+        self.resolution_phase += 1
+        if self.resolution_phase >= len(self.resolution_phases):
+            self.resolution_phase = 0
+            self.year += 1
+
+    def get_phase(self):
+        return self.resolution_phases[self.resolution_phase]
+
     def get_primary_territories(self, player):
         count = 0
         for i in range(len(self.territories)):
@@ -120,19 +133,71 @@ class Map:
                 player.add_unit(unit)
 
     def queue_order(self, order, owner=None):
+        # Cannot queue an order from the wrong owner or that is blank
         if owner is not None and order.unit.owner != owner:
             if not self.silent_mode: print(f'{order.pretty_print()}: Cannot order a unit that is not your own!')
             return
         if order is None:
             return
-        if order.is_valid:
-            self.queued_orders.append(order)
-            if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
-        else:
+
+        # If the order is not valid, reset it
+        if not order.is_valid:
             order.unit.reset_order()
             if not self.silent_mode: print(f'{order.unit.pretty_print()} already has orders. Skipped {order.pretty_print()}')
+            return
+
+        # If the phase is a retreat phase, only allow advance orders acting on dislodged units
+        if self.get_phase() == 'Spring Retreat' or self.get_phase() == 'Fall Retreat':
+            dislodged = self.gather_dislodged()
+            if order.name != 'Advance' or order.is_utilizing_convoy or order.unit not in dislodged:
+                return
+        
+        self.queued_orders.append(order)
+        if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
+
+    def resolve_retreat_orders(self):
+        # Loop over all dislodged units
+        for dislodged in self.gather_dislodged():
+            # If the order is none, disband
+            if dislodged.order is None:
+                dislodged.disband()
+                continue
+
+            # If the order is retreating to an occupied territory, disband
+            if dislodged.order.dest_territory.unit is not None:
+                dislodged.disband()
+                continue
+
+            # If the order is retreating to a territory and is contested by another retreat, disband
+            contested = False
+            for other_dislodged in self.gather_dislodged():
+                if other_dislodged.order is not None and other_dislodged.order.dest_territory == dislodged.order.dest_territory:
+                    contested = True
+                    break
+            if contested:
+                dislodged.disband()
+                continue
+
+            # Otherwise, retreat succeeds
+            dislodged.dislodged = False
+            dislodged.dislodge_to = None
+            dislodged.set_territory(dislodged.order.dest_territory)
+            dislodged.reset_order()
 
     def resolve_orders(self):
+        # If this is the retreat phase, resolve retreat orders
+        phase = self.get_phase()
+        if phase == 'Spring Retreat' or phase == 'Fall Retreat':
+            self.resolve_retreat_orders()
+        elif phase == 'Spring' or phase == 'Fall':
+            self.resolve_general_orders()
+
+        # Clear orders
+        self.queued_orders.clear()
+
+        self.advance_phase()
+
+    def resolve_general_orders(self):
         # Build the order graph, so each territory knows who occupies and who contests it
         # Each unit knows who supports it
         self.build_order_graph()
@@ -163,9 +228,15 @@ class Map:
         for player in self.players:
             for unit in player.units:
                 unit.handle_collapse()
+                unit.reset_order()
 
-        # Clear orders
-        self.queued_orders.clear()
+    def gather_dislodged(self):
+        dislodged = []
+        for player in self.players:
+            for unit in player.units:
+                if unit.dislodged:
+                    dislodged.append(unit)
+        return dislodged
 
     def build_order_graph(self):
         # Ensure all units with no order are ordered to hold
@@ -288,7 +359,14 @@ class Map:
             idx += 1
 
             # Get troop from territory
-            unit = territory.unit
+            if self.get_phase() == 'Spring Retreat' or self.get_phase() == 'Fall Retreat':
+                unit = None
+                for dislodged in self.gather_dislodged():
+                    if dislodged.dislodged_from == territory:
+                        unit = dislodged
+                        break
+            else:
+                unit = territory.unit
             if unit is None or (unit.type != unit_type and not territory.is_coast):
                 raise Exception()
 

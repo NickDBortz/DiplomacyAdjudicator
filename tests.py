@@ -3310,6 +3310,57 @@ def test_explicit_convoy_to_adjacent_province_disrupted():
     assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.mid_atlantic_ocean)
     assert_not_equal('English Fleet Territory', english_fleet.territory, map.english_channel)
 
+# 6.H Retreating
+# 6.H.1
+def test_no_supports_during_retreat():
+    map = get_classic_map()
+    austrian_fleet = add_fleet(map.trieste, map.austria_hungary)
+    austrian_army = add_army(map.serbia, map.austria_hungary)
+    turkish_fleet = add_fleet(map.greece, map.turkey)
+    italian_army1 = add_army(map.venice, map.italy)
+    italian_army2 = add_army(map.tyrolia, map.italy)
+    italian_fleet1 = add_fleet(map.ionian_sea, map.italy)
+    italian_fleet2 = add_fleet(map.aegean_sea, map.italy)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('F TRI H')
+    map.parse_order_string('A SER H')
+    map.parse_order_string('F GRE H')
+    map.parse_order_string('A VEN S A TYR - TRI')
+    map.parse_order_string('A TYR - TRI')
+    map.parse_order_string('F ION - GRE')
+    map.parse_order_string('F AEG S F ION - GRE')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_not_equal('Austrian Fleet Territory', austrian_fleet.territory, map.trieste)
+    assert_equal('Austrian Army Territory', austrian_army.territory, map.serbia)
+    assert_not_equal('Turkish Fleet Territory', turkish_fleet.territory, map.greece)
+    assert_equal('Italian Army 1 Territory', italian_army1.territory, map.venice)
+    assert_equal('Italian Army 2 Territory', italian_army2.territory, map.trieste)
+    assert_equal('Italian Fleet 1 Territory', italian_fleet1.territory, map.greece)
+    assert_equal('Italian Fleet 2 Territory', italian_fleet2.territory, map.aegean_sea)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('F TRI - ALB')
+    map.parse_order_string('A SER S F TRI - ALB')
+    map.parse_order_string('F GRE - ALB')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Austrian Fleet Territory', austrian_fleet.territory, None)
+    assert_equal('Turkish Fleet Territory', turkish_fleet.territory, None)
+    assert_equal('Austrian Fleet Disbanded', austrian_fleet.disbanded, True)
+    assert_equal('Turkish Fleet Disbanded', turkish_fleet.disbanded, True)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -3498,6 +3549,13 @@ def main():
     run_test(test_the_two_unit_in_one_area_bug_with_double_convoy)
     run_test(test_swapping_with_intent_of_unnecessary_convoy)
     run_test(test_explicit_convoy_to_adjacent_province_disrupted)
+    print()
+
+    # 6.H Retreating
+    prefix = '6.H'
+    test_num = 1
+    print('Retreating:')
+    run_test(test_no_supports_during_retreat)
     print()
 
     print(f'{passed}/{count} Tests Passed')

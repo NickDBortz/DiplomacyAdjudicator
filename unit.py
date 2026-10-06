@@ -10,6 +10,10 @@ class Unit:
         self.collapse_to = None
         self.is_collapsed = False
 
+        self.dislodged = False
+        self.dislodged_from = None
+        self.disbanded = False
+
     def set_territory(self, territory):
         self.territory = territory
 
@@ -21,6 +25,8 @@ class Unit:
 
     def dislodge(self):
         self.is_collapsed = True
+        self.dislodged = True
+        self.dislodged_from = self.territory
 
     def collapse(self, territory):
         self.collapse_to = territory
@@ -37,6 +43,11 @@ class Unit:
 
             self.collapse_to = None
             self.is_collapsed = False
+
+    def disband(self):
+        self.owner.remove_unit(self)
+        self.disbanded = True
+        self.territory = None
 
     def transform(self):
         transformation_map = {
