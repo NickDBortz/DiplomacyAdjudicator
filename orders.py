@@ -68,7 +68,7 @@ class AdvanceOrder(Order):
     def match(self, other):
         if not isinstance(other, AdvanceOrder):
             return False
-        return other.unit == self.unit and other.dest_territory == self.dest_territory and other.is_utilizing_convoy == self.is_utilizing_convoy and (other.coast == self.coast if other.coast is not None else True)
+        return other.unit == self.unit and other.dest_territory == self.dest_territory and (other.coast == self.coast if other.coast is not None else True)
 
     def validate(self):
         if self.dest_territory == self.unit.territory or not self.unit.can_traverse(self.dest_territory, self.coast):

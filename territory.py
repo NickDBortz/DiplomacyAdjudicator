@@ -194,9 +194,12 @@ class Territory:
         winner_owner = winner.unit.owner if winner is not None else None
         current_owner = self.unit.owner if self.unit is not None else None
         if self.unit is not None and not current_unit_leaves and winner_owner == current_owner:
-            return self.unit.order
-        return winner if winner != head_to_head else self.unit.order if self.unit is not None else None
-        # return winner
+            winner = self.unit.order
+        elif winner == head_to_head:
+            winner = self.unit.order if self.unit is not None and not current_unit_leaves else None
+        elif self.unit is not None and winner == self.unit.order and current_unit_leaves:
+            winner = None
+        return winner
 
     def check_convoy_from(self, unit, start_territory, dest_territory, exclude=[]):
         # Starting at start territory

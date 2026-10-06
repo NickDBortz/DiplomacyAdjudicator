@@ -4058,6 +4058,57 @@ def test_swapped_or_dislodged():
     assert_equal('English Fleet 2 Territory', english_fleet2.territory, map.finland)
     assert_equal('Russian Army Territory', russian_army.territory, map.norway)
 
+# 6.G.10
+def test_swapped_or_a_head_to_head_battle():
+    map = get_classic_map()
+    english_army = add_unit('Army', map.norway, map.england)
+    english_fleet1 = add_unit('Fleet', map.denmark, map.england)
+    english_fleet2 = add_unit('Fleet', map.finland, map.england)
+    german_fleet = add_unit('Fleet', map.skagerrak, map.germany)
+    russian_army = add_unit('Army', map.sweden, map.russia)
+    russian_fleet = add_unit('Fleet', map.barents_sea, map.russia)
+    french_fleet1 = add_unit('Fleet', map.norwegian_sea, map.france)
+    french_fleet2 = add_unit('Fleet', map.north_sea, map.france)
+
+    order1 = map.parse_order_string('A NOR - SWE via convoy')
+    order2 = map.parse_order_string('F DEN S A NOR - SWE')
+    order3 = map.parse_order_string('F FIN S A NOR - SWE')
+    order4 = map.parse_order_string('F SKA C A NOR - SWE')
+    order5 = map.parse_order_string('A SWE - NOR')
+    order6 = map.parse_order_string('F BAR S A SWE - NOR')
+    order7 = map.parse_order_string('F NRG - NOR')
+    order8 = map.parse_order_string('F NTH S F NRG - NOR')
+    english_army.set_order(order1)
+    english_fleet1.set_order(order2)
+    english_fleet2.set_order(order3)
+    german_fleet.set_order(order4)
+    russian_army.set_order(order5)
+    russian_fleet.set_order(order6)
+    french_fleet1.set_order(order7)
+    french_fleet2.set_order(order8)
+    map.queue_order(order1)
+    map.queue_order(order2)
+    map.queue_order(order3)
+    map.queue_order(order4)
+    map.queue_order(order5)
+    map.queue_order(order6)
+    map.queue_order(order7)
+    map.queue_order(order8)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 8)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army Territory', english_army.territory, map.sweden)
+    assert_equal('English Fleet 1 Territory', english_fleet1.territory, map.denmark)
+    assert_equal('English Fleet 2 Territory', english_fleet2.territory, map.finland)
+    assert_equal('German Fleet Territory', german_fleet.territory, map.skagerrak)
+    assert_not_equal('Russian Army Territory', russian_army.territory, map.sweden)
+    assert_not_equal('Russian Army Territory', russian_army.territory, map.norway)
+    assert_equal('Russian Fleet Territory', russian_fleet.territory, map.barents_sea)
+    assert_equal('French Fleet 1 Territory', french_fleet1.territory, map.norwegian_sea)
+    assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.north_sea)
+
 def main():
     global prefix, test_num
 
@@ -4235,6 +4286,7 @@ def main():
     run_test(test_swapping_with_illegal_intent)
     run_test(test_explicit_convoy_that_isnt_there)
     run_test(test_swapped_or_dislodged)
+    run_test(test_swapped_or_a_head_to_head_battle)
     print()
 
     print(f'{passed}/{count} Tests Passed')
