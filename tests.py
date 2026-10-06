@@ -4109,6 +4109,41 @@ def test_swapped_or_a_head_to_head_battle():
     assert_equal('French Fleet 1 Territory', french_fleet1.territory, map.norwegian_sea)
     assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.north_sea)
 
+# 6.G.11
+def test_convoy_to_an_adjacent_province_with_a_paradox():
+    map = get_classic_map()
+    english_fleet1 = add_unit('Fleet', map.norway, map.england)
+    english_fleet2 = add_unit('Fleet', map.north_sea, map.england)
+    russian_army = add_unit('Army', map.sweden, map.russia)
+    russian_fleet1 = add_unit('Fleet', map.skagerrak, map.russia)
+    russian_fleet2 = add_unit('Fleet', map.barents_sea, map.russia)
+
+    order1 = map.parse_order_string('F NOR S F NTH - SKA')
+    order2 = map.parse_order_string('F NTH - SKA')
+    order3 = map.parse_order_string('A SWE - NOR')
+    order4 = map.parse_order_string('F SKA C A SWE - NOR')
+    order5 = map.parse_order_string('F BAR S A SWE - NOR')
+    english_fleet1.set_order(order1)
+    english_fleet2.set_order(order2)
+    russian_army.set_order(order3)
+    russian_fleet1.set_order(order4)
+    russian_fleet2.set_order(order5)
+    map.queue_order(order1)
+    map.queue_order(order2)
+    map.queue_order(order3)
+    map.queue_order(order4)
+    map.queue_order(order5)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Fleet 1 Territory', english_fleet1.territory, map.norway)
+    assert_equal('English Fleet 2 Territory', english_fleet2.territory, map.skagerrak)
+    assert_equal('Russian Army Territory', russian_army.territory, map.sweden)
+    assert_not_equal('Russian Fleet 1 Territory', russian_fleet1.territory, map.skagerrak)
+    assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, map.barents_sea)
+
 def main():
     global prefix, test_num
 
@@ -4287,6 +4322,7 @@ def main():
     run_test(test_explicit_convoy_that_isnt_there)
     run_test(test_swapped_or_dislodged)
     run_test(test_swapped_or_a_head_to_head_battle)
+    run_test(test_convoy_to_an_adjacent_province_with_a_paradox)
     print()
 
     print(f'{passed}/{count} Tests Passed')
