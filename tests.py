@@ -3529,6 +3529,46 @@ def test_unit_may_not_retreat_to_area_from_which_it_is_attacked():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.6
+def test_unit_may_not_retreat_to_a_contested_area():
+    map = get_classic_map()
+    austrian_army1 = add_army(map.budapest, map.austria_hungary)
+    austrian_army2 = add_army(map.trieste, map.austria_hungary)
+    german_army1 = add_army(map.munich, map.germany)
+    german_army2 = add_army(map.silesia, map.germany)
+    italian_army = add_army(map.vienna, map.italy)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('A BUD S A TRI - VIE')
+    map.parse_order_string('A TRI - VIE')
+    map.parse_order_string('A MUN - BOH')
+    map.parse_order_string('A SIL - BOH')
+    map.parse_order_string('A VIE H')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Austrian Army 1 Territory', austrian_army1.territory, map.budapest)
+    assert_equal('Austrian Army 2 Territory', austrian_army2.territory, map.vienna)
+    assert_equal('German Army 1 Territory', german_army1.territory, map.munich)
+    assert_equal('German Army 2 Territory', german_army2.territory, map.silesia)
+    assert_not_equal('Italian Army Territory', italian_army.territory, map.vienna)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('A VIE - BOH')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Turkish Fleet Territory', italian_army.territory, None)
+    assert_equal('Turkish Fleet Disbanded', italian_army.disbanded, True)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -3728,6 +3768,7 @@ def main():
     run_test(test_no_convoy_during_retreat)
     run_test(test_no_other_moves_during_retreat)
     run_test(test_unit_may_not_retreat_to_area_from_which_it_is_attacked)
+    run_test(test_unit_may_not_retreat_to_a_contested_area)
     print()
 
     print(f'{passed}/{count} Tests Passed')
