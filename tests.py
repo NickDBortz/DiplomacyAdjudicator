@@ -3673,6 +3673,51 @@ def test_triple_retreat_to_same_area_will_disband_units():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.9
+def test_dislodged_unit_will_not_make_attackers_area_contested():
+    map = get_classic_map()
+    english_fleet1 = add_fleet(map.helgoland_bight, map.england)
+    english_fleet2 = add_fleet(map.denmark, map.england)
+    german_army1 = add_army(map.berlin, map.germany)
+    german_fleet = add_fleet(map.kiel, map.germany)
+    german_army2 = add_army(map.silesia, map.germany)
+    russian_army = add_army(map.prussia, map.russia)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('F HEL - KIE')
+    map.parse_order_string('F DEN S F HEL - KIE')
+    map.parse_order_string('A BER - PRU')
+    map.parse_order_string('F KIE H')
+    map.parse_order_string('A SIL S A BER - PRU')
+    map.parse_order_string('A PRU H')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 6)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Fleet 1 Territory', english_fleet1.territory, map.kiel)
+    assert_equal('English Fleet 2 Territory', english_fleet2.territory, map.denmark)
+    assert_equal('German Army 1 Territory', german_army1.territory, map.prussia)
+    assert_not_equal('German Fleet Territory', german_fleet.territory, map.kiel)
+    assert_equal('German Army 2 Territory', german_army2.territory, map.silesia)
+    assert_not_equal('Russian Army Territory', russian_army.territory, map.prussia)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('F KIE - BER')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Fleet Territory', german_fleet.territory, map.berlin)
+    assert_equal('German Fleet Disbanded', german_fleet.disbanded, False)
+    assert_equal('Russian Army Territory', russian_army.territory, None)
+    assert_equal('Russian Army Disbanded', russian_army.disbanded, True)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -3864,7 +3909,7 @@ def main():
     print()
 
     # 6.H Retreating
-    prefix = '6.H'
+    prefix = '6.H.'
     test_num = 1
     print('Retreating:')
     run_test(test_no_supports_during_retreat)
@@ -3875,6 +3920,7 @@ def main():
     run_test(test_unit_may_not_retreat_to_a_contested_area)
     run_test(test_multiple_retreat_to_same_area_will_disband_units)
     run_test(test_triple_retreat_to_same_area_will_disband_units)
+    run_test(test_dislodged_unit_will_not_make_attackers_area_contested)
     print()
 
     print(f'{passed}/{count} Tests Passed')
