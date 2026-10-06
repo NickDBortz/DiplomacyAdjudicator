@@ -4003,6 +4003,31 @@ def test_swapping_with_illegal_intent():
     assert_equal('Russian Army Territory', russian_army.territory, map.sweden)
     assert_equal('Russian Fleet Territory', russian_fleet.territory, map.gulf_of_bothnia)
 
+# 6.G.8
+def test_explicit_convoy_that_isnt_there():
+    map = get_classic_map()
+    french_army = add_unit('Army', map.belgium, map.france)
+    english_fleet = add_unit('Fleet', map.north_sea, map.england)
+    english_army = add_unit('Army', map.holland, map.england)
+
+    order1 = map.parse_order_string('A BEL - HOL via convoy')
+    order2 = map.parse_order_string('F NTH - HEL')
+    order3 = map.parse_order_string('A HOL - KIE')
+    french_army.set_order(order1)
+    english_fleet.set_order(order2)
+    english_army.set_order(order3)
+    map.queue_order(order1)
+    map.queue_order(order2)
+    map.queue_order(order3)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army Territory', french_army.territory, map.belgium)
+    assert_equal('English Fleet Territory', english_fleet.territory, map.helgoland_bight)
+    assert_equal('English Army Territory', english_army.territory, map.kiel)
+
 def main():
     global prefix, test_num
 
@@ -4178,6 +4203,7 @@ def main():
     run_test(test_swapping_with_multiple_fleets_with_one_own_fleet)
     run_test(test_swapping_with_unintended_intent)
     run_test(test_swapping_with_illegal_intent)
+    run_test(test_explicit_convoy_that_isnt_there)
     print()
 
     print(f'{passed}/{count} Tests Passed')
