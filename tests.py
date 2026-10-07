@@ -4367,12 +4367,43 @@ def test_civil_disorder_two_fleets_with_equal_distance():
     map = get_classic_map()
     russian_fleet1 = add_fleet(map.gulf_of_bothnia, map.russia)
     russian_fleet2 = add_fleet(map.north_sea, map.russia)
-    add_army(map.prussia, map.russia)
 
     map.munich.owner = map.russia
 
+    map.st_petersburg.owner = map.france
     map.moscow.owner = map.france
     map.warsaw.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 2)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 1)
+
+    assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, None)
+    assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, map.north_sea)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.7
+def test_civil_disorder_two_fleets_and_army_with_equal_distance():
+    map = get_classic_map()
+    russian_army = add_army(map.bohemia, map.russia)
+    russian_fleet1 = add_fleet(map.skagerrak, map.russia)
+    russian_fleet2 = add_fleet(map.north_sea, map.russia)
+
+    map.st_petersburg.owner = map.russia
+    map.warsaw.owner = map.russia
+
+    map.moscow.owner = map.france
     map.sevastopol.owner = map.france
     
     assert_equal('Russian Units', len(map.russia.units), 3)
@@ -4388,6 +4419,7 @@ def test_civil_disorder_two_fleets_with_equal_distance():
 
     assert_equal('Russian Units', len(map.russia.units), 2)
 
+    assert_equal('Russian Army Territory', russian_army.territory, map.bohemia)
     assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, map.skagerrak)
     assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, None)
 
@@ -4627,6 +4659,8 @@ def main():
     run_test(test_civil_disorder_two_armies_with_different_distance)
     run_test(test_civil_disorder_two_armies_with_equal_distance)
     run_test(test_civil_disorder_two_fleets_with_different_distance)
+    run_test(test_civil_disorder_two_fleets_with_equal_distance)
+    run_test(test_civil_disorder_two_fleets_and_army_with_equal_distance)
     print()
 
     print(f'{passed}/{count} Tests Passed')

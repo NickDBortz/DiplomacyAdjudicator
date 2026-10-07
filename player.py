@@ -46,6 +46,11 @@ class Player:
         if len(furthest_units) == 1:
             return furthest_units[0]
 
+        # Fleets take precedence in civil disobedience
+        furthest_fleets = [unit for unit in furthest_units if unit.type == 'Fleet']
+        if len(furthest_fleets) > 0:
+            furthest_units = furthest_fleets
+
         first_alphabetized = furthest_units[0].territory.name
         first_unit = furthest_units[0]
         for unit in furthest_units:
