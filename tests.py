@@ -3982,6 +3982,46 @@ def test_no_coastal_crawl_in_retreat():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.16
+def test_contested_for_both_coasts():
+    map = get_classic_map()
+    french_fleet1 = add_fleet(map.mid_atlantic_ocean, map.france)
+    french_fleet2 = add_fleet(map.gascony, map.france)
+    french_fleet3 = add_fleet(map.western_mediterranean, map.france)
+    italian_fleet1 = add_fleet(map.tunis, map.italy)
+    italian_fleet2 = add_fleet(map.tyrrhenian_sea, map.italy)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('F MAO - SPA(nc)')
+    map.parse_order_string('F GAS - SPA(nc)')
+    map.parse_order_string('F WME H')
+    map.parse_order_string('F TUN S F TYS - WME')
+    map.parse_order_string('F TYS - WME')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet 1 Territory', french_fleet1.territory, map.mid_atlantic_ocean)
+    assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.gascony)
+    assert_not_equal('French Fleet 3 Territory', french_fleet3.territory, map.western_mediterranean)
+    assert_equal('Italian Fleet 1 Territory', italian_fleet1.territory, map.tunis)
+    assert_equal('Italian Fleet 2 Territory', italian_fleet2.territory, map.western_mediterranean)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('F WME - SPA(sc)')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet 3 Territory', french_fleet3.territory, None)
+    assert_equal('French Fleet 3 Disbanded', french_fleet3.disbanded, True)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -4191,6 +4231,7 @@ def main():
     run_test(test_no_retreat_with_convoy_in_movement_phase)
     run_test(test_no_retreat_with_support_in_movement_phase)
     run_test(test_no_coastal_crawl_in_retreat)
+    run_test(test_contested_for_both_coasts)
     print()
 
     print(f'{passed}/{count} Tests Passed')
