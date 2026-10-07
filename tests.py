@@ -4022,6 +4022,32 @@ def test_contested_for_both_coasts():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.I Building
+# 6.I.1
+def test_too_many_build_orders():
+    map = get_classic_map()
+    # Leave only one build slot open for germany
+    add_army(map.berlin, map.germany)
+    add_army(map.prussia, map.germany)
+    
+    assert_equal('German Units', len(map.germany.units), 2)
+    assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build A WAR', owner=map.germany)
+    map.parse_order_string('Build A KIE', owner=map.germany)
+    map.parse_order_string('Build A MUN', owner=map.germany)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Units', len(map.germany.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
@@ -4232,6 +4258,13 @@ def main():
     run_test(test_no_retreat_with_support_in_movement_phase)
     run_test(test_no_coastal_crawl_in_retreat)
     run_test(test_contested_for_both_coasts)
+    print()
+
+    # 6.I Building
+    prefix = '6.I.'
+    test_num = 1
+    print('Building:')
+    run_test(test_too_many_build_orders)
     print()
 
     print(f'{passed}/{count} Tests Passed')

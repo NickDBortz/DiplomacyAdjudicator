@@ -115,6 +115,11 @@ class Map:
     def get_phase(self):
         return self.resolution_phases[self.resolution_phase]
 
+    def set_phase(self, phase):
+        if phase not in self.resolution_phases:
+            return
+        self.resolution_phase = self.resolution_phases.index(phase)
+
     def get_primary_territories(self, player):
         count = 0
         for i in range(len(self.territories)):
@@ -151,6 +156,14 @@ class Map:
             dislodged = self.gather_dislodged()
             if order.name != 'Advance' or order.is_utilizing_convoy or order.unit not in dislodged:
                 return False
+
+        # If the phase is not a build phase, disallow build orders
+        if self.get_phase() != 'Build' and order.name == 'Build':
+            return False
+        
+        # If the phase is a build phase, disallow non-build orders
+        if self.get_phase() == 'Build' and order.name != 'Build':
+            return False
         
         self.queued_orders.append(order)
         if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
@@ -222,6 +235,16 @@ class Map:
         for territory in self.territories:
             territory.contesting.clear()
 
+    def resolve_build_orders(self):
+        # Loop through build orders
+        for build_order in self.queued_orders:
+            territory = build_order.dest_territory
+            player = territory.owner
+            units_to_build = player.units_to_build(self.territories)
+            # Only build the unit if the player has enough supply centers, the territory is a supply center
+            if units_to_build > 0 and territory.is_supply_center:
+                build_order.resolve()
+
     def resolve_orders(self):
         # If this is the retreat phase, resolve retreat orders
         phase = self.get_phase()
@@ -229,6 +252,8 @@ class Map:
             self.resolve_retreat_orders()
         elif phase == 'Spring' or phase == 'Fall':
             self.resolve_general_orders()
+        elif phase == 'Build':
+            self.resolve_build_orders()
 
         # Clear orders
         self.queued_orders.clear()

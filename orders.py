@@ -11,6 +11,7 @@ class Order:
         self.supporters = []
         self.deactivated_supporters = []
 
+        self.is_valid = self.validate()
         if self.unit.order is not None:
             self.is_valid = False
 
@@ -252,7 +253,7 @@ class BuildOrder(Order):
         return other.unit == self.unit and other.dest_territory == self.dest_territory and other.coast == self.coast
 
     def validate(self):
-        if len(self.territory.north_coast) > 0 and self.coast is None or self.dest_territory.unit is not None:
+        if len(self.dest_territory.north_coast) > 0 and self.coast is None or self.dest_territory.unit is not None:
             return False
         return True
 
@@ -260,8 +261,8 @@ class BuildOrder(Order):
         pass
 
     def resolve(self):
-        self.territory.set_unit(self.unit, coast=self.coast)
-        self.territory.owner.add_unit(self.unit)
+        self.dest_territory.set_unit(self.unit, coast=self.coast)
+        self.dest_territory.owner.add_unit(self.unit)
 
     def __str__(self):
         return f'{self.unit} Built at {self.dest_territory}'
