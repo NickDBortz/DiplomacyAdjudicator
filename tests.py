@@ -4301,6 +4301,36 @@ def test_civil_disorder_two_armies_with_different_distance():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# 6.J.4
+def test_civil_disorder_two_armies_with_equal_distance():
+    map = get_classic_map()
+    russian_army1 = add_army(map.livonia, map.russia)
+    russian_army2 = add_army(map.ukraine, map.russia)
+
+    map.moscow.owner = map.russia
+
+    map.moscow.owner = map.france
+    map.warsaw.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 2)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 1)
+
+    assert_equal('Russian Army 1 Territory', russian_army1.territory, None)
+    assert_equal('Russian Army 2 Territory', russian_army2.territory, map.ukraine)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
@@ -4533,6 +4563,7 @@ def main():
     run_test(test_too_many_disband_orders)
     run_test(test_removing_the_same_unit_twice)
     run_test(test_civil_disorder_two_armies_with_different_distance)
+    run_test(test_civil_disorder_two_armies_with_equal_distance)
     print()
 
     print(f'{passed}/{count} Tests Passed')
