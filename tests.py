@@ -3899,6 +3899,55 @@ def test_no_retreat_with_convoy_in_movement_phase():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.14
+def test_no_retreat_with_support_in_movement_phase():
+    map = get_classic_map()
+    english_army = add_army(map.picardy, map.england)
+    english_fleet = add_fleet(map.english_channel, map.england)
+    french_army1 = add_army(map.paris, map.france)
+    french_army2 = add_army(map.brest, map.france)
+    french_army3 = add_army(map.burgundy, map.france)
+    german_army1 = add_army(map.munich, map.germany)
+    german_army2 = add_army(map.marseilles, map.germany)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('A PIC H')
+    map.parse_order_string('F ENG S A PIC - BEL')
+    map.parse_order_string('A PAR - PIC')
+    map.parse_order_string('A BRE S A PAR - PIC')
+    map.parse_order_string('A BUR H')
+    map.parse_order_string('A MUN S A MAR - BUR')
+    map.parse_order_string('A MAR - BUR')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_not_equal('English Army Territory', english_army.territory, map.picardy)
+    assert_equal('English Fleet Territory', english_fleet.territory, map.english_channel)
+    assert_equal('French Army 1 Territory', french_army1.territory, map.picardy)
+    assert_equal('French Army 2 Territory', french_army2.territory, map.brest)
+    assert_not_equal('French Army 3 Territory', french_army3.territory, map.burgundy)
+    assert_equal('German Army 1 Territory', german_army1.territory, map.munich)
+    assert_equal('German Army 2 Territory', german_army2.territory, map.burgundy)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('A PIC - BEL')
+    map.parse_order_string('A BUR - BEL')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army Territory', english_army.territory, None)
+    assert_equal('English Army Disbanded', english_army.disbanded, True)
+    assert_equal('French Army 3 Territory', french_army3.territory, None)
+    assert_equal('French Army 3 Disbanded', french_army3.disbanded, True)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -4106,6 +4155,7 @@ def main():
     run_test(test_retreat_when_dislodged_by_adjacent_convoy)
     run_test(test_retreat_when_dislodged_by_adjacent_convoy_while_trying_to_do_the_same)
     run_test(test_no_retreat_with_convoy_in_movement_phase)
+    run_test(test_no_retreat_with_support_in_movement_phase)
     print()
 
     print(f'{passed}/{count} Tests Passed')
