@@ -4119,6 +4119,47 @@ def test_both_coasts_must_be_empty_for_building():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# 6.I.5
+def test_building_in_home_supply_center_that_is_not_owned():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    russian_army = add_army(map.kiel, map.russia)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('A KIE - BER')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+    
+    assert_equal('Russian Army Territory', russian_army.territory, map.berlin)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
+    map.parse_order_string('A BER - KIE')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+    
+    assert_equal('Russian Army Territory', russian_army.territory, map.kiel)
+
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+    
+    assert_equal('German Units', len(map.germany.units), 0)
+    assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
+
+    map.parse_order_string('Build A BER', owner=map.germany)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Units', len(map.germany.units), 0)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
@@ -4338,6 +4379,8 @@ def main():
     run_test(test_too_many_build_orders)
     run_test(test_fleets_cannot_be_built_in_land_areas)
     run_test(test_supply_center_must_be_empty_for_building)
+    run_test(test_both_coasts_must_be_empty_for_building)
+    run_test(test_building_in_home_supply_center_that_is_not_owned)
     print()
 
     print(f'{passed}/{count} Tests Passed')

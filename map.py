@@ -112,6 +112,11 @@ class Map:
             self.resolution_phase = 0
             self.year += 1
 
+        # Skip retreat phases if there are no dislodged units that need to retreat
+        dislodged = self.gather_dislodged()
+        if (self.get_phase() == 'Spring Retreat' or self.get_phase() == 'Fall Retreat') and len(dislodged) == 0:
+            self.advance_phase()
+
     def get_phase(self):
         return self.resolution_phases[self.resolution_phase]
 
