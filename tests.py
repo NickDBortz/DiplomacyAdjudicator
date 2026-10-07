@@ -4033,8 +4033,8 @@ def test_too_many_build_orders():
     assert_equal('German Units', len(map.germany.units), 2)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build A WAR', owner=map.germany)
     map.parse_order_string('Build A KIE', owner=map.germany)
@@ -4059,8 +4059,8 @@ def test_fleets_cannot_be_built_in_land_areas():
     assert_equal('Russian Units', len(map.russia.units), 3)
     assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build F MOS', owner=map.russia)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -4082,8 +4082,8 @@ def test_supply_center_must_be_empty_for_building():
     assert_equal('German Units', len(map.germany.units), 2)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build A BER', owner=map.germany)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -4106,8 +4106,8 @@ def test_both_coasts_must_be_empty_for_building():
     assert_equal('Russian Units', len(map.russia.units), 3)
     assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build F STP(nc)', owner=map.russia)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -4145,7 +4145,7 @@ def test_building_in_home_supply_center_that_is_not_owned():
     
     assert_equal('Russian Army Territory', russian_army.territory, map.kiel)
 
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
     
     assert_equal('German Units', len(map.germany.units), 0)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
@@ -4173,8 +4173,8 @@ def test_building_in_owned_supply_center_that_is_not_a_home_supply_center():
     assert_equal('German Units', len(map.germany.units), 3)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build A WAR', owner=map.germany)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -4196,8 +4196,8 @@ def test_only_one_build_in_a_home_supply_center():
     assert_equal('Russian Units', len(map.russia.units), 2)
     assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 2)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build A MOS', owner=map.russia)
     map.parse_order_string('Build A MOS', owner=map.russia)
@@ -4223,8 +4223,8 @@ def test_too_many_disband_orders():
     assert_equal('French Units', len(map.france.units), 2)
     assert_equal('French Available Units', map.france.units_to_build(map.territories), -1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Remove F GOL', owner=map.france)
     map.parse_order_string('Remove A PIC', owner=map.france)
@@ -4253,8 +4253,8 @@ def test_removing_the_same_unit_twice():
     assert_equal('French Units', len(map.france.units), 2)
     assert_equal('French Available Units', map.france.units_to_build(map.territories), -1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Remove A PAR', owner=map.france)
     map.parse_order_string('Remove A PAR', owner=map.france)
@@ -4267,6 +4267,37 @@ def test_removing_the_same_unit_twice():
 
     assert_equal('French Army 1 Territory', french_army1.territory, None)
     assert_equal('French Army 2 Territory', french_army2.territory, map.picardy)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.3
+def test_civil_disorder_two_armies_with_different_distance():
+    map = get_classic_map()
+    russian_army1 = add_army(map.livonia, map.russia)
+    russian_army2 = add_army(map.sweden, map.russia)
+    add_army(map.ukraine, map.russia)
+
+    map.st_petersburg.owner = map.russia
+
+    map.moscow.owner = map.france
+    map.warsaw.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 2)
+
+    assert_equal('Russian Army 1 Territory', russian_army1.territory, map.livonia)
+    assert_equal('Russian Army 2 Territory', russian_army2.territory, None)
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
@@ -4501,6 +4532,7 @@ def main():
     print('Civil Disorder and Disbands')
     run_test(test_too_many_disband_orders)
     run_test(test_removing_the_same_unit_twice)
+    run_test(test_civil_disorder_two_armies_with_different_distance)
     print()
 
     print(f'{passed}/{count} Tests Passed')

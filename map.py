@@ -102,7 +102,7 @@ class Map:
         self.guess_based = False
         self.recursion_hits = 0
 
-        self.resolution_phases = ['Spring', 'Spring Retreat', 'Fall', 'Fall Retreat', 'Build']
+        self.resolution_phases = ['Spring', 'Spring Retreat', 'Fall', 'Fall Retreat', 'Adjustment']
         self.resolution_phase = 0
         self.year = 1800 # Set to what it should be
 
@@ -163,15 +163,15 @@ class Map:
                 return False
 
         # If the phase is not a build phase, disallow build and disband orders
-        if self.get_phase() != 'Build' and (order.name == 'Build' or order.name == 'Disband'):
+        if self.get_phase() != 'Adjustment' and (order.name == 'Build' or order.name == 'Disband'):
             return False
         
         # If the phase is a build phase, disallow non-build and non-disband orders
-        if self.get_phase() == 'Build' and order.name != 'Build' and order.name != 'Disband':
+        if self.get_phase() == 'Adjustment' and order.name != 'Build' and order.name != 'Disband':
             return False
 
         # If the order is a build order on a territory that is not initially owned by the owner, fail
-        if self.get_phase() == 'Build' and order.name == 'Build' and order.dest_territory.home_owner != owner:
+        if self.get_phase() == 'Adjustment' and order.name == 'Build' and order.dest_territory.home_owner != owner:
             return False 
         
         self.queued_orders.append(order)
@@ -244,7 +244,7 @@ class Map:
         for territory in self.territories:
             territory.clear_contesting()
 
-    def resolve_build_orders(self):
+    def resolve_adjustment_orders(self):
         # Loop through build orders
         for order in self.queued_orders:
             if isinstance(order, BuildOrder):
@@ -263,6 +263,16 @@ class Map:
                 if units_to_build < 0:
                     disband_order.resolve()
 
+        # After we're done, check and see if any players have too many troops
+        for player in self.players:
+            units_to_build = player.units_to_build(self.territories)
+            if units_to_build < 0:
+                # Find the furthest unit from a home supply center and disband it
+                furthest_unit = player.get_furthest_unit(self.territories)
+                furthest_unit.territory.set_unit(None)
+                furthest_unit.territory = None
+                furthest_unit.owner.remove_unit(furthest_unit)
+
     def resolve_orders(self):
         # If this is the retreat phase, resolve retreat orders
         phase = self.get_phase()
@@ -270,8 +280,8 @@ class Map:
             self.resolve_retreat_orders()
         elif phase == 'Spring' or phase == 'Fall':
             self.resolve_general_orders()
-        elif phase == 'Build':
-            self.resolve_build_orders()
+        elif phase == 'Adjustment':
+            self.resolve_adjustment_orders()
 
         # Clear orders
         self.queued_orders.clear()
