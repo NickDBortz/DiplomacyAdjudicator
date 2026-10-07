@@ -3807,6 +3807,61 @@ def test_retreat_when_dislodged_by_adjacent_convoy():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.12
+def test_retreat_when_dislodged_by_adjacent_convoy_while_trying_to_do_the_same():
+    map = get_classic_map()
+    english_army = add_army(map.liverpool, map.england)
+    english_fleet1 = add_fleet(map.irish_sea, map.england)
+    english_fleet2 = add_fleet(map.english_channel, map.england)
+    english_fleet3 = add_fleet(map.north_sea, map.england)
+    french_fleet1 = add_fleet(map.brest, map.france)
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+    russian_army1 = add_army(map.edinburgh, map.russia)
+    russian_fleet1 = add_fleet(map.norwegian_sea, map.russia)
+    russian_fleet2 = add_fleet(map.north_atlantic_ocean, map.russia)
+    russian_army2 = add_army(map.clyde, map.russia)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('A LVP - EDI via convoy')
+    map.parse_order_string('F IRI C A LVP - EDI')
+    map.parse_order_string('F ENG C A LVP - EDI')
+    map.parse_order_string('F NTH C A LVP - EDI')
+    map.parse_order_string('F BRE - ENG')
+    map.parse_order_string('F MAO S F BRE - ENG')
+    map.parse_order_string('A EDI - LVP via convoy')
+    map.parse_order_string('F NRG C A EDI - LVP')
+    map.parse_order_string('F NAO C A EDI - LVP')
+    map.parse_order_string('A CLY S A EDI - LVP')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 10)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_not_equal('English Army Territory', english_army.territory, map.liverpool)
+    assert_equal('English Fleet 1 Territory', english_fleet1.territory, map.irish_sea)
+    assert_not_equal('English Fleet 2 Territory', english_fleet2.territory, map.english_channel)
+    assert_equal('English Fleet 3 Territory', english_fleet3.territory, map.north_sea)
+    assert_equal('French Fleet 1 Territory', french_fleet1.territory, map.english_channel)
+    assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.mid_atlantic_ocean)
+    assert_equal('Russian Army 1 Territory', russian_army1.territory, map.liverpool)
+    assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, map.norwegian_sea)
+    assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, map.north_atlantic_ocean)
+    assert_equal('Russian Army 2 Territory', russian_army2.territory, map.clyde)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('A LVP - EDI')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army Territory', english_army.territory, map.edinburgh)
+    assert_equal('English Army Disbanded', english_army.disbanded, False)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
