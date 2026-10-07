@@ -4455,6 +4455,39 @@ def test_civil_disorder_a_fleet_with_shorter_distance_than_the_army():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# 6.J.9
+def test_civil_disorder_must_be_counted_from_both_coasts():
+    map = get_classic_map()
+    russian_army1 = add_army(map.greece, map.russia)
+    russian_army2 = add_army(map.sevastopol, map.russia)
+    russian_fleet = add_fleet(map.baltic_sea, map.russia)
+    add_army(map.prussia, map.russia)
+
+    map.st_petersburg.owner = map.russia
+    map.sevastopol.owner = map.russia
+
+    map.warsaw.owner = map.france
+    map.moscow.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 4)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 3)
+
+    assert_equal('Russian Army 1 Territory', russian_army1.territory, None)
+    assert_equal('Russian Army 2 Territory', russian_army2.territory, map.sevastopol)
+    assert_equal('Russian Fleet Territory', russian_fleet.territory, map.baltic_sea)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
@@ -4692,6 +4725,7 @@ def main():
     run_test(test_civil_disorder_two_fleets_with_equal_distance)
     run_test(test_civil_disorder_two_fleets_and_army_with_equal_distance)
     run_test(test_civil_disorder_a_fleet_with_shorter_distance_than_the_army)
+    run_test(test_civil_disorder_must_be_counted_from_both_coasts)
     print()
 
     print(f'{passed}/{count} Tests Passed')
