@@ -4214,7 +4214,6 @@ def test_only_one_build_in_a_home_supply_center():
 # 6.J.1
 def test_too_many_disband_orders():
     map = get_classic_map()
-    # Leave only one build slot open for russia
     french_army1 = add_army(map.paris, map.france)
     french_army2 = add_army(map.picardy, map.france)
 
@@ -4239,6 +4238,35 @@ def test_too_many_disband_orders():
 
     assert_equal('French Army 1 Territory', french_army1.territory, map.paris)
     assert_equal('French Army 2 Territory', french_army2.territory, None)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.2
+def test_removing_the_same_unit_twice():
+    map = get_classic_map()
+    french_army1 = add_army(map.paris, map.france)
+    french_army2 = add_army(map.picardy, map.france)
+
+    map.brest.owner = map.russia
+    map.marseilles.owner = map.russia
+    
+    assert_equal('French Units', len(map.france.units), 2)
+    assert_equal('French Available Units', map.france.units_to_build(map.territories), -1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Remove A PAR', owner=map.france)
+    map.parse_order_string('Remove A PAR', owner=map.france)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Units', len(map.france.units), 1)
+
+    assert_equal('French Army 1 Territory', french_army1.territory, None)
+    assert_equal('French Army 2 Territory', french_army2.territory, map.picardy)
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
@@ -4472,6 +4500,7 @@ def main():
     test_num = 1
     print('Civil Disorder and Disbands')
     run_test(test_too_many_disband_orders)
+    run_test(test_removing_the_same_unit_twice)
     print()
 
     print(f'{passed}/{count} Tests Passed')
