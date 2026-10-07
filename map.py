@@ -174,8 +174,11 @@ class Map:
 
             # If the order is retreating to a territory that was contested during the order phase, disband
             if len(dislodged.order.dest_territory.contesting) > 0:
-                dislodged.disband()
-                continue
+                if len(dislodged.order.dest_territory.contesting) == 1 and dislodged.order.dest_territory.contesting[0].unit == dislodged:
+                    pass
+                else:
+                    dislodged.disband()
+                    continue
 
             # If the order is retreating to the territory it was attacked from and said order was not a convoy, disband
             found_attacker = False

@@ -3862,6 +3862,43 @@ def test_retreat_when_dislodged_by_adjacent_convoy_while_trying_to_do_the_same()
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.13
+def test_no_retreat_with_convoy_in_movement_phase():
+    map = get_classic_map()
+    english_army = add_army(map.picardy, map.england)
+    english_fleet = add_fleet(map.english_channel, map.england)
+    french_army1 = add_army(map.paris, map.france)
+    french_army2 = add_army(map.brest, map.france)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('A PIC H')
+    map.parse_order_string('F ENG C A PIC - LON')
+    map.parse_order_string('A PAR - PIC')
+    map.parse_order_string('A BRE S A PAR - PIC')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_not_equal('English Army Territory', english_army.territory, map.picardy)
+    assert_equal('English Fleet Territory', english_fleet.territory, map.english_channel)
+    assert_equal('French Army 1 Territory', french_army1.territory, map.picardy)
+    assert_equal('French Army 2 Territory', french_army2.territory, map.brest)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('A PIC - LON')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Army Territory', english_army.territory, None)
+    assert_equal('English Army Disbanded', english_army.disbanded, True)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -4067,6 +4104,8 @@ def main():
     run_test(test_dislodged_unit_will_not_make_attackers_area_contested)
     run_test(test_not_retreating_to_attackers_does_not_mean_contested)
     run_test(test_retreat_when_dislodged_by_adjacent_convoy)
+    run_test(test_retreat_when_dislodged_by_adjacent_convoy_while_trying_to_do_the_same)
+    run_test(test_no_retreat_with_convoy_in_movement_phase)
     print()
 
     print(f'{passed}/{count} Tests Passed')
