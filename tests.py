@@ -3764,6 +3764,49 @@ def test_not_retreating_to_attackers_does_not_mean_contested():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.11
+def test_retreat_when_dislodged_by_adjacent_convoy():
+    map = get_classic_map()
+    french_army1 = add_army(map.gascony, map.france)
+    french_army2 = add_army(map.burgundy, map.france)
+    french_fleet1 = add_fleet(map.mid_atlantic_ocean, map.france)
+    french_fleet2 = add_fleet(map.western_mediterranean, map.france)
+    french_fleet3 = add_fleet(map.gulf_of_lyon, map.france)
+    italian_army = add_army(map.marseilles, map.italy)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('A GAS - MAR via convoy')
+    map.parse_order_string('A BUR S A GAS - MAR')
+    map.parse_order_string('F MAO C A GAS - MAR')
+    map.parse_order_string('F WME C A GAS - MAR')
+    map.parse_order_string('F GOL C A GAS - MAR')
+    map.parse_order_string('A MAR H')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 6)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army 1 Territory', french_army1.territory, map.marseilles)
+    assert_equal('French Army 2 Territory', french_army2.territory, map.burgundy)
+    assert_equal('French Fleet 1 Territory', french_fleet1.territory, map.mid_atlantic_ocean)
+    assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.western_mediterranean)
+    assert_equal('French Fleet 3 Territory', french_fleet3.territory, map.gulf_of_lyon)
+    assert_not_equal('Italian Army Territory', italian_army.territory, map.marseilles)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('A MAR - GAS')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Italian Army Territory', italian_army.territory, map.gascony)
+    assert_equal('Italian Army Disbanded', italian_army.disbanded, False)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -3968,6 +4011,7 @@ def main():
     run_test(test_triple_retreat_to_same_area_will_disband_units)
     run_test(test_dislodged_unit_will_not_make_attackers_area_contested)
     run_test(test_not_retreating_to_attackers_does_not_mean_contested)
+    run_test(test_retreat_when_dislodged_by_adjacent_convoy)
     print()
 
     print(f'{passed}/{count} Tests Passed')

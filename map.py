@@ -177,10 +177,10 @@ class Map:
                 dislodged.disband()
                 continue
 
-            # If the order is retreating to the territory it was attacked from, disband
+            # If the order is retreating to the territory it was attacked from and said order was not a convoy, disband
             found_attacker = False
             for contesting_order in dislodged.dislodged_from.contesting:
-                if contesting_order.unit_territory == dislodged.order.dest_territory:
+                if not contesting_order.is_utilizing_convoy and contesting_order.unit_territory == dislodged.order.dest_territory:
                     found_attacker = True
                     break
             if found_attacker:
@@ -193,10 +193,10 @@ class Map:
                 if other_dislodged == dislodged:
                     continue
 
-                # If other is advancing on a territory it was attacked from, it doesn't actually contest
+                # If other is advancing on a territory it was attacked from and contesting order was not a convoy, it doesn't actually contest
                 found_attacker = False
                 for contesting_order in other_dislodged.dislodged_from.contesting:
-                    if other_dislodged.order is not None and contesting_order.unit_territory == other_dislodged.order.dest_territory:
+                    if other_dislodged.order is not None and not contesting_order.is_utilizing_convoy and contesting_order.unit_territory == other_dislodged.order.dest_territory:
                         found_attacker = True
                         break
                 if found_attacker:
