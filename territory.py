@@ -5,6 +5,7 @@ class Territory:
         self.is_supply_center = is_supply_center
         self.unit = None
         self.owner = owner
+        self.home_owner = owner
 
         self.unit_coast = None
         self.north_coast = []
@@ -67,6 +68,7 @@ class Territory:
         if winner is not None and winner.unit != self.unit:
             if self.unit is not None: self.unit.dislodge()
             winner.unit.collapse(self)
+            self.owner = winner.unit.owner
 
     def winner(self):
         current_unit_advancing = self.unit is not None and self.unit.order.name == 'Advance'

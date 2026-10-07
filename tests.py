@@ -4022,6 +4022,194 @@ def test_contested_for_both_coasts():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.I Building
+# 6.I.1
+def test_too_many_build_orders():
+    map = get_classic_map()
+    # Leave only one build slot open for germany
+    add_army(map.berlin, map.germany)
+    add_army(map.prussia, map.germany)
+    
+    assert_equal('German Units', len(map.germany.units), 2)
+    assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build A WAR', owner=map.germany)
+    map.parse_order_string('Build A KIE', owner=map.germany)
+    map.parse_order_string('Build A MUN', owner=map.germany)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Units', len(map.germany.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.I.2
+def test_fleets_cannot_be_built_in_land_areas():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    add_army(map.finland, map.russia)
+    add_army(map.st_petersburg, map.russia)
+    add_army(map.livonia, map.russia)
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build F MOS', owner=map.russia)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.I.3
+def test_supply_center_must_be_empty_for_building():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    add_army(map.berlin, map.germany)
+    add_army(map.st_petersburg, map.germany)
+    
+    assert_equal('German Units', len(map.germany.units), 2)
+    assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build A BER', owner=map.germany)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Units', len(map.germany.units), 2)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.I.4
+def test_both_coasts_must_be_empty_for_building():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    add_army(map.finland, map.russia)
+    add_fleet(map.st_petersburg, map.russia, 'sc')
+    add_army(map.livonia, map.russia)
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build F STP(nc)', owner=map.russia)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.I.5
+def test_building_in_home_supply_center_that_is_not_owned():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    russian_army = add_army(map.kiel, map.russia)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('A KIE - BER')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+    
+    assert_equal('Russian Army Territory', russian_army.territory, map.berlin)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
+    map.parse_order_string('A BER - KIE')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+    
+    assert_equal('Russian Army Territory', russian_army.territory, map.kiel)
+
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+    
+    assert_equal('German Units', len(map.germany.units), 0)
+    assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
+
+    map.parse_order_string('Build A BER', owner=map.germany)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Units', len(map.germany.units), 0)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.I.6
+def test_building_in_owned_supply_center_that_is_not_a_home_supply_center():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    add_army(map.berlin, map.germany)
+    add_army(map.prussia, map.germany)
+    add_army(map.kiel, map.germany)
+
+    map.warsaw.owner = map.germany
+    
+    assert_equal('German Units', len(map.germany.units), 3)
+    assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build A WAR', owner=map.germany)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Units', len(map.germany.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.I.7
+def test_only_one_build_in_a_home_supply_center():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    add_army(map.berlin, map.russia)
+    add_army(map.prussia, map.russia)
+    
+    assert_equal('Russian Units', len(map.russia.units), 2)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 2)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build A MOS', owner=map.russia)
+    map.parse_order_string('Build A MOS', owner=map.russia)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
@@ -4232,6 +4420,19 @@ def main():
     run_test(test_no_retreat_with_support_in_movement_phase)
     run_test(test_no_coastal_crawl_in_retreat)
     run_test(test_contested_for_both_coasts)
+    print()
+
+    # 6.I Building
+    prefix = '6.I.'
+    test_num = 1
+    print('Building:')
+    run_test(test_too_many_build_orders)
+    run_test(test_fleets_cannot_be_built_in_land_areas)
+    run_test(test_supply_center_must_be_empty_for_building)
+    run_test(test_both_coasts_must_be_empty_for_building)
+    run_test(test_building_in_home_supply_center_that_is_not_owned)
+    run_test(test_building_in_owned_supply_center_that_is_not_a_home_supply_center)
+    run_test(test_only_one_build_in_a_home_supply_center)
     print()
 
     print(f'{passed}/{count} Tests Passed')
