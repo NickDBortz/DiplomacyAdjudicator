@@ -338,7 +338,7 @@ class Territory:
     def get_distance_from(self, territory):
         depth = 1
         visited = [self]
-        check_this_depth = [t for t in self.adjacents]
+        check_this_depth = [t for t in self.adjacents if territory.unit.type == 'Army' and isinstance(t, LandTerritory) or territory.unit.type == 'Fleet' and (isinstance(t, WaterTerritory) or isinstance(t, LandTerritory) and t.is_coast)]
         check_next_depth = []
         while True:
             while len(check_this_depth) > 0:
@@ -348,7 +348,8 @@ class Territory:
                     return depth
                 for adj in t.adjacents:
                     if adj not in visited:
-                        check_next_depth.append(adj)
+                        if territory.unit.type == 'Army' and isinstance(adj, LandTerritory) or territory.unit.type == 'Fleet' and (isinstance(adj, WaterTerritory) or isinstance(adj, LandTerritory) and adj.is_coast):
+                            check_next_depth.append(adj)
             depth += 1
             check_this_depth = check_next_depth
             check_next_depth = []

@@ -31,7 +31,7 @@ class Player:
         for unit in self.units:
             dist = 0
             for hsc in home_supply_centers:
-                _dist = unit.territory.get_distance_from(hsc)
+                _dist = hsc.get_distance_from(unit.territory)
                 if _dist > dist:
                     dist = _dist
             if dist > furthest_distance:
