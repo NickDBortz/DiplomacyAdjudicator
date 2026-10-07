@@ -4077,7 +4077,7 @@ def test_supply_center_must_be_empty_for_building():
     map = get_classic_map()
     # Leave only one build slot open for russia
     add_army(map.berlin, map.germany)
-    add_army(map.st_petersburg, map.germany)
+    add_army(map.finland, map.germany)
     
     assert_equal('German Units', len(map.germany.units), 2)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
@@ -4190,7 +4190,7 @@ def test_building_in_owned_supply_center_that_is_not_a_home_supply_center():
 def test_only_one_build_in_a_home_supply_center():
     map = get_classic_map()
     # Leave only one build slot open for russia
-    add_army(map.berlin, map.russia)
+    add_army(map.ukraine, map.russia)
     add_army(map.prussia, map.russia)
     
     assert_equal('Russian Units', len(map.russia.units), 2)
@@ -4207,6 +4207,38 @@ def test_only_one_build_in_a_home_supply_center():
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
 
     assert_equal('Russian Units', len(map.russia.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J Civil Disorder and Disbands
+# 6.J.1
+def test_too_many_disband_orders():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    french_army1 = add_army(map.paris, map.france)
+    french_army2 = add_army(map.picardy, map.france)
+
+    map.brest.owner = map.russia
+    map.marseilles.owner = map.russia
+    
+    assert_equal('French Units', len(map.france.units), 2)
+    assert_equal('French Available Units', map.france.units_to_build(map.territories), -1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Remove F GOL', owner=map.france)
+    map.parse_order_string('Remove A PIC', owner=map.france)
+    map.parse_order_string('Remove A PAR', owner=map.france)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Units', len(map.france.units), 1)
+
+    assert_equal('French Army 1 Territory', french_army1.territory, map.paris)
+    assert_equal('French Army 2 Territory', french_army2.territory, None)
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
@@ -4433,6 +4465,13 @@ def main():
     run_test(test_building_in_home_supply_center_that_is_not_owned)
     run_test(test_building_in_owned_supply_center_that_is_not_a_home_supply_center)
     run_test(test_only_one_build_in_a_home_supply_center)
+    print()
+
+    # 6.J Civil Disorder and Disbands
+    prefix = '6.J.'
+    test_num = 1
+    print('Civil Disorder and Disbands')
+    run_test(test_too_many_disband_orders)
     print()
 
     print(f'{passed}/{count} Tests Passed')

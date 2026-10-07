@@ -1,7 +1,7 @@
 from player import Player
 from territory import LandTerritory, WaterTerritory
 from unit import Unit
-from orders import Order, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder, BuildOrder
+from orders import Order, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder, BuildOrder, DisbandOrder
 from classic_map_setup import init_classic_map
 
 class Map:
@@ -162,16 +162,16 @@ class Map:
             if order.name != 'Advance' or order.is_utilizing_convoy or order.unit not in dislodged:
                 return False
 
-        # If the phase is not a build phase, disallow build orders
-        if self.get_phase() != 'Build' and order.name == 'Build':
+        # If the phase is not a build phase, disallow build and disband orders
+        if self.get_phase() != 'Build' and (order.name == 'Build' or order.name == 'Disband'):
             return False
         
-        # If the phase is a build phase, disallow non-build orders
-        if self.get_phase() == 'Build' and order.name != 'Build':
+        # If the phase is a build phase, disallow non-build and non-disband orders
+        if self.get_phase() == 'Build' and order.name != 'Build' and order.name != 'Disband':
             return False
 
         # If the order is a build order on a territory that is not initially owned by the owner, fail
-        if self.get_phase() == 'Build' and order.dest_territory.home_owner != owner:
+        if self.get_phase() == 'Build' and order.name == 'Build' and order.dest_territory.home_owner != owner:
             return False 
         
         self.queued_orders.append(order)
@@ -242,17 +242,26 @@ class Map:
 
         # Clear the contesting of each territory
         for territory in self.territories:
-            territory.contesting.clear()
+            territory.clear_contesting()
 
     def resolve_build_orders(self):
         # Loop through build orders
-        for build_order in self.queued_orders:
-            territory = build_order.dest_territory
-            player = territory.owner
-            units_to_build = player.units_to_build(self.territories)
-            # Only build the unit if the player has enough supply centers, the territory is a supply center
-            if units_to_build > 0 and territory.is_supply_center and territory.unit is None:
-                build_order.resolve()
+        for order in self.queued_orders:
+            if isinstance(order, BuildOrder):
+                build_order = order
+                territory = build_order.dest_territory
+                player = territory.owner
+                units_to_build = player.units_to_build(self.territories)
+                # Only build the unit if the player has enough supply centers, the territory is a supply center
+                if units_to_build > 0 and territory.is_supply_center and territory.unit is None:
+                    build_order.resolve()
+            else:
+                disband_order = order
+                player = disband_order.unit.owner
+                units_to_build = player.units_to_build(self.territories)
+                # Only disband the unit if the player has not enough supply centers
+                if units_to_build < 0:
+                    disband_order.resolve()
 
     def resolve_orders(self):
         # If this is the retreat phase, resolve retreat orders
@@ -378,9 +387,9 @@ class Map:
             if idx < 0 or idx >= len(split_order_string):
                 raise Exception()
             unit_type = split_order_string[idx]
-            if unit_type not in ['A', 'F', 'Build']:
+            if unit_type not in ['A', 'F', 'Build', 'Remove']:
                 raise Exception()
-            return 'Army' if unit_type == 'A' else 'Fleet' if unit_type == 'F' else 'Build'
+            return 'Army' if unit_type == 'A' else 'Fleet' if unit_type == 'F' else unit_type
 
         def expect_territory_abbr(split_order_string, idx, allow_coast=False):
             if idx < 0 or idx >= len(split_order_string):
@@ -422,6 +431,16 @@ class Map:
                 idx += 1
                 unit = Unit(territory.owner, unit_type, territory)
                 return BuildOrder(unit, territory, coast)
+
+            if unit_type == 'Remove':
+                unit_type = expect_unit_type(split_order_string, idx)
+                idx += 1
+                territory, _ = expect_territory_abbr(split_order_string, idx)
+                idx += 1
+                unit = territory.unit
+                if unit is None or (unit.type != unit_type and not territory.is_coast):
+                    raise Exception()
+                return DisbandOrder(unit)
 
             # Expect Territory abbreviation
             territory, _ = expect_territory_abbr(split_order_string, idx)

@@ -22,10 +22,8 @@ class Territory:
         self.unit = unit
         self.temp_coast = coast
         self.temp_unit = unit
-
-    def set_temp_unit(self, unit, coast=None):
-        self.temp_coast = coast
-        self.temp_unit = unit
+        if unit is not None:
+            self.owner = unit.owner
 
     def set_adjacent(self, territory):
         if territory in self.adjacents:
