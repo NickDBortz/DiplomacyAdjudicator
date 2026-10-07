@@ -22,10 +22,8 @@ class Territory:
         self.unit = unit
         self.temp_coast = coast
         self.temp_unit = unit
-
-    def set_temp_unit(self, unit, coast=None):
-        self.temp_coast = coast
-        self.temp_unit = unit
+        if unit is not None:
+            self.owner = unit.owner
 
     def set_adjacent(self, territory):
         if territory in self.adjacents:
@@ -336,6 +334,26 @@ class Territory:
         for support in order.supporters:
             if support.unit.owner == friendly_country:
                 order.nullify_support(support)
+
+    def get_distance_from(self, territory):
+        if self == territory:
+            return 0
+        depth = 1
+        visited = [self]
+        check_this_depth = [t for t in self.adjacents]
+        check_next_depth = []
+        while True:
+            while len(check_this_depth) > 0:
+                t = check_this_depth.pop()
+                visited.append(t)
+                if t == territory:
+                    return depth
+                for adj in t.adjacents:
+                    if adj not in visited:
+                        check_next_depth.append(adj)
+            depth += 1
+            check_this_depth = check_next_depth
+            check_next_depth = []
 
     def __str__(self):
         return f'{self.name}{f'*' if self.is_supply_center else ''}'

@@ -4033,8 +4033,8 @@ def test_too_many_build_orders():
     assert_equal('German Units', len(map.germany.units), 2)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build A WAR', owner=map.germany)
     map.parse_order_string('Build A KIE', owner=map.germany)
@@ -4059,8 +4059,8 @@ def test_fleets_cannot_be_built_in_land_areas():
     assert_equal('Russian Units', len(map.russia.units), 3)
     assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build F MOS', owner=map.russia)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -4077,13 +4077,13 @@ def test_supply_center_must_be_empty_for_building():
     map = get_classic_map()
     # Leave only one build slot open for russia
     add_army(map.berlin, map.germany)
-    add_army(map.st_petersburg, map.germany)
+    add_army(map.finland, map.germany)
     
     assert_equal('German Units', len(map.germany.units), 2)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build A BER', owner=map.germany)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -4106,8 +4106,8 @@ def test_both_coasts_must_be_empty_for_building():
     assert_equal('Russian Units', len(map.russia.units), 3)
     assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build F STP(nc)', owner=map.russia)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -4145,7 +4145,7 @@ def test_building_in_home_supply_center_that_is_not_owned():
     
     assert_equal('Russian Army Territory', russian_army.territory, map.kiel)
 
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
     
     assert_equal('German Units', len(map.germany.units), 0)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
@@ -4173,8 +4173,8 @@ def test_building_in_owned_supply_center_that_is_not_a_home_supply_center():
     assert_equal('German Units', len(map.germany.units), 3)
     assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build A WAR', owner=map.germany)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -4190,14 +4190,14 @@ def test_building_in_owned_supply_center_that_is_not_a_home_supply_center():
 def test_only_one_build_in_a_home_supply_center():
     map = get_classic_map()
     # Leave only one build slot open for russia
-    add_army(map.berlin, map.russia)
+    add_army(map.ukraine, map.russia)
     add_army(map.prussia, map.russia)
     
     assert_equal('Russian Units', len(map.russia.units), 2)
     assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 2)
 
-    map.set_phase('Build')
-    assert_equal('Map Phase', map.get_phase(), 'Build')
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
     map.parse_order_string('Build A MOS', owner=map.russia)
     map.parse_order_string('Build A MOS', owner=map.russia)
@@ -4207,6 +4207,345 @@ def test_only_one_build_in_a_home_supply_center():
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
 
     assert_equal('Russian Units', len(map.russia.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J Civil Disorder and Disbands
+# 6.J.1
+def test_too_many_disband_orders():
+    map = get_classic_map()
+    french_army1 = add_army(map.paris, map.france)
+    french_army2 = add_army(map.picardy, map.france)
+
+    map.brest.owner = map.russia
+    map.marseilles.owner = map.russia
+    
+    assert_equal('French Units', len(map.france.units), 2)
+    assert_equal('French Available Units', map.france.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    map.parse_order_string('Remove F GOL', owner=map.france)
+    map.parse_order_string('Remove A PIC', owner=map.france)
+    map.parse_order_string('Remove A PAR', owner=map.france)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Units', len(map.france.units), 1)
+
+    assert_equal('French Army 1 Territory', french_army1.territory, map.paris)
+    assert_equal('French Army 2 Territory', french_army2.territory, None)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.2
+def test_removing_the_same_unit_twice():
+    map = get_classic_map()
+    french_army1 = add_army(map.paris, map.france)
+    french_army2 = add_army(map.picardy, map.france)
+
+    map.brest.owner = map.russia
+    map.marseilles.owner = map.russia
+    
+    assert_equal('French Units', len(map.france.units), 2)
+    assert_equal('French Available Units', map.france.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    map.parse_order_string('Remove A PAR', owner=map.france)
+    map.parse_order_string('Remove A PAR', owner=map.france)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Units', len(map.france.units), 1)
+
+    assert_equal('French Army 1 Territory', french_army1.territory, None)
+    assert_equal('French Army 2 Territory', french_army2.territory, map.picardy)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.3
+def test_civil_disorder_two_armies_with_different_distance():
+    map = get_classic_map()
+    russian_army1 = add_army(map.livonia, map.russia)
+    russian_army2 = add_army(map.sweden, map.russia)
+    russian_army3 = add_army(map.finland, map.russia)
+
+    map.st_petersburg.owner = map.russia
+
+    map.moscow.owner = map.france
+    map.warsaw.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 2)
+
+    assert_equal('Russian Army 1 Territory', russian_army1.territory, map.livonia)
+    assert_equal('Russian Army 2 Territory', russian_army2.territory, map.sweden)
+    assert_equal('Russian Army 3 Territory', russian_army3.territory, None)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.4
+def test_civil_disorder_two_armies_with_equal_distance():
+    map = get_classic_map()
+    russian_army1 = add_army(map.livonia, map.russia)
+    russian_army2 = add_army(map.ukraine, map.russia)
+    add_army(map.moscow, map.russia)
+
+    map.moscow.owner = map.russia
+
+    map.warsaw.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 2)
+
+    assert_equal('Russian Army 1 Territory', russian_army1.territory, None)
+    assert_equal('Russian Army 2 Territory', russian_army2.territory, map.ukraine)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.5
+def test_civil_disorder_two_fleets_with_different_distance():
+    map = get_classic_map()
+    russian_fleet1 = add_fleet(map.skagerrak, map.russia)
+    russian_fleet2 = add_fleet(map.berlin, map.russia)
+    add_army(map.prussia, map.russia)
+
+    map.st_petersburg.owner = map.russia
+
+    map.moscow.owner = map.france
+    map.warsaw.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 2)
+
+    assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, None)
+    assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, map.berlin)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.6
+def test_civil_disorder_two_fleets_with_equal_distance():
+    map = get_classic_map()
+    russian_fleet1 = add_fleet(map.gulf_of_bothnia, map.russia)
+    russian_fleet2 = add_fleet(map.north_sea, map.russia)
+
+    map.munich.owner = map.russia
+
+    map.st_petersburg.owner = map.france
+    map.moscow.owner = map.france
+    map.warsaw.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 2)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 1)
+
+    assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, None)
+    assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, map.north_sea)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.7
+def test_civil_disorder_two_fleets_and_army_with_equal_distance():
+    map = get_classic_map()
+    russian_army = add_army(map.bohemia, map.russia)
+    russian_fleet1 = add_fleet(map.skagerrak, map.russia)
+    russian_fleet2 = add_fleet(map.north_sea, map.russia)
+
+    map.st_petersburg.owner = map.russia
+    map.warsaw.owner = map.russia
+
+    map.moscow.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 2)
+
+    assert_equal('Russian Army Territory', russian_army.territory, map.bohemia)
+    assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, map.skagerrak)
+    assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, None)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.8
+def test_civil_disorder_a_fleet_with_shorter_distance_than_the_army():
+    map = get_classic_map()
+    russian_army = add_army(map.tyrolia, map.russia)
+    russian_fleet = add_fleet(map.baltic_sea, map.russia)
+
+    map.warsaw.owner = map.russia
+
+    map.st_petersburg.owner = map.france
+    map.moscow.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 2)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 1)
+
+    assert_equal('Russian Army Territory', russian_army.territory, None)
+    assert_equal('Russian Fleet Territory', russian_fleet.territory, map.baltic_sea)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.9
+def test_civil_disorder_must_be_counted_from_both_coasts():
+    map = get_classic_map()
+    russian_army1 = add_army(map.greece, map.russia)
+    russian_army2 = add_army(map.sevastopol, map.russia)
+    russian_fleet = add_fleet(map.baltic_sea, map.russia)
+    add_army(map.prussia, map.russia)
+
+    map.st_petersburg.owner = map.russia
+    map.sevastopol.owner = map.russia
+
+    map.warsaw.owner = map.france
+    map.moscow.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 4)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 3)
+
+    assert_equal('Russian Army 1 Territory', russian_army1.territory, map.greece)
+    assert_equal('Russian Army 2 Territory', russian_army2.territory, map.sevastopol)
+    assert_equal('Russian Fleet Territory', russian_fleet.territory, None)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.10
+def test_civil_disorder_counting_convoying_distance():
+    map = get_classic_map()
+    italian_army1 = add_army(map.greece, map.italy)
+    italian_army2 = add_army(map.piedmont, map.italy)
+    add_army(map.tuscany, map.italy)
+
+    map.naples.owner = map.italy
+
+    map.venice.owner = map.france
+    map.rome.owner = map.france
+    
+    assert_equal('Italian Units', len(map.italy.units), 3)
+    assert_equal('Italian Available Units', map.italy.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Italian Units', len(map.italy.units), 2)
+
+    assert_equal('Italian Army 1 Territory', italian_army1.territory, map.greece)
+    assert_equal('Italian Army 2 Territory', italian_army2.territory, None)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.11
+def test_distance_to_owned_supply_center():
+    map = get_classic_map()
+    italian_army1 = add_army(map.warsaw, map.italy)
+    italian_army2 = add_army(map.tuscany, map.italy)
+
+    map.warsaw.owner = map.italy
+
+    map.naples.owner = map.france
+    map.venice.owner = map.france
+    map.rome.owner = map.france
+    
+    assert_equal('Italian Units', len(map.italy.units), 2)
+    assert_equal('Italian Available Units', map.italy.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Italian Units', len(map.italy.units), 1)
+
+    assert_equal('Italian Army 1 Territory', italian_army1.territory, map.warsaw)
+    assert_equal('Italian Army 2 Territory', italian_army2.territory, None)
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
@@ -4433,6 +4772,23 @@ def main():
     run_test(test_building_in_home_supply_center_that_is_not_owned)
     run_test(test_building_in_owned_supply_center_that_is_not_a_home_supply_center)
     run_test(test_only_one_build_in_a_home_supply_center)
+    print()
+
+    # 6.J Civil Disorder and Disbands
+    prefix = '6.J.'
+    test_num = 1
+    print('Civil Disorder and Disbands')
+    run_test(test_too_many_disband_orders)
+    run_test(test_removing_the_same_unit_twice)
+    run_test(test_civil_disorder_two_armies_with_different_distance)
+    run_test(test_civil_disorder_two_armies_with_equal_distance)
+    run_test(test_civil_disorder_two_fleets_with_different_distance)
+    run_test(test_civil_disorder_two_fleets_with_equal_distance)
+    run_test(test_civil_disorder_two_fleets_and_army_with_equal_distance)
+    run_test(test_civil_disorder_a_fleet_with_shorter_distance_than_the_army)
+    run_test(test_civil_disorder_must_be_counted_from_both_coasts)
+    run_test(test_civil_disorder_counting_convoying_distance)
+    run_test(test_distance_to_owned_supply_center)
     print()
 
     print(f'{passed}/{count} Tests Passed')

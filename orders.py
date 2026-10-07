@@ -280,3 +280,26 @@ class BuildOrder(Order):
 
     def __str__(self):
         return f'{self.unit} Built at {self.dest_territory}'
+
+class DisbandOrder(Order):
+    def __init__(self, unit):
+        super().__init__('Disband', unit)
+
+    def match(self, other):
+        if not isinstance(other, DisbandOrder):
+            return False
+        return other.unit == self.unit
+
+    def validate(self):        
+        return True
+
+    def activate(self):
+        pass
+
+    def resolve(self):
+        self.unit.territory.set_unit(None)
+        self.unit.territory = None
+        self.unit.owner.remove_unit(self.unit)
+
+    def __str__(self):
+        return f'{self.unit} Removed from {self.territory}'
