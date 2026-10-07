@@ -169,6 +169,10 @@ class Map:
         # If the phase is a build phase, disallow non-build orders
         if self.get_phase() == 'Build' and order.name != 'Build':
             return False
+
+        # If the order is a build order on a territory that is not initially owned by the owner, fail
+        if self.get_phase() == 'Build' and order.dest_territory.home_owner != owner:
+            return False 
         
         self.queued_orders.append(order)
         if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')

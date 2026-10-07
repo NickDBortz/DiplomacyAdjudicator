@@ -5,6 +5,7 @@ class Territory:
         self.is_supply_center = is_supply_center
         self.unit = None
         self.owner = owner
+        self.home_owner = owner
 
         self.unit_coast = None
         self.north_coast = []

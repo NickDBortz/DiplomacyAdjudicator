@@ -4160,6 +4160,32 @@ def test_building_in_home_supply_center_that_is_not_owned():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# 6.I.6
+def test_building_in_owned_supply_center_that_is_not_a_home_supply_center():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    add_army(map.berlin, map.germany)
+    add_army(map.prussia, map.germany)
+    add_army(map.kiel, map.germany)
+
+    map.warsaw.owner = map.germany
+    
+    assert_equal('German Units', len(map.germany.units), 3)
+    assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build A WAR', owner=map.germany)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Units', len(map.germany.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
@@ -4381,6 +4407,7 @@ def main():
     run_test(test_supply_center_must_be_empty_for_building)
     run_test(test_both_coasts_must_be_empty_for_building)
     run_test(test_building_in_home_supply_center_that_is_not_owned)
+    run_test(test_building_in_owned_supply_center_that_is_not_a_home_supply_center)
     print()
 
     print(f'{passed}/{count} Tests Passed')
