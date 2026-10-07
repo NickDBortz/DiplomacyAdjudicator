@@ -253,8 +253,18 @@ class BuildOrder(Order):
         return other.unit == self.unit and other.dest_territory == self.dest_territory and other.coast == self.coast
 
     def validate(self):
+        # If the destination has multiple coasts and we don't specify one, fail
         if len(self.dest_territory.north_coast) > 0 and self.coast is None or self.dest_territory.unit is not None:
             return False
+
+        # If the destination is a water territory and the unit is an army, fail
+        if isinstance(self.dest_territory, WaterTerritory) and self.unit.type == 'Army':
+            return False
+
+        # If the destination is an inland territory and the unit is a fleet, fail
+        if isinstance(self.dest_territory, LandTerritory) and not self.dest_territory.is_coast and self.unit.type == 'Fleet':
+            return False
+        
         return True
 
     def activate(self):
