@@ -4095,6 +4095,30 @@ def test_supply_center_must_be_empty_for_building():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# 6.I.4
+def test_both_coasts_must_be_empty_for_building():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    add_army(map.finland, map.russia)
+    add_fleet(map.st_petersburg, map.russia, 'sc')
+    add_army(map.livonia, map.russia)
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build F STP(nc)', owner=map.russia)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 3)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
