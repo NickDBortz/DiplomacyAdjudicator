@@ -264,6 +264,10 @@ class BuildOrder(Order):
         # If the destination is an inland territory and the unit is a fleet, fail
         if isinstance(self.dest_territory, LandTerritory) and not self.dest_territory.is_coast and self.unit.type == 'Fleet':
             return False
+
+        # If the destination is occupied, fail
+        if self.dest_territory.unit is not None:
+            return False
         
         return True
 

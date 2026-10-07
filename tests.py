@@ -4072,6 +4072,29 @@ def test_fleets_cannot_be_built_in_land_areas():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# 6.I.3
+def test_supply_center_must_be_empty_for_building():
+    map = get_classic_map()
+    # Leave only one build slot open for russia
+    add_army(map.berlin, map.germany)
+    add_army(map.st_petersburg, map.germany)
+    
+    assert_equal('German Units', len(map.germany.units), 2)
+    assert_equal('German Available Units', map.germany.units_to_build(map.territories), 1)
+
+    map.set_phase('Build')
+    assert_equal('Map Phase', map.get_phase(), 'Build')
+
+    map.parse_order_string('Build A BER', owner=map.germany)
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('German Units', len(map.germany.units), 2)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
@@ -4290,6 +4313,7 @@ def main():
     print('Building:')
     run_test(test_too_many_build_orders)
     run_test(test_fleets_cannot_be_built_in_land_areas)
+    run_test(test_supply_center_must_be_empty_for_building)
     print()
 
     print(f'{passed}/{count} Tests Passed')
