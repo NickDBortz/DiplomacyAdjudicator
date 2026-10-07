@@ -31,8 +31,8 @@ class Player:
         for unit in self.units:
             dist = 100
             for sc in owned_supply_centers:
-                if sc == unit.territory and sc.home_owner != self:
-                    continue
+                # if sc == unit.territory and sc.home_owner != self:
+                #     continue
                 _dist = sc.get_distance_from(unit.territory)
                 if _dist < dist:
                     dist = _dist
