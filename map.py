@@ -251,7 +251,7 @@ class Map:
             player = territory.owner
             units_to_build = player.units_to_build(self.territories)
             # Only build the unit if the player has enough supply centers, the territory is a supply center
-            if units_to_build > 0 and territory.is_supply_center:
+            if units_to_build > 0 and territory.is_supply_center and territory.unit is None:
                 build_order.resolve()
 
     def resolve_orders(self):
