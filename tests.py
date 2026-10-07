@@ -3948,6 +3948,40 @@ def test_no_retreat_with_support_in_movement_phase():
 
     assert_equal('Map Phase', map.get_phase(), 'Fall')
 
+# 6.H.15
+def test_no_coastal_crawl_in_retreat():
+    map = get_classic_map()
+    english_fleet = add_fleet(map.portugal, map.england)
+    french_fleet1 = add_fleet(map.spain, map.france, 'sc')
+    french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+    map.parse_order_string('F POR H')
+    map.parse_order_string('F SPA - POR')
+    map.parse_order_string('F MAO S F SPA - POR')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_not_equal('English Fleet Territory', english_fleet.territory, map.portugal)
+    assert_equal('French Fleet 1 Territory', french_fleet1.territory, map.portugal)
+    assert_equal('French Fleet 2 Territory', french_fleet2.territory, map.mid_atlantic_ocean)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
+
+    map.parse_order_string('F POR - SPA(nc)')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('English Fleet Territory', english_fleet.territory, None)
+    assert_equal('English Fleet Disbanded', english_fleet.disbanded, True)
+
+    assert_equal('Map Phase', map.get_phase(), 'Fall')
+
 def main():
     global prefix, test_num
 
@@ -4156,6 +4190,7 @@ def main():
     run_test(test_retreat_when_dislodged_by_adjacent_convoy_while_trying_to_do_the_same)
     run_test(test_no_retreat_with_convoy_in_movement_phase)
     run_test(test_no_retreat_with_support_in_movement_phase)
+    run_test(test_no_coastal_crawl_in_retreat)
     print()
 
     print(f'{passed}/{count} Tests Passed')
