@@ -4488,6 +4488,36 @@ def test_civil_disorder_must_be_counted_from_both_coasts():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# 6.J.10
+def test_civil_disorder_counting_convoying_distance():
+    map = get_classic_map()
+    italian_army1 = add_army(map.greece, map.italy)
+    italian_army2 = add_army(map.piedmont, map.italy)
+    add_army(map.tuscany, map.italy)
+
+    map.naples.owner = map.italy
+
+    map.venice.owner = map.france
+    map.rome.owner = map.france
+    
+    assert_equal('Italian Units', len(map.italy.units), 3)
+    assert_equal('Italian Available Units', map.italy.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Italian Units', len(map.italy.units), 2)
+
+    assert_equal('Italian Army 1 Territory', italian_army1.territory, map.greece)
+    assert_equal('Italian Army 2 Territory', italian_army2.territory, None)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
 def main():
     global prefix, test_num
 
@@ -4726,6 +4756,7 @@ def main():
     run_test(test_civil_disorder_two_fleets_and_army_with_equal_distance)
     run_test(test_civil_disorder_a_fleet_with_shorter_distance_than_the_army)
     run_test(test_civil_disorder_must_be_counted_from_both_coasts)
+    run_test(test_civil_disorder_counting_convoying_distance)
     print()
 
     print(f'{passed}/{count} Tests Passed')
