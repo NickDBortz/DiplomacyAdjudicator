@@ -4275,7 +4275,7 @@ def test_civil_disorder_two_armies_with_different_distance():
     map = get_classic_map()
     russian_army1 = add_army(map.livonia, map.russia)
     russian_army2 = add_army(map.sweden, map.russia)
-    add_army(map.ukraine, map.russia)
+    add_army(map.finland, map.russia)
 
     map.st_petersburg.owner = map.russia
 
@@ -4306,14 +4306,14 @@ def test_civil_disorder_two_armies_with_equal_distance():
     map = get_classic_map()
     russian_army1 = add_army(map.livonia, map.russia)
     russian_army2 = add_army(map.ukraine, map.russia)
+    add_army(map.moscow, map.russia)
 
     map.moscow.owner = map.russia
 
-    map.moscow.owner = map.france
     map.warsaw.owner = map.france
     map.sevastopol.owner = map.france
     
-    assert_equal('Russian Units', len(map.russia.units), 2)
+    assert_equal('Russian Units', len(map.russia.units), 3)
     assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
 
     map.set_phase('Adjustment')
@@ -4324,7 +4324,7 @@ def test_civil_disorder_two_armies_with_equal_distance():
     map.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
 
-    assert_equal('Russian Units', len(map.russia.units), 1)
+    assert_equal('Russian Units', len(map.russia.units), 2)
 
     assert_equal('Russian Army 1 Territory', russian_army1.territory, None)
     assert_equal('Russian Army 2 Territory', russian_army2.territory, map.ukraine)
@@ -4339,6 +4339,37 @@ def test_civil_disorder_two_fleets_with_different_distance():
     add_army(map.prussia, map.russia)
 
     map.st_petersburg.owner = map.russia
+
+    map.moscow.owner = map.france
+    map.warsaw.owner = map.france
+    map.sevastopol.owner = map.france
+    
+    assert_equal('Russian Units', len(map.russia.units), 3)
+    assert_equal('Russian Available Units', map.russia.units_to_build(map.territories), -1)
+
+    map.set_phase('Adjustment')
+    assert_equal('Map Phase', map.get_phase(), 'Adjustment')
+
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('Russian Units', len(map.russia.units), 2)
+
+    assert_equal('Russian Fleet 1 Territory', russian_fleet1.territory, map.skagerrak)
+    assert_equal('Russian Fleet 2 Territory', russian_fleet2.territory, None)
+
+    assert_equal('Map Phase', map.get_phase(), 'Spring')
+
+# 6.J.6
+def test_civil_disorder_two_fleets_with_equal_distance():
+    map = get_classic_map()
+    russian_fleet1 = add_fleet(map.gulf_of_bothnia, map.russia)
+    russian_fleet2 = add_fleet(map.north_sea, map.russia)
+    add_army(map.prussia, map.russia)
+
+    map.munich.owner = map.russia
 
     map.moscow.owner = map.france
     map.warsaw.owner = map.france

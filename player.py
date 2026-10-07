@@ -25,14 +25,16 @@ class Player:
         return supply_centers - current_units
 
     def get_furthest_unit(self, territories):
-        home_supply_centers = [territory for territory in territories if territory.home_owner == self and territory.is_supply_center]
+        owned_supply_centers = [territory for territory in territories if territory.owner == self and territory.is_supply_center]
         furthest_distance = 0
         furthest_units = []
         for unit in self.units:
-            dist = 0
-            for hsc in home_supply_centers:
-                _dist = hsc.get_distance_from(unit.territory)
-                if _dist > dist:
+            dist = 100
+            for sc in owned_supply_centers:
+                if sc == unit.territory and sc.home_owner != self:
+                    continue
+                _dist = sc.get_distance_from(unit.territory)
+                if _dist < dist:
                     dist = _dist
             if dist > furthest_distance:
                 furthest_distance = dist
