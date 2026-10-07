@@ -192,6 +192,16 @@ class Map:
             for other_dislodged in all_dislodged:
                 if other_dislodged == dislodged:
                     continue
+
+                # If other is advancing on a territory it was attacked from, it doesn't actually contest
+                found_attacker = False
+                for contesting_order in other_dislodged.dislodged_from.contesting:
+                    if other_dislodged.order is not None and contesting_order.unit_territory == other_dislodged.order.dest_territory:
+                        found_attacker = True
+                        break
+                if found_attacker:
+                    continue
+
                 if other_dislodged.order is not None and other_dislodged.order.dest_territory == dislodged.order.dest_territory:
                     contested = True
                     break
