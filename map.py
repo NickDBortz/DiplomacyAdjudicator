@@ -2,109 +2,75 @@ from player import Player
 from territory import LandTerritory, WaterTerritory
 from unit import Unit
 from orders import Order, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder, BuildOrder, DisbandOrder
-from classic_map_setup import init_classic_map
+from pathlib import Path
+import json
 
 class Map:
-    def __init__(self, silent_mode=False, use_test_map=True, begin_empty=False):
+    def __init__(self, silent_mode=False, begin_empty=False, json_file=''):
         self.silent_mode = silent_mode
-        if use_test_map:
-            player1 = Player('Player 1')
-            player2 = Player('Player 2')
-            player3 = Player('Player 3')
-            player4 = Player('Player 4')
 
-            self.player1 = player1
-            self.player2 = player2
-            self.player3 = player3
-            self.player4 = player4
+        self.players = []
+        self.territories = []
 
-            self.territories = []
-            t1 = LandTerritory('Territory 1', 'T1', True, player1)
-            t2 = LandTerritory('Territory 2', 'T2', False, player1)
-            t3 = LandTerritory('Territory 3', 'T3', True, player2)
-            t4 = LandTerritory('Territory 4', 'T4', False, player2)
-            t5 = LandTerritory('Territory 5', 'T5', True, player3)
-            t6 = LandTerritory('Territory 6', 'T6', True, player4)
+        self.load_map_json(json_file)
 
-            t7 = LandTerritory('Territory 7', 'T7', False, player4)
-            t8 = WaterTerritory('Territory 8', 'T8', player4)
-            t9 = WaterTerritory('Territory 9', 'T9', player1)
-            t10 = LandTerritory('Territory 10', 'T10', False, player1)
-            t11 = WaterTerritory('Territory 11', 'T11', player1)
-            t12 = WaterTerritory('Territory 12', 'T12', player1)
-            t13 = LandTerritory('Territory 13', 'T13', False, player1)
-
-            t14 = WaterTerritory('Territory 14', 'T14', player2)
-            t15 = LandTerritory('Territory 15', 'T15', True, player2)
-
-            t16 = LandTerritory('Territory 16', 'T16', True, player3)
-            t1.set_adjacent(t2)
-            t1.set_adjacent(t3)
-            t1.set_adjacent(t4)
-            t2.set_adjacent(t3)
-            t2.set_adjacent(t4)
-            t3.set_adjacent(t4)
-
-            t5.set_adjacent(t1)
-            t5.set_adjacent(t3)
-            t6.set_adjacent(t5)
-
-            t7.set_adjacent(t6)
-            t8.set_adjacent(t7)
-
-            t9.set_adjacent(t1)
-            t10.set_adjacent(t9)
-
-            t11.set_adjacent(t9)
-            t12.set_adjacent(t11)
-            t13.set_adjacent(t12)
-
-            t14.set_adjacent(t11)
-
-            t15.set_adjacent(t12)
-            t15.set_adjacent(t1)
-            t15.set_adjacent(t5)
-
-            t16.set_adjacent(t5)
-
-            self.territories.append(t1)
-            self.territories.append(t2)
-            self.territories.append(t3)
-            self.territories.append(t4)
-            self.territories.append(t5)
-            self.territories.append(t6)
-            self.territories.append(t7)
-            self.territories.append(t8)
-            self.territories.append(t9)
-            self.territories.append(t10)
-            self.territories.append(t11)
-            self.territories.append(t12)
-            self.territories.append(t13)
-            self.territories.append(t14)
-            self.territories.append(t15)
-            self.territories.append(t16)
-
-            if not begin_empty:
-                self.init_player_units(self.player1)
-                self.init_player_units(self.player2)
-                self.init_player_units(self.player3)
-                self.init_player_units(self.player4)
-        else:
-            init_classic_map(self)
-
-            if not begin_empty:
-                for player in self.players:
-                    self.init_player_units(player)
+        if not begin_empty:
+            for player in self.players:
+                self.init_player_units(player)
 
         self.queued_orders = []
-
-        self.cycle = []
-        self.guess_based = False
-        self.recursion_hits = 0
 
         self.resolution_phases = ['Spring', 'Spring Retreat', 'Fall', 'Fall Retreat', 'Adjustment']
         self.resolution_phase = 0
         self.year = 1800 # Set to what it should be
+
+    def load_map_json(self, json_file):
+        json_file_path = Path(json_file)
+        if not json_file_path.is_file():
+            json_file = 'classic_map.json'
+
+        with open(json_file, 'r') as file:
+            map_obj = json.load(file)
+
+            # Load Players
+            players = map_obj['players']
+            for player_obj in players:
+                player = Player(player_obj['name'])
+                setattr(self, player_obj['var_name'], player)
+                self.players.append(player)
+
+            # Load Territories
+            territories = map_obj['territories']
+            for territory_obj in territories:
+                name = territory_obj['name']
+                abbr = territory_obj['abbr']
+                is_supply_center = territory_obj['supply_center']
+                owner_name = territory_obj['owner']
+                owner = next((player for player in self.players if player.name == owner_name), None)
+
+                if territory_obj['land']:
+                    territory = LandTerritory(name, abbr, is_supply_center, owner)
+                else:
+                    territory = WaterTerritory(name, abbr, owner)
+
+                setattr(self, territory_obj['var_name'], territory)
+                self.territories.append(territory)
+
+            # Set Adjacents
+            for territory_obj in territories:
+                territory = next((t for t in self.territories if t.name == territory_obj['name']), None)
+
+                for nth_adj_name in territory_obj['north_coast']:
+                    nth_adj = next((t for t in self.territories if t.name == nth_adj_name), None)
+                    territory.set_adjacent(nth_adj, 0)
+
+                for sth_adj_name in territory_obj['south_coast']:
+                    sth_adj = next((t for t in self.territories if t.name == sth_adj_name), None)
+                    territory.set_adjacent(sth_adj, 1)
+
+                for adj_name in territory_obj['adjacents']:
+                    adj = next((t for t in self.territories if t.name == adj_name), None)
+                    territory.set_adjacent(adj)
 
     def advance_phase(self):
         self.resolution_phase += 1
@@ -124,14 +90,6 @@ class Map:
         if phase not in self.resolution_phases:
             return
         self.resolution_phase = self.resolution_phases.index(phase)
-
-    def get_primary_territories(self, player):
-        count = 0
-        for i in range(len(self.territories)):
-            territory = self.territories[i]
-            if territory.is_supply_center and territory.owner == player:
-                count += 1
-        return count
 
     def init_player_units(self, player):
         for i in range(len(self.territories)):

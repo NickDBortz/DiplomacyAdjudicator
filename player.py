@@ -3,8 +3,6 @@ class Player:
         self.name = name
         self.units = []
 
-        self.queue_to_remove = []
-
     def add_unit(self, unit):
         self.units.append(unit)
 
@@ -31,8 +29,6 @@ class Player:
         for unit in self.units:
             dist = 100
             for sc in owned_supply_centers:
-                # if sc == unit.territory and sc.home_owner != self:
-                #     continue
                 _dist = sc.get_distance_from(unit.territory)
                 if _dist < dist:
                     dist = _dist
@@ -59,3 +55,6 @@ class Player:
                 first_unit = unit
 
         return first_unit
+
+    def __str__(self):
+        return f'Player {self.name}'

@@ -2,7 +2,6 @@ from player import Player
 from territory import Territory
 from unit import Unit
 from map import Map
-from orders import HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder
 
 passed = 0
 count = 0
@@ -54,116 +53,8 @@ def get_army(player_name, territory_name, territory_abbreviation, is_primary):
     assert_equal('Army order', army.order, None)
     return player, territory, army
 
-def get_test_map():
-    map = Map(silent_mode=True, begin_empty=False)
-    player1 = map.player1
-    player2 = map.player2
-    player3 = map.player3
-    player4 = map.player4
-
-    assert_equal('Map Player 1', map.player1, player1)
-    assert_equal('Map Player 2', map.player2, player2)
-    assert_equal('Map Player 3', map.player3, player3)
-    assert_equal('Map Player 4', map.player4, player4)
-    assert_equal('Map Territory Count', len(map.territories), 16)
-    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
-
-    territory1 = map.territories[0]
-    territory2 = map.territories[1]
-    territory3 = map.territories[2]
-    territory4 = map.territories[3]
-    territory5 = map.territories[4]
-    territory6 = map.territories[5]
-    territory7 = map.territories[6]
-    territory8 = map.territories[7]
-    territory9 = map.territories[8]
-    territory10 = map.territories[9]
-    territory11 = map.territories[10]
-    territory12 = map.territories[11]
-    territory13 = map.territories[12]
-    territory14 = map.territories[13]
-    territory15 = map.territories[14]
-    territory16 = map.territories[15]
-
-    unit = Unit(player1, 'Fleet', territory9)
-    territory9.set_unit(unit)
-    player1.add_unit(unit)
-
-    unit = Unit(player1, 'Fleet', territory11)
-    territory11.set_unit(unit)
-    player1.add_unit(unit)
-
-    unit = Unit(player1, 'Fleet', territory12)
-    territory12.set_unit(unit)
-    player1.add_unit(unit)
-
-    unit = Unit(player2, 'Fleet', territory14)
-    territory14.set_unit(unit)
-    player2.add_unit(unit)
-
-    assert_equal('Territory 1 Name', territory1.name, 'Territory 1')
-    assert_equal('Territory 1 Abbreviation', territory1.abbr, 'T1')
-    assert_equal('Territory 1 Supply Center', territory1.is_supply_center, True)
-    assert_equal('Territory 1 Owner', territory1.owner, player1)
-    assert_equal('Territory 1 unit', territory1.unit, player1.units[0])
-    assert_equal('Territory 1 Adjacent Count', len(territory1.adjacents), 6) 
-    assert_equal('Territory 1 First Adjacent', territory1.adjacents[0], territory2)
-
-    assert_equal('Territory 2 Name', territory2.name, 'Territory 2')
-    assert_equal('Territory 2 Abbreviation', territory2.abbr, 'T2')
-    assert_equal('Territory 2 Supply Center', territory2.is_supply_center, False)
-    assert_equal('Territory 2 Owner', territory2.owner, player1)
-    assert_equal('Territory 2 unit', territory2.unit, None)
-    assert_equal('Territory 2 Adjacent Count', len(territory2.adjacents), 3) 
-    assert_equal('Territory 2 First Adjacent', territory2.adjacents[0], territory1)
-
-    # Check coast status of territory 7
-    assert_equal('Territory 7 Name', territory7.name, 'Territory 7')
-    assert_equal('Territory 7 Abbreviation', territory7.abbr, 'T7')
-    assert_equal('Territory 7 Supply Center', territory7.is_supply_center, False)
-    assert_equal('Territory 7 Owner', territory7.owner, player4)
-    assert_equal('Territory 7 unit', territory7.unit, None)
-    assert_equal('Territory 7 Coast Flag', territory7.is_coast, True)
-
-    assert_equal('Player 1 Name', player1.name, 'Player 1')
-    assert_equal('Player 1 unit Count', len(player1.units), 4)
-
-    assert_equal('Player 2 Name', player2.name, 'Player 2')
-    assert_equal('Player 2 unit Count', len(player2.units), 3)
-
-    assert_equal('Player 3 Name', player3.name, 'Player 3')
-    assert_equal('Player 3 unit Count', len(player3.units), 2)
-
-    assert_equal('Player 4 Name', player4.name, 'Player 4')
-    assert_equal('Player 4 unit Count', len(player4.units), 1)
-
-    unit1 = player1.units[0]
-    assert_equal('Trrop 1 Owner', unit1.owner, player1)
-    assert_equal('Trrop 1 Type', unit1.type, 'Army')
-    assert_equal('unit 1 Territory', unit1.territory, territory1)
-    assert_equal('unit 1 order', unit1.order, None)
-
-    unit2 = player2.units[0]
-    assert_equal('unit 2 Owner', unit2.owner, player2)
-    assert_equal('Trrop 2 Type', unit2.type, 'Army')
-    assert_equal('unit 2 Territory', unit2.territory, territory3)
-    assert_equal('unit 2 order', unit2.order, None)
-
-    unit3 = player3.units[0]
-    assert_equal('unit 3 Owner', unit3.owner, player3)
-    assert_equal('Trrop 3 Type', unit3.type, 'Army')
-    assert_equal('unit 3 Territory', unit3.territory, territory5)
-    assert_equal('unit 3 order', unit3.order, None)
-
-    unit4 = player4.units[0]
-    assert_equal('unit 4 Owner', unit4.owner, player4)
-    assert_equal('Trrop 4 Type', unit4.type, 'Army')
-    assert_equal('unit 4 Territory', unit4.territory, territory6)
-    assert_equal('unit 4 order', unit4.order, None)
-    return map
-
 def get_classic_map(begin_empty=True):
-    return Map(silent_mode=True, use_test_map=False, begin_empty=begin_empty)
+    return Map(silent_mode=True, begin_empty=begin_empty)
 
 def add_army(territory, owner):
     unit = Unit(owner, 'Army', territory)
@@ -176,88 +67,6 @@ def add_fleet(territory, owner, coast=None):
     territory.set_unit(unit, coast=coast)
     owner.add_unit(unit)
     return unit
-
-def test_parse_hold_order():
-    map = get_test_map()
-    order = map._parse_order_string('A T1 H')
-
-    assert_equal('Hold Order Name', order.name, 'Hold')
-    assert_equal('Hold Order Unit', order.unit, map.player1.units[0])
-    assert_equal('Hold Order Valid', order.is_valid, True)
-
-def test_parse_advance_order():
-    map = get_test_map()
-    order = map._parse_order_string('A T1 - T2')
-
-    assert_equal('Advance Order Name', order.name, 'Advance')
-    assert_equal('Advance Order Unit', order.unit, map.player1.units[0])
-    assert_equal('Advance Order Destination', order.dest_territory, map.territories[1])
-    assert_equal('Advance Order Valid', order.is_valid, True)
-
-def test_parse_support_hold_order():
-    map = get_test_map()
-    order = map._parse_order_string('A T1 S A T3 H')
-
-    assert_equal('Support Order Name', order.name, 'Support')
-    assert_equal('Support Order Unit', order.unit, map.player1.units[0])
-    assert_equal('Support Order Supported Order Name', order.supported_order.name, 'Hold')
-    assert_equal('Support Order Supported Order Unit', order.supported_order.unit, map.player2.units[0])
-    assert_equal('Support Order Supported Order Valid', order.supported_order.is_valid, True)
-    assert_equal('Support Order Valid', order.is_valid, True)
-
-def test_parse_support_advance_order():
-    map = get_test_map()
-    order = map._parse_order_string('A T1 S A T3 - T4')
-
-    assert_equal('Support Order Name', order.name, 'Support')
-    assert_equal('Support Order Unit', order.unit, map.player1.units[0])
-    assert_equal('Support Order Supported Order Name', order.supported_order.name, 'Advance')
-    assert_equal('Support Order Supported Order Unit', order.supported_order.unit, map.player2.units[0])
-    assert_equal('Support Order Supported Order Destination', order.supported_order.dest_territory, map.territories[3])
-    assert_equal('Support Order Supported Order Valid', order.supported_order.is_valid, True)
-    assert_equal('Support Order Valid', order.is_valid, True)
-
-def test_parse_support_transform_order():
-    map = get_test_map()
-    order = map._parse_order_string('A T3 S A T1 T')
-
-    assert_equal('Support Order Name', order.name, 'Support')
-    assert_equal('Support Order Unit', order.unit, map.player2.units[0])
-    assert_equal('Support Order Supported Order Name', order.supported_order.name, 'Transform')
-    assert_equal('Support Order Supported Order Unit', order.supported_order.unit, map.player1.units[0])
-    assert_equal('Support Order Supported Order Valid', order.supported_order.is_valid, True)
-    assert_equal('Support Order Valid', order.is_valid, True)
-
-def test_parse_support_convoy_order():
-    map = get_test_map()
-    order = map._parse_order_string('F T11 S F T9 C A T1 - T10')
-
-    assert_equal('Support Order Name', order.name, 'Support')
-    assert_equal('Support Order Unit', order.unit, map.player1.units[2])
-    assert_equal('Support Order Supported Order Name', order.supported_order.name, 'Convoy')
-    assert_equal('Support Order Supported Order Unit', order.supported_order.unit, map.player1.units[1])
-    assert_equal('Support Order Supported Order Advancing Unit', order.supported_order.convoying_unit, map.player1.units[0])
-    assert_equal('Support Order Supported Order Advancing Destination', order.supported_order.dest_territory, map.territories[9])
-    assert_equal('Support Order Supported Order Valid', order.supported_order.is_valid, True)
-    assert_equal('Support Order Valid', order.is_valid, True)
-
-def test_parse_transform_order():
-    map = get_test_map()
-    order = map._parse_order_string('A T1 T')
-
-    assert_equal('Transform Order Name', order.name, 'Transform')
-    assert_equal('Transform Order Unit', order.unit, map.player1.units[0])
-    assert_equal('Transform Order Valid', order.is_valid, True)
-
-def test_parse_convoy_order():
-    map = get_test_map()
-    order = map._parse_order_string('F T9 C A T1 - T10')
-
-    assert_equal('Convoy Order Name', order.name, 'Convoy')
-    assert_equal('Convoy Order Unit', order.unit, map.player1.units[1])
-    assert_equal('Convoy Order Advancing Unit', order.convoying_unit, map.player1.units[0])
-    assert_equal('Convoy Order Advancing Destination', order.dest_territory, map.territories[9])
-    assert_equal('Convoy Order Valid', order.is_valid, True)
 
 # 6.A Basic Checks
 # 6.A.1
@@ -4553,19 +4362,6 @@ def main():
     global prefix, test_num
 
     # Tests are taken from this site: https://webdiplomacy.net/doc/DATC_v3_0.html#5.A
-
-    # Order Parsing
-    print('Order Parsing: ')
-    test_num = 1
-    run_test(test_parse_hold_order)
-    run_test(test_parse_advance_order)
-    run_test(test_parse_support_hold_order)
-    run_test(test_parse_support_advance_order)
-    run_test(test_parse_support_transform_order)
-    run_test(test_parse_support_convoy_order)
-    run_test(test_parse_transform_order)
-    run_test(test_parse_convoy_order)
-    print()
 
     # 6.A Basic Checks
     print('Basic Checks:')

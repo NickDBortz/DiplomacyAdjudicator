@@ -1,0 +1,1454 @@
+{
+    "players": [
+        {
+            "name": "Russia",
+            "var_name": "russia",
+            "hex": "#000000"
+        },
+        {
+            "name": "England",
+            "var_name": "england",
+            "hex": "#000000"
+        },
+        {
+            "name": "France",
+            "var_name": "france",
+            "hex": "#000000"
+        },
+        {
+            "name": "Italy",
+            "var_name": "italy",
+            "hex": "#000000"
+        },
+        {
+            "name": "Germany",
+            "var_name": "germany",
+            "hex": "#000000"
+        },
+        {
+            "name": "Austria-Hungary",
+            "var_name": "austria_hungary",
+            "hex": "#000000"
+        },
+        {
+            "name": "Turkey",
+            "var_name": "turkey",
+            "hex": "#000000"
+        }
+    ],
+    "vertices": [],
+    "edges": [],
+    "territories": [
+        {
+            "name": "Finland",
+            "abbr": "FIN",
+            "var_name": "finland",
+            "owner": "Russia",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "St Petersburg",
+                "Norway",
+                "Sweden",
+                "Gulf of Bothnia"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "St Petersburg",
+            "abbr": "STP",
+            "var_name": "st_petersburg",
+            "owner": "Russia",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Finland",
+                "Moscow",
+                "Livonia",
+                "Norway",
+                "Barents Sea",
+                "Gulf of Bothnia"
+            ],
+            "north_coast": [
+                "Norway",
+                "Barents Sea"
+            ],
+            "south_coast": [
+                "Finland",
+                "Livonia",
+                "Gulf of Bothnia"
+            ],
+            "edges": []
+        },
+        {
+            "name": "Livonia",
+            "abbr": "LIV",
+            "var_name": "livonia",
+            "owner": "Russia",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "St Petersburg",
+                "Moscow",
+                "Warsaw",
+                "Prussia",
+                "Gulf of Bothnia",
+                "Baltic Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Moscow",
+            "abbr": "MOS",
+            "var_name": "moscow",
+            "owner": "Russia",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "St Petersburg",
+                "Livonia",
+                "Warsaw",
+                "Ukraine",
+                "Sevastopol"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Warsaw",
+            "abbr": "WAR",
+            "var_name": "warsaw",
+            "owner": "Russia",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Livonia",
+                "Moscow",
+                "Ukraine",
+                "Prussia",
+                "Silesia",
+                "Galicia"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Ukraine",
+            "abbr": "UKR",
+            "var_name": "ukraine",
+            "owner": "Russia",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Moscow",
+                "Warsaw",
+                "Sevastopol",
+                "Galicia",
+                "Rumania"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Sevastopol",
+            "abbr": "SEV",
+            "var_name": "sevastopol",
+            "owner": "Russia",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Moscow",
+                "Ukraine",
+                "Armenia",
+                "Rumania",
+                "Black Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Edinburgh",
+            "abbr": "EDI",
+            "var_name": "edinburgh",
+            "owner": "England",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Yorkshire",
+                "Liverpool",
+                "Clyde",
+                "Norwegian Sea",
+                "North Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Yorkshire",
+            "abbr": "YOR",
+            "var_name": "yorkshire",
+            "owner": "England",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Edinburgh",
+                "London",
+                "Wales",
+                "Liverpool",
+                "North Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "London",
+            "abbr": "LON",
+            "var_name": "london",
+            "owner": "England",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Yorkshire",
+                "Wales",
+                "North Sea",
+                "English Channel"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Wales",
+            "abbr": "WAL",
+            "var_name": "wales",
+            "owner": "England",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Yorkshire",
+                "London",
+                "Liverpool",
+                "Irish Sea",
+                "English Channel"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Liverpool",
+            "abbr": "LVP",
+            "var_name": "liverpool",
+            "owner": "England",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Edinburgh",
+                "Yorkshire",
+                "Wales",
+                "Clyde",
+                "North Atlantic Ocean",
+                "Irish Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Clyde",
+            "abbr": "CLY",
+            "var_name": "clyde",
+            "owner": "England",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Edinburgh",
+                "Liverpool",
+                "North Atlantic Ocean",
+                "Norwegian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Brest",
+            "abbr": "BRE",
+            "var_name": "brest",
+            "owner": "France",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Picardy",
+                "Paris",
+                "Gascony",
+                "English Channel",
+                "Mid-Atlantic Ocean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Picardy",
+            "abbr": "PIC",
+            "var_name": "picardy",
+            "owner": "France",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Brest",
+                "Paris",
+                "Burgundy",
+                "Belgium",
+                "English Channel"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Paris",
+            "abbr": "PAR",
+            "var_name": "paris",
+            "owner": "France",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Brest",
+                "Picardy",
+                "Burgundy",
+                "Gascony"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Burgundy",
+            "abbr": "BUR",
+            "var_name": "burgundy",
+            "owner": "France",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Picardy",
+                "Paris",
+                "Gascony",
+                "Marseilles",
+                "Ruhr",
+                "Munich",
+                "Belgium"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Gascony",
+            "abbr": "GAS",
+            "var_name": "gascony",
+            "owner": "France",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Brest",
+                "Paris",
+                "Burgundy",
+                "Marseilles",
+                "Spain",
+                "Mid-Atlantic Ocean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Marseilles",
+            "abbr": "MAR",
+            "var_name": "marseilles",
+            "owner": "France",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Burgundy",
+                "Gascony",
+                "Piedmont",
+                "Spain",
+                "Gulf of Lyon"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Piedmont",
+            "abbr": "PIE",
+            "var_name": "piedmont",
+            "owner": "Italy",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Marseilles",
+                "Venice",
+                "Tuscany",
+                "tyrolia",
+                "Gulf of Lyon"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Venice",
+            "abbr": "VEN",
+            "var_name": "venice",
+            "owner": "Italy",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Piedmont",
+                "Tuscany",
+                "Rome",
+                "Apulia",
+                "tyrolia",
+                "Trieste",
+                "Adriatic Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Tuscany",
+            "abbr": "TUS",
+            "var_name": "tuscany",
+            "owner": "Italy",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Piedmont",
+                "Venice",
+                "Rome",
+                "Gulf of Lyon",
+                "Tyrrhenian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Rome",
+            "abbr": "ROM",
+            "var_name": "rome",
+            "owner": "Italy",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Venice",
+                "Tuscany",
+                "Naples",
+                "Apulia",
+                "Tyrrhenian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Naples",
+            "abbr": "NAP",
+            "var_name": "naples",
+            "owner": "Italy",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Rome",
+                "Apulia",
+                "Tyrrhenian Sea",
+                "Ionian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Apulia",
+            "abbr": "APU",
+            "var_name": "apulia",
+            "owner": "Italy",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Venice",
+                "Rome",
+                "Naples",
+                "Adriatic Sea",
+                "Ionian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Kiel",
+            "abbr": "KIE",
+            "var_name": "kiel",
+            "owner": "Germany",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Berlin",
+                "Ruhr",
+                "Munich",
+                "Denmark",
+                "Holland",
+                "Helgoland Bight",
+                "Baltic Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Berlin",
+            "abbr": "BER",
+            "var_name": "berlin",
+            "owner": "Germany",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Kiel",
+                "Prussia",
+                "Munich",
+                "Silesia",
+                "Baltic Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Prussia",
+            "abbr": "PRU",
+            "var_name": "prussia",
+            "owner": "Germany",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Livonia",
+                "Warsaw",
+                "Berlin",
+                "Silesia",
+                "Baltic Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Ruhr",
+            "abbr": "RUH",
+            "var_name": "ruhr",
+            "owner": "Germany",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Burgundy",
+                "Kiel",
+                "Munich",
+                "Belgium",
+                "Holland"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Munich",
+            "abbr": "MUN",
+            "var_name": "munich",
+            "owner": "Germany",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Burgundy",
+                "Kiel",
+                "Berlin",
+                "Ruhr",
+                "Silesia",
+                "Bohemia",
+                "tyrolia"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Silesia",
+            "abbr": "SIL",
+            "var_name": "silesia",
+            "owner": "Germany",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Warsaw",
+                "Berlin",
+                "Prussia",
+                "Munich",
+                "Bohemia",
+                "Galicia"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Bohemia",
+            "abbr": "BOH",
+            "var_name": "bohemia",
+            "owner": "Austria-Hungary",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Munich",
+                "Silesia",
+                "Galicia",
+                "Vienna",
+                "tyrolia"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Galicia",
+            "abbr": "GAL",
+            "var_name": "galicia",
+            "owner": "Austria-Hungary",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Warsaw",
+                "Ukraine",
+                "Silesia",
+                "Bohemia",
+                "Vienna",
+                "Budapest",
+                "Rumania"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Vienna",
+            "abbr": "VIE",
+            "var_name": "vienna",
+            "owner": "Austria-Hungary",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Bohemia",
+                "Galicia",
+                "Budapest",
+                "tyrolia",
+                "Trieste"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Budapest",
+            "abbr": "BUD",
+            "var_name": "budapest",
+            "owner": "Austria-Hungary",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Galicia",
+                "Vienna",
+                "Trieste",
+                "Rumania",
+                "Serbia"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "tyrolia",
+            "abbr": "TYR",
+            "var_name": "tyrolia",
+            "owner": "Austria-Hungary",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Piedmont",
+                "Venice",
+                "Munich",
+                "Bohemia",
+                "Vienna",
+                "Trieste"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Trieste",
+            "abbr": "TRI",
+            "var_name": "trieste",
+            "owner": "Austria-Hungary",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Venice",
+                "Vienna",
+                "Budapest",
+                "tyrolia",
+                "Serbia",
+                "Albania",
+                "Adriatic Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Constantinople",
+            "abbr": "CON",
+            "var_name": "constantinople",
+            "owner": "Turkey",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Ankara",
+                "Smyrna",
+                "Bulgaria",
+                "Aegean Sea",
+                "Black Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Ankara",
+            "abbr": "ANK",
+            "var_name": "ankara",
+            "owner": "Turkey",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Constantinople",
+                "Armenia",
+                "Smyrna",
+                "Black Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Armenia",
+            "abbr": "ARM",
+            "var_name": "armenia",
+            "owner": "Turkey",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Sevastopol",
+                "Ankara",
+                "Smyrna",
+                "Syria",
+                "Black Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Smyrna",
+            "abbr": "SMY",
+            "var_name": "smyrna",
+            "owner": "Turkey",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Constantinople",
+                "Ankara",
+                "Armenia",
+                "Syria",
+                "Aegean Sea",
+                "Eastern Mediterranean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Syria",
+            "abbr": "SYR",
+            "var_name": "syria",
+            "owner": "Turkey",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Armenia",
+                "Smyrna",
+                "Eastern Mediterranean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Norway",
+            "abbr": "NOR",
+            "var_name": "norway",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Finland",
+                "St Petersburg",
+                "Sweden",
+                "Norwegian Sea",
+                "Barents Sea",
+                "North Sea",
+                "Skagerrak"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Sweden",
+            "abbr": "SWE",
+            "var_name": "sweden",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Finland",
+                "Norway",
+                "Denmark",
+                "Gulf of Bothnia",
+                "Baltic Sea",
+                "Skagerrak"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Denmark",
+            "abbr": "DEN",
+            "var_name": "denmark",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Kiel",
+                "Sweden",
+                "North Sea",
+                "Helgoland Bight",
+                "Skagerrak",
+                "Baltic Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Holland",
+            "abbr": "HOL",
+            "var_name": "holland",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Kiel",
+                "Ruhr",
+                "Belgium",
+                "North Sea",
+                "Helgoland Bight"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Belgium",
+            "abbr": "BEL",
+            "var_name": "belgium",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Picardy",
+                "Burgundy",
+                "Ruhr",
+                "Holland",
+                "English Channel",
+                "North Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Portugal",
+            "abbr": "POR",
+            "var_name": "portugal",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Spain",
+                "Mid-Atlantic Ocean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Spain",
+            "abbr": "SPA",
+            "var_name": "spain",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Gascony",
+                "Marseilles",
+                "Portugal",
+                "Mid-Atlantic Ocean",
+                "Western Mediterranean",
+                "Gulf of Lyon"
+            ],
+            "north_coast": [
+                "Gascony",
+                "Portugal",
+                "Mid-Atlantic Ocean"
+            ],
+            "south_coast": [
+                "Portugal",
+                "Mid-Atlantic Ocean",
+                "Western Mediterranean",
+                "Gulf of Lyon"
+            ],
+            "edges": []
+        },
+        {
+            "name": "North Africa",
+            "abbr": "AFR",
+            "var_name": "north_africa",
+            "owner": "",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Tunis",
+                "Mid-Atlantic Ocean",
+                "Western Mediterranean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Tunis",
+            "abbr": "TUN",
+            "var_name": "tunis",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "North Africa",
+                "Western Mediterranean",
+                "Tyrrhenian Sea",
+                "Ionian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Rumania",
+            "abbr": "RUM",
+            "var_name": "rumania",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Ukraine",
+                "Sevastopol",
+                "Galicia",
+                "Budapest",
+                "Bulgaria",
+                "Serbia",
+                "Black Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Bulgaria",
+            "abbr": "BUL",
+            "var_name": "bulgaria",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Constantinople",
+                "Rumania",
+                "Serbia",
+                "Greece",
+                "Black Sea",
+                "Aegean Sea"
+            ],
+            "north_coast": [
+                "Constantinople",
+                "Rumania",
+                "Black Sea"
+            ],
+            "south_coast": [
+                "Constantinople",
+                "Greece",
+                "Aegean Sea"
+            ],
+            "edges": []
+        },
+        {
+            "name": "Serbia",
+            "abbr": "SER",
+            "var_name": "serbia",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Budapest",
+                "Trieste",
+                "Rumania",
+                "Bulgaria",
+                "Albania",
+                "Greece"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Albania",
+            "abbr": "ALB",
+            "var_name": "albania",
+            "owner": "",
+            "land": true,
+            "supply_center": false,
+            "adjacents": [
+                "Trieste",
+                "Serbia",
+                "Greece",
+                "Adriatic Sea",
+                "Ionian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Greece",
+            "abbr": "GRE",
+            "var_name": "greece",
+            "owner": "",
+            "land": true,
+            "supply_center": true,
+            "adjacents": [
+                "Bulgaria",
+                "Serbia",
+                "Albania",
+                "Ionian Sea",
+                "Aegean Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "North Atlantic Ocean",
+            "abbr": "NAO",
+            "var_name": "north_atlantic_ocean",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Liverpool",
+                "Clyde",
+                "Norwegian Sea",
+                "Irish Sea",
+                "Mid-Atlantic Ocean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Norwegian Sea",
+            "abbr": "NRG",
+            "var_name": "norwegian_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Edinburgh",
+                "Clyde",
+                "Norway",
+                "North Atlantic Ocean",
+                "Barents Sea",
+                "North Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Barents Sea",
+            "abbr": "BAR",
+            "var_name": "barents_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "St Petersburg",
+                "Norway",
+                "Norwegian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "North Sea",
+            "abbr": "NTH",
+            "var_name": "north_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Edinburgh",
+                "Yorkshire",
+                "London",
+                "Norway",
+                "Denmark",
+                "Holland",
+                "Belgium",
+                "Norwegian Sea",
+                "Skagerrak",
+                "Helgoland Bight",
+                "English Channel"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Gulf of Bothnia",
+            "abbr": "GOB",
+            "var_name": "gulf_of_bothnia",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Finland",
+                "St Petersburg",
+                "Livonia",
+                "Sweden",
+                "Baltic Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Baltic Sea",
+            "abbr": "BAL",
+            "var_name": "baltic_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Livonia",
+                "Kiel",
+                "Berlin",
+                "Prussia",
+                "Sweden",
+                "Denmark",
+                "Gulf of Bothnia"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Skagerrak",
+            "abbr": "SKA",
+            "var_name": "skagerrak",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Norway",
+                "Sweden",
+                "Denmark",
+                "North Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Helgoland Bight",
+            "abbr": "HEL",
+            "var_name": "helgoland_bight",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Kiel",
+                "Denmark",
+                "Holland",
+                "North Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Irish Sea",
+            "abbr": "IRI",
+            "var_name": "irish_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Wales",
+                "Liverpool",
+                "North Atlantic Ocean",
+                "English Channel",
+                "Mid-Atlantic Ocean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "English Channel",
+            "abbr": "ENG",
+            "var_name": "english_channel",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "London",
+                "Wales",
+                "Brest",
+                "Picardy",
+                "Belgium",
+                "North Sea",
+                "Irish Sea",
+                "Mid-Atlantic Ocean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Mid-Atlantic Ocean",
+            "abbr": "MAO",
+            "var_name": "mid_atlantic_ocean",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Brest",
+                "Gascony",
+                "Portugal",
+                "Spain",
+                "North Africa",
+                "North Atlantic Ocean",
+                "Irish Sea",
+                "English Channel",
+                "Western Mediterranean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Gulf of Lyon",
+            "abbr": "GOL",
+            "var_name": "gulf_of_lyon",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Marseilles",
+                "Piedmont",
+                "Tuscany",
+                "Spain",
+                "Western Mediterranean",
+                "Tyrrhenian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Western Mediterranean",
+            "abbr": "WME",
+            "var_name": "western_mediterranean",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Spain",
+                "North Africa",
+                "Tunis",
+                "Mid-Atlantic Ocean",
+                "Gulf of Lyon",
+                "Tyrrhenian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Tyrrhenian Sea",
+            "abbr": "TYS",
+            "var_name": "tyrrhenian_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Tuscany",
+                "Rome",
+                "Naples",
+                "Tunis",
+                "Gulf of Lyon",
+                "Western Mediterranean",
+                "Ionian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Adriatic Sea",
+            "abbr": "ADR",
+            "var_name": "adriatic_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Venice",
+                "Apulia",
+                "Trieste",
+                "Albania",
+                "Ionian Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Ionian Sea",
+            "abbr": "ION",
+            "var_name": "ionian_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Naples",
+                "Apulia",
+                "Tunis",
+                "Albania",
+                "Greece",
+                "Tyrrhenian Sea",
+                "Adriatic Sea",
+                "Aegean Sea",
+                "Eastern Mediterranean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Aegean Sea",
+            "abbr": "AEG",
+            "var_name": "aegean_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Constantinople",
+                "Smyrna",
+                "Bulgaria",
+                "Greece",
+                "Ionian Sea",
+                "Eastern Mediterranean"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Eastern Mediterranean",
+            "abbr": "EMS",
+            "var_name": "eastern_mediterranean",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Smyrna",
+                "Syria",
+                "Ionian Sea",
+                "Aegean Sea"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        },
+        {
+            "name": "Black Sea",
+            "abbr": "BLA",
+            "var_name": "black_sea",
+            "owner": "",
+            "land": false,
+            "supply_center": false,
+            "adjacents": [
+                "Sevastopol",
+                "Constantinople",
+                "Ankara",
+                "Armenia",
+                "Rumania",
+                "Bulgaria"
+            ],
+            "north_coast": [],
+            "south_coast": [],
+            "edges": []
+        }
+    ]
+}

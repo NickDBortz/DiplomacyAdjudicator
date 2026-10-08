@@ -308,15 +308,6 @@ class Territory:
         max_power = -1
         dislodger = None
         for contestant in territory.contesting:
-            # # Fix contestant power if the territory has a unit and that unit is not in a non-convoy head-to-head with the contestant
-            # if territory.unit is not None:
-            #     # If this is a head-to-head
-            #     if territory.unit.order.name == 'Advance' and territory.unit.order.dest_territory == contestant.unit.territory:
-            #         # If this is without convoys
-            #         if not territory.unit.order.is_utilizing_convoy and not contestant.is_utilizing_convoy:
-            #             self.fix_order_power(contestant, territory.unit.owner)
-            #     else:
-            #         self.fix_order_power(contestant, territory.unit.owner)
             # If contestant has greater power than current best power, it is the new winner
             # Still use primary power before fix to affect the position, but that power is not used to win
             if contestant.power > max_power:
