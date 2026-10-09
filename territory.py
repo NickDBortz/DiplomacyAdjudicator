@@ -158,6 +158,15 @@ class Territory:
             if self.unit is not None: self.unit.dislodge()
             winner.unit.collapse(self)
             self.owner = winner.unit.owner
+        elif winner is not None and winner.unit == self.unit:
+            if winner.name == 'Transform':
+                current_type = winner.unit.type
+                if current_type == 'Fleet':
+                    winner.unit.type = 'Army'
+                else:
+                    winner.unit.type = 'Fleet'
+                    if len(self.north_coast) > 0:
+                        self.unit_coast = winner.coast
 
     def winner(self):
         current_unit_advancing = self.unit is not None and self.unit.order.name == 'Advance'

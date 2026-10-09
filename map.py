@@ -8,8 +8,9 @@ import cv2
 import numpy as np
 
 class Map:
-    def __init__(self, silent_mode=False, begin_empty=False, json_file=''):
+    def __init__(self, silent_mode=False, begin_empty=False, json_file='', load_rendering_data=True, allow_transformations=True):
         self.silent_mode = silent_mode
+        self.allow_transformations = allow_transformations
 
         self.players = []
         self.territories = []
@@ -18,7 +19,7 @@ class Map:
         self.height = 0
         self.vertices = []
 
-        self.load_map_json(json_file)
+        self.load_map_json(json_file, load_rendering_data)
 
         if not begin_empty:
             for player in self.players:
@@ -30,7 +31,7 @@ class Map:
         self.resolution_phase = 0
         self.year = 1800 # Set to what it should be
 
-    def load_map_json(self, json_file):
+    def load_map_json(self, json_file, load_rendering_data):
         json_file_path = Path(json_file)
         if not json_file_path.is_file():
             json_file = 'classic_map.json'
@@ -45,11 +46,14 @@ class Map:
                 setattr(self, player_obj['var_name'], player)
                 self.players.append(player)
 
-            self.vertices = map_obj['vertices']
+            if load_rendering_data:
+                self.vertices = map_obj['vertices']
 
-            water_color = map_obj['water_color']
-            self.width = map_obj['width']
-            self.height = map_obj['height']
+                water_color = map_obj['water_color']
+                self.width = map_obj['width']
+                self.height = map_obj['height']
+            else:
+                water_color = []
 
             # Load Territories
             territories = map_obj['territories']
@@ -59,17 +63,31 @@ class Map:
                 is_supply_center = territory_obj['supply_center']
                 owner_name = territory_obj['owner']
                 owner = next((player for player in self.players if player.name == owner_name), None)
-                polygons = territory_obj['polygons']
-                label_pos = territory_obj['label_pos']
+
+                if load_rendering_data:
+                    polygons = territory_obj['polygons']
+                    label_pos = territory_obj['label_pos']
+                else:
+                    polygons = []
+                    label_pos = []
 
                 if territory_obj['land']:
-                    supply_center_pos = territory_obj['supply_center_pos']
-                    army_pos = territory_obj['army_pos']
-                    coast_pos = territory_obj['coast_pos']
-                    south_coast_pos = territory_obj['south_coast_pos']
+                    if load_rendering_data:
+                        supply_center_pos = territory_obj['supply_center_pos']
+                        army_pos = territory_obj['army_pos']
+                        coast_pos = territory_obj['coast_pos']
+                        south_coast_pos = territory_obj['south_coast_pos']
+                    else:
+                        supply_center_pos = []
+                        army_pos = []
+                        coast_pos = []
+                        south_coast_pos = []
                     territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos)
                 else:
-                    fleet_pos = territory_obj['fleet_pos']
+                    if load_rendering_data:
+                        fleet_pos = territory_obj['fleet_pos']
+                    else:
+                        fleet_pos = []
                     territory = WaterTerritory(name, abbr, owner, water_color, polygons, label_pos, fleet_pos)
 
                 setattr(self, territory_obj['var_name'], territory)
@@ -416,6 +434,8 @@ class Map:
                 raise Exception()
             order_type = split_order_string[idx]
             if order_type not in ['H', '-', 'S', 'T', 'C', 'B']:
+                if order_type.startswith('T'):
+                    return order_type
                 raise Exception()
             return order_type
 
@@ -479,8 +499,14 @@ class Map:
                 if not isinstance(supported_order, Order):
                     raise Exception()
                 return SupportOrder(unit, supported_order)
-            elif order_type == 'T':
-                return TransformOrder(unit)
+            elif order_type.startswith('T') and self.allow_transformations: # This is a house rule and isn't always allowed
+                split_terr_coast = order_type.split('(')
+                coast = None
+                if len(split_terr_coast) > 1:
+                    coast = split_terr_coast[1].split(')')[0]
+                    if coast not in ('nc', 'sc'):
+                        raise Exception()
+                return TransformOrder(unit, coast)
             elif order_type == 'C':
                 if unit_type != 'Fleet':
                     raise Exception()
@@ -489,5 +515,7 @@ class Map:
                 if not isinstance(advance_order, AdvanceOrder):
                     raise Exception()
                 return ConvoyOrder(unit, advance_order.unit, advance_order.dest_territory)
+            else:
+                raise Exception()
         except Exception:
             return None

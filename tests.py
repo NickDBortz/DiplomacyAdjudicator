@@ -54,7 +54,7 @@ def get_army(player_name, territory_name, territory_abbreviation, is_primary):
     return player, territory, army
 
 def get_classic_map(begin_empty=True):
-    return Map(silent_mode=True, begin_empty=begin_empty)
+    return Map(silent_mode=True, begin_empty=begin_empty, load_rendering_data=False)
 
 def add_army(territory, owner):
     unit = Unit(owner, 'Army', territory)
@@ -4358,6 +4358,113 @@ def test_distance_to_owned_supply_center():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# Transform Orders
+# T.1
+def test_transform_coastal_army():
+    map = get_classic_map()
+    french_army = add_army(map.norway, map.france)
+
+    map.parse_order_string('A NWY T')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet Territory', french_army.territory, map.norway)
+    assert_equal('French Fleet Type', french_army.type, 'Fleet')
+
+# T.2
+def test_transform_inland_army():
+    map = get_classic_map()
+    french_army = add_army(map.moscow, map.france)
+
+    map.parse_order_string('A MOS T')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army Territory', french_army.territory, map.moscow)
+    assert_equal('French Army Type', french_army.type, 'Army')
+
+# T.3
+def test_transform_coastal_fleet():
+    map = get_classic_map()
+    french_fleet = add_fleet(map.sweden, map.france)
+
+    map.parse_order_string('F SWE T')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army Territory', french_fleet.territory, map.sweden)
+    assert_equal('French Army Type', french_fleet.type, 'Army')
+
+# T.4
+def test_transform_coastal_army_to_south_coast():
+    map = get_classic_map()
+    french_army = add_army(map.st_petersburg, map.france)
+
+    map.parse_order_string('A STP T(sc)')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet Territory', french_army.territory, map.st_petersburg)
+    assert_equal('French Fleet Territory Coast', french_army.territory.unit_coast, 'sc')
+    assert_equal('French Fleet Type', french_army.type, 'Fleet')
+
+# T.5
+def test_transform_coastal_army_to_invalid_south_coast():
+    map = get_classic_map()
+    french_army = add_army(map.norway, map.france)
+
+    map.parse_order_string('A NWY T(sc)')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army Territory', french_army.territory, map.norway)
+    assert_equal('French Army Territory Coast', french_army.territory.unit_coast, None)
+    assert_equal('French Army Type', french_army.type, 'Army')
+
+# T.6
+def test_transform_fleet_in_water():
+    map = get_classic_map()
+    french_fleet = add_fleet(map.north_atlantic_ocean, map.france)
+
+    map.parse_order_string('F NAO T')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet Territory', french_fleet.territory, map.north_atlantic_ocean)
+    assert_equal('French Fleet Type', french_fleet.type, 'Fleet')
+
+# T.7
+def test_dislodged_army_cannot_transform():
+    map = get_classic_map()
+    french_army = add_army(map.gascony, map.france)
+    german_army1 = add_army(map.marseilles, map.germany)
+    german_army2 = add_army(map.spain, map.germany)
+
+    map.parse_order_string('A GAS T')
+    map.parse_order_string('A MAR - GAS')
+    map.parse_order_string('A SPA S A MAR - GAS')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_not_equal('French Army Territory', french_army.territory, map.gascony)
+    assert_equal('German Army 1 Territory', german_army1.territory, map.gascony)
+    assert_equal('German Army 2 Territory', german_army2.territory, map.spain)
+    assert_equal('French Army Type', french_army.type, 'Army')
+
 def main():
     global prefix, test_num
 
@@ -4573,7 +4680,7 @@ def main():
     # 6.J Civil Disorder and Disbands
     prefix = '6.J.'
     test_num = 1
-    print('Civil Disorder and Disbands')
+    print('Civil Disorder and Disbands:')
     run_test(test_too_many_disband_orders)
     run_test(test_removing_the_same_unit_twice)
     run_test(test_civil_disorder_two_armies_with_different_distance)
@@ -4585,6 +4692,19 @@ def main():
     run_test(test_civil_disorder_must_be_counted_from_both_coasts)
     run_test(test_civil_disorder_counting_convoying_distance)
     run_test(test_distance_to_owned_supply_center)
+    print()
+
+    # T Transform Orders
+    prefix = 'T.'
+    test_num = 1
+    print('Transform Orders:')
+    run_test(test_transform_coastal_army)
+    run_test(test_transform_inland_army)
+    run_test(test_transform_coastal_fleet)
+    run_test(test_transform_coastal_army_to_south_coast)
+    run_test(test_transform_coastal_army_to_invalid_south_coast)
+    run_test(test_transform_fleet_in_water)
+    run_test(test_dislodged_army_cannot_transform)
     print()
 
     print(f'{passed}/{count} Tests Passed')

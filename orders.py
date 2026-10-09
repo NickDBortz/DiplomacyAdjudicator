@@ -161,7 +161,8 @@ class SupportOrder(Order):
         return f'{self.unit} Supports {self.supported_order}'
 
 class TransformOrder(Order):
-    def __init__(self, unit):
+    def __init__(self, unit, coast=None):
+        self.coast = coast
         super().__init__('Transform', unit)
 
     def match(self, other):
@@ -170,8 +171,20 @@ class TransformOrder(Order):
         return other.unit == self.unit
 
     def validate(self):
-        # Valid if on coast only
-        return isinstance(self.unit.territory, LandTerritory) and self.unit.territory.is_coast
+        if isinstance(self.unit.territory, WaterTerritory):
+            return False
+
+        if self.unit.territory.is_coast:
+            if len(self.unit.territory.north_coast) > 0:
+                if self.coast is None:
+                    return False
+                return True
+            elif self.coast is not None:
+                return False
+            else:
+                return True
+        else:
+            return False
 
     def activate(self):
         # Functions like a hold order, does not contest
