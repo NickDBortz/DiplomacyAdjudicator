@@ -3,39 +3,40 @@
         {
             "name": "Russia",
             "var_name": "russia",
-            "hex": "#000000"
+            "color": "#000000"
         },
         {
             "name": "England",
             "var_name": "england",
-            "hex": "#000000"
+            "color": "#000000"
         },
         {
             "name": "France",
             "var_name": "france",
-            "hex": "#000000"
+            "color": "#000000"
         },
         {
             "name": "Italy",
             "var_name": "italy",
-            "hex": "#000000"
+            "color": "#000000"
         },
         {
             "name": "Germany",
             "var_name": "germany",
-            "hex": "#000000"
+            "color": "#000000"
         },
         {
             "name": "Austria-Hungary",
             "var_name": "austria_hungary",
-            "hex": "#000000"
+            "color": "#000000"
         },
         {
             "name": "Turkey",
             "var_name": "turkey",
-            "hex": "#000000"
+            "color": "#000000"
         }
     ],
+    "water_color": "#0E87CC",
     "vertices": [
         [
             644,
@@ -30613,7 +30614,7 @@
         },
         {
             "name": "Liverpool",
-            "abbr": "LVP",
+            "abbr": "LPL",
             "var_name": "liverpool",
             "owner": "England",
             "land": true,
@@ -33340,7 +33341,7 @@
         },
         {
             "name": "Munich",
-            "abbr": "MUN",
+            "abbr": "MUC",
             "var_name": "munich",
             "owner": "Germany",
             "land": true,
@@ -35091,7 +35092,7 @@
         },
         {
             "name": "Norway",
-            "abbr": "NOR",
+            "abbr": "NWY",
             "var_name": "norway",
             "owner": "",
             "land": true,
@@ -36027,7 +36028,7 @@
         },
         {
             "name": "North Africa",
-            "abbr": "AFR",
+            "abbr": "NAF",
             "var_name": "north_africa",
             "owner": "",
             "land": true,
@@ -37113,7 +37114,7 @@
         },
         {
             "name": "Norwegian Sea",
-            "abbr": "NRG",
+            "abbr": "NWG",
             "var_name": "norwegian_sea",
             "owner": "",
             "land": false,
@@ -37452,7 +37453,7 @@
         },
         {
             "name": "Gulf of Bothnia",
-            "abbr": "GOB",
+            "abbr": "BOT",
             "var_name": "gulf_of_bothnia",
             "owner": "",
             "land": false,
@@ -38361,7 +38362,7 @@
         },
         {
             "name": "Gulf of Lyon",
-            "abbr": "GOL",
+            "abbr": "LYO",
             "var_name": "gulf_of_lyon",
             "owner": "",
             "land": false,
@@ -38481,7 +38482,7 @@
         },
         {
             "name": "Western Mediterranean",
-            "abbr": "WME",
+            "abbr": "WES",
             "var_name": "western_mediterranean",
             "owner": "",
             "land": false,
@@ -39161,7 +39162,7 @@
         },
         {
             "name": "Eastern Mediterranean",
-            "abbr": "EMS",
+            "abbr": "EAS",
             "var_name": "eastern_mediterranean",
             "owner": "",
             "land": false,
