@@ -73,7 +73,7 @@ class Territory:
             thickness
         )
 
-    def render_unit(self):
+    def render_unit(self, canvas):
         pass
 
     def get_color(self):
@@ -419,15 +419,14 @@ class Territory:
         return f'{self.name}{f'*' if self.is_supply_center else ''}'
 
 class LandTerritory(Territory):
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos):
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos):
         super().__init__(name, abbr, is_supply_center, owner, polygons, label_pos)
         self.is_coast = False
 
         self.supply_center_pos = supply_center_pos
-        self.army_pos = [0, 0]
-        self.coast_pos = [0, 0]
-        self.north_coast_pos = [0, 0]
-        self.south_coast_pos = [0, 0]
+        self.army_pos = army_pos
+        self.coast_pos = coast_pos
+        self.south_coast_pos = south_coast_pos
 
     def render_supply_center(self, canvas):
         if self.is_supply_center:
@@ -439,8 +438,29 @@ class LandTerritory(Territory):
                 3
             )
 
-    def render_unit(self):
-        pass
+    def render_unit(self, canvas):
+        if self.unit is not None:
+            if self.unit.type == 'Army':
+                cv2.circle(
+                    canvas,
+                    (self.army_pos[0], self.army_pos[1]),
+                    5,
+                    (32, 83, 75),
+                    -1
+                )
+            else:
+                pos_x = self.coast_pos[0]
+                pos_y = self.coast_pos[1]
+                if self.unit_coast is not None and self.unit_coast == 'sc':
+                    pos_x = self.south_coast_pos[0]
+                    pos_y = self.south_coast_pos[1]
+                cv2.circle(
+                    canvas,
+                    (pos_x, pos_y),
+                    5,
+                    (255, 0, 0),
+                    -1
+                )
 
     def set_adjacent(self, territory, coast=-1):
         if isinstance(territory, WaterTerritory):
@@ -466,7 +486,7 @@ class WaterTerritory(Territory):
 
         self.fleet_pos = [0, 0]
 
-    def render_unit(self):
+    def render_unit(self, canvas):
         pass
 
     def get_color(self):

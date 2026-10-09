@@ -30501,6 +30501,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                665,
+                244
+            ],
+            "coast_pos": [
+                630,
+                308
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -30630,6 +30642,18 @@
             "supply_center_pos": [
                 726,
                 305
+            ],
+            "army_pos": [
+                801,
+                253
+            ],
+            "coast_pos": [
+                750,
+                85
+            ],
+            "south_coast_pos": [
+                712,
+                317
             ]
         },
         {
@@ -30773,6 +30797,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                670,
+                405
+            ],
+            "coast_pos": [
+                650,
+                341
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -30831,6 +30867,18 @@
             "supply_center_pos": [
                 847,
                 381
+            ],
+            "army_pos": [
+                785,
+                443
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -30981,6 +31029,18 @@
             "supply_center_pos": [
                 621,
                 513
+            ],
+            "army_pos": [
+                647,
+                529
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -31094,6 +31154,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                735,
+                545
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -31204,6 +31276,18 @@
             "supply_center_pos": [
                 859,
                 671
+            ],
+            "army_pos": [
+                847,
+                620
+            ],
+            "coast_pos": [
+                948,
+                648
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -31359,6 +31443,18 @@
             "supply_center_pos": [
                 280,
                 392
+            ],
+            "army_pos": [
+                279,
+                354
+            ],
+            "coast_pos": [
+                292,
+                352
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -31481,6 +31577,18 @@
                 457
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                281,
+                475
+            ],
+            "coast_pos": [
+                297,
+                436
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -31611,6 +31719,18 @@
             "supply_center_pos": [
                 294,
                 510
+            ],
+            "army_pos": [
+                310,
+                488
+            ],
+            "coast_pos": [
+                315,
+                482
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -31766,6 +31886,18 @@
                 482
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                231,
+                511
+            ],
+            "coast_pos": [
+                224,
+                513
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -32059,6 +32191,18 @@
             "supply_center_pos": [
                 264,
                 452
+            ],
+            "army_pos": [
+                260,
+                400
+            ],
+            "coast_pos": [
+                253,
+                403
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -32339,6 +32483,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                259,
+                338
+            ],
+            "coast_pos": [
+                269,
+                328
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -32497,6 +32653,18 @@
             "supply_center_pos": [
                 207,
                 565
+            ],
+            "army_pos": [
+                273,
+                578
+            ],
+            "coast_pos": [
+                222,
+                568
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -32631,6 +32799,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                347,
+                565
+            ],
+            "coast_pos": [
+                322,
+                533
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -32741,6 +32921,18 @@
             "supply_center_pos": [
                 320,
                 582
+            ],
+            "army_pos": [
+                302,
+                580
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -32887,6 +33079,18 @@
                 623
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                364,
+                599
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -33054,6 +33258,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                277,
+                640
+            ],
+            "coast_pos": [
+                245,
+                662
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -33218,6 +33434,18 @@
             "supply_center_pos": [
                 352,
                 725
+            ],
+            "army_pos": [
+                291,
+                717
+            ],
+            "coast_pos": [
+                370,
+                722
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -33380,6 +33608,18 @@
                 690
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                437,
+                707
+            ],
+            "coast_pos": [
+                399,
+                706
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -33554,6 +33794,18 @@
             "supply_center_pos": [
                 469,
                 688
+            ],
+            "army_pos": [
+                473,
+                726
+            ],
+            "coast_pos": [
+                485,
+                731
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -33681,6 +33933,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                450,
+                728
+            ],
+            "coast_pos": [
+                445,
+                729
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -33765,6 +34029,18 @@
             "supply_center_pos": [
                 478,
                 774
+            ],
+            "army_pos": [
+                493,
+                783
+            ],
+            "coast_pos": [
+                490,
+                784
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -34003,6 +34279,18 @@
             "supply_center_pos": [
                 512,
                 799
+            ],
+            "army_pos": [
+                552,
+                844
+            ],
+            "coast_pos": [
+                548,
+                843
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -34159,6 +34447,18 @@
                 791
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                511,
+                773
+            ],
+            "coast_pos": [
+                559,
+                803
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -34322,6 +34622,18 @@
             "supply_center_pos": [
                 460,
                 466
+            ],
+            "army_pos": [
+                455,
+                511
+            ],
+            "coast_pos": [
+                474,
+                478
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -34457,6 +34769,18 @@
             "supply_center_pos": [
                 504,
                 510
+            ],
+            "army_pos": [
+                501,
+                480
+            ],
+            "coast_pos": [
+                495,
+                469
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -34610,6 +34934,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                554,
+                480
+            ],
+            "coast_pos": [
+                561,
+                461
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -34759,6 +35095,18 @@
                 557
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                413,
+                537
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -34914,6 +35262,18 @@
             "supply_center_pos": [
                 467,
                 617
+            ],
+            "army_pos": [
+                455,
+                560
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -35048,6 +35408,18 @@
                 541
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                546,
+                524
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -35196,6 +35568,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                503,
+                571
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -35340,6 +35724,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                599,
+                582
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -35481,6 +35877,18 @@
             "supply_center_pos": [
                 550,
                 617
+            ],
+            "army_pos": [
+                531,
+                619
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -35632,6 +36040,18 @@
             "supply_center_pos": [
                 597,
                 634
+            ],
+            "army_pos": [
+                602,
+                672
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -35806,6 +36226,18 @@
             "supply_center_pos": [
                 0,
                 0
+            ],
+            "army_pos": [
+                505,
+                644
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -35965,6 +36397,18 @@
             "supply_center_pos": [
                 519,
                 686
+            ],
+            "army_pos": [
+                548,
+                705
+            ],
+            "coast_pos": [
+                578,
+                748
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -36166,6 +36610,18 @@
             "supply_center_pos": [
                 784,
                 776
+            ],
+            "army_pos": [
+                812,
+                788
+            ],
+            "coast_pos": [
+                808,
+                776
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -36305,6 +36761,18 @@
             "supply_center_pos": [
                 867,
                 794
+            ],
+            "army_pos": [
+                882,
+                761
+            ],
+            "coast_pos": [
+                882,
+                743
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -36404,6 +36872,18 @@
                 751
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                1007,
+                773
+            ],
+            "coast_pos": [
+                982,
+                739
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -36543,6 +37023,18 @@
             "supply_center_pos": [
                 765,
                 850
+            ],
+            "army_pos": [
+                802,
+                856
+            ],
+            "coast_pos": [
+                818,
+                889
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -36614,6 +37106,18 @@
                 872
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                984,
+                861
+            ],
+            "coast_pos": [
+                960,
+                890
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -36780,6 +37284,18 @@
             "supply_center_pos": [
                 478,
                 321
+            ],
+            "army_pos": [
+                444,
+                294
+            ],
+            "coast_pos": [
+                426,
+                357
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -36916,6 +37432,18 @@
             "supply_center_pos": [
                 570,
                 338
+            ],
+            "army_pos": [
+                522,
+                346
+            ],
+            "coast_pos": [
+                571,
+                320
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -37152,6 +37680,18 @@
             "supply_center_pos": [
                 491,
                 427
+            ],
+            "army_pos": [
+                449,
+                410
+            ],
+            "coast_pos": [
+                480,
+                435
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -37298,6 +37838,18 @@
             "supply_center_pos": [
                 372,
                 500
+            ],
+            "army_pos": [
+                398,
+                487
+            ],
+            "coast_pos": [
+                396,
+                483
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -37419,6 +37971,18 @@
             "supply_center_pos": [
                 360,
                 536
+            ],
+            "army_pos": [
+                346,
+                533
+            ],
+            "coast_pos": [
+                342,
+                528
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -37578,6 +38142,18 @@
             "supply_center_pos": [
                 54,
                 770
+            ],
+            "army_pos": [
+                87,
+                730
+            ],
+            "coast_pos": [
+                83,
+                726
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -37731,6 +38307,18 @@
             "supply_center_pos": [
                 166,
                 763
+            ],
+            "army_pos": [
+                173,
+                733
+            ],
+            "coast_pos": [
+                133,
+                677
+            ],
+            "south_coast_pos": [
+                147,
+                843
             ]
         },
         {
@@ -37803,6 +38391,18 @@
                 907
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                252,
+                915
+            ],
+            "coast_pos": [
+                243,
+                891
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -38004,6 +38604,18 @@
             "supply_center_pos": [
                 419,
                 902
+            ],
+            "army_pos": [
+                406,
+                934
+            ],
+            "coast_pos": [
+                405,
+                896
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -38152,6 +38764,18 @@
             "supply_center_pos": [
                 728,
                 705
+            ],
+            "army_pos": [
+                691,
+                698
+            ],
+            "coast_pos": [
+                765,
+                691
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -38314,6 +38938,18 @@
             "supply_center_pos": [
                 678,
                 750
+            ],
+            "army_pos": [
+                721,
+                774
+            ],
+            "coast_pos": [
+                754,
+                727
+            ],
+            "south_coast_pos": [
+                722,
+                784
             ]
         },
         {
@@ -38494,6 +39130,18 @@
             "supply_center_pos": [
                 625,
                 709
+            ],
+            "army_pos": [
+                645,
+                774
+            ],
+            "coast_pos": [
+                0,
+                0
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {
@@ -38588,6 +39236,18 @@
                 798
             ],
             "supply_center_pos": [
+                0,
+                0
+            ],
+            "army_pos": [
+                618,
+                777
+            ],
+            "coast_pos": [
+                618,
+                815
+            ],
+            "south_coast_pos": [
                 0,
                 0
             ]
@@ -38813,6 +39473,18 @@
             "supply_center_pos": [
                 696,
                 865
+            ],
+            "army_pos": [
+                656,
+                826
+            ],
+            "coast_pos": [
+                673,
+                890
+            ],
+            "south_coast_pos": [
+                0,
+                0
             ]
         },
         {

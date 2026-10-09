@@ -13,7 +13,7 @@ with open('classic_map.json', 'r') as file:
 
 include_land = True
 include_water = False
-select_mode = 'supply_center_pos'
+select_mode = 'south_coast_pos'
 current_territory = ''
 
 for territory in json_obj['territories']:

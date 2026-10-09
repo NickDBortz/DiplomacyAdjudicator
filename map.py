@@ -64,7 +64,10 @@ class Map:
 
                 if territory_obj['land']:
                     supply_center_pos = territory_obj['supply_center_pos']
-                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos)
+                    army_pos = territory_obj['army_pos']
+                    coast_pos = territory_obj['coast_pos']
+                    south_coast_pos = territory_obj['south_coast_pos']
+                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos)
                 else:
                     territory = WaterTerritory(name, abbr, owner, water_color, polygons, label_pos)
 
@@ -94,6 +97,7 @@ class Map:
         for territory in self.territories:
             if isinstance(territory, LandTerritory):
                 territory.render_supply_center(canvas)
+            territory.render_unit(canvas)
         for territory in self.territories:
             territory.render_text(canvas)
         cv2.imshow("Diplomacy", canvas)
@@ -123,7 +127,7 @@ class Map:
         for i in range(len(self.territories)):
             territory = self.territories[i]
             if territory.is_supply_center and territory.owner == player:
-                unit_type = 'Army' if isinstance(territory, LandTerritory) else 'Fleet'
+                unit_type = 'Army' if isinstance(territory, LandTerritory) and not territory.is_coast else 'Fleet'
                 unit = Unit(player, unit_type, territory)
                 territory.set_unit(unit)
                 player.add_unit(unit)
