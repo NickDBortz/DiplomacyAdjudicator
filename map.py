@@ -60,11 +60,13 @@ class Map:
                 owner_name = territory_obj['owner']
                 owner = next((player for player in self.players if player.name == owner_name), None)
                 polygons = territory_obj['polygons']
+                label_pos = territory_obj['label_pos']
 
                 if territory_obj['land']:
-                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons)
+                    supply_center_pos = territory_obj['supply_center_pos']
+                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos)
                 else:
-                    territory = WaterTerritory(name, abbr, owner, water_color, polygons)
+                    territory = WaterTerritory(name, abbr, owner, water_color, polygons, label_pos)
 
                 setattr(self, territory_obj['var_name'], territory)
                 self.territories.append(territory)
@@ -89,6 +91,11 @@ class Map:
         canvas = np.zeros((self.height, self.width, 3), dtype=np.uint8)
         for territory in self.territories:
             territory.render(self.vertices, canvas)
+        for territory in self.territories:
+            if isinstance(territory, LandTerritory):
+                territory.render_supply_center(canvas)
+        for territory in self.territories:
+            territory.render_text(canvas)
         cv2.imshow("Diplomacy", canvas)
         cv2.waitKey(0)
         cv2.destroyAllWindows()

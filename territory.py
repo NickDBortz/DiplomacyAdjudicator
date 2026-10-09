@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 class Territory:
-    def __init__(self, name, abbr, is_supply_center, owner, polygons):
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos):
         self.name = name
         self.abbr = abbr
         self.is_supply_center = is_supply_center
@@ -11,7 +11,7 @@ class Territory:
         self.home_owner = owner
 
         self.polygons = polygons
-        self.label_pos = [0, 0]
+        self.label_pos = label_pos
 
         self.unit_coast = None
         self.north_coast = []
@@ -50,19 +50,18 @@ class Territory:
             if len(poly0) == 0:
                 poly0 = pts
 
-        # Render Supply Center Marker
-
+    def render_text(self, canvas):
         # Render Abbreviation
         font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 1.0
+        font_scale = 0.5
         thickness = 2
-        color = (0, 0, 0)
+        color = (255, 255, 255)
 
         text_size, _ = cv2.getTextSize(self.abbr, font, font_scale, thickness)
         text_w, text_h = text_size[0], text_size[1]
 
         text_x = self.label_pos[0] - (text_w // 2)
-        text_y = self.label_pos[1] - (text_h // 2)
+        text_y = self.label_pos[1] + (text_h // 2)
 
         cv2.putText(
             canvas, 
@@ -420,15 +419,25 @@ class Territory:
         return f'{self.name}{f'*' if self.is_supply_center else ''}'
 
 class LandTerritory(Territory):
-    def __init__(self, name, abbr, is_supply_center, owner, polygons):
-        super().__init__(name, abbr, is_supply_center, owner, polygons)
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos):
+        super().__init__(name, abbr, is_supply_center, owner, polygons, label_pos)
         self.is_coast = False
 
-        self.supply_center_pos = [0, 0]
+        self.supply_center_pos = supply_center_pos
         self.army_pos = [0, 0]
         self.coast_pos = [0, 0]
         self.north_coast_pos = [0, 0]
         self.south_coast_pos = [0, 0]
+
+    def render_supply_center(self, canvas):
+        if self.is_supply_center:
+            cv2.circle(
+                canvas,
+                (self.supply_center_pos[0], self.supply_center_pos[1]),
+                5,
+                (0, 173, 218),
+                3
+            )
 
     def render_unit(self):
         pass
@@ -450,8 +459,8 @@ class LandTerritory(Territory):
         territory.set_adjacent(self)
 
 class WaterTerritory(Territory):
-    def __init__(self, name, abbr, owner, color, polygons):
-        super().__init__(name, abbr, False, owner, polygons)
+    def __init__(self, name, abbr, owner, color, polygons, label_pos):
+        super().__init__(name, abbr, False, owner, polygons, label_pos)
 
         self.color = color
 
