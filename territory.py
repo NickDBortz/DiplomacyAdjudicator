@@ -44,7 +44,7 @@ class Territory:
                 [pts],
                 isClosed=True,
                 color=(0, 0, 0),
-                thickness=2
+                thickness=1
             )
 
             if len(poly0) == 0:
@@ -479,12 +479,12 @@ class LandTerritory(Territory):
         territory.set_adjacent(self)
 
 class WaterTerritory(Territory):
-    def __init__(self, name, abbr, owner, color, polygons, label_pos):
+    def __init__(self, name, abbr, owner, color, polygons, label_pos, fleet_pos):
         super().__init__(name, abbr, False, owner, polygons, label_pos)
 
         self.color = color
 
-        self.fleet_pos = [0, 0]
+        self.fleet_pos = fleet_pos
 
     def render_unit(self, canvas):
         pass

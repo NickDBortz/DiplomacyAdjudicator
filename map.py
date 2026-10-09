@@ -69,7 +69,8 @@ class Map:
                     south_coast_pos = territory_obj['south_coast_pos']
                     territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos)
                 else:
-                    territory = WaterTerritory(name, abbr, owner, water_color, polygons, label_pos)
+                    fleet_pos = territory_obj['fleet_pos']
+                    territory = WaterTerritory(name, abbr, owner, water_color, polygons, label_pos, fleet_pos)
 
                 setattr(self, territory_obj['var_name'], territory)
                 self.territories.append(territory)

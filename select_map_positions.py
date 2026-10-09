@@ -11,9 +11,9 @@ display = original.copy()
 with open('classic_map.json', 'r') as file:
     json_obj = json.load(file)
 
-include_land = True
-include_water = False
-select_mode = 'south_coast_pos'
+include_land = False
+include_water = True
+select_mode = 'fleet_pos'
 current_territory = ''
 
 for territory in json_obj['territories']:
