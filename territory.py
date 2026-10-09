@@ -1,11 +1,17 @@
+import numpy as np
+import cv2
+
 class Territory:
-    def __init__(self, name, abbr, is_supply_center, owner):
+    def __init__(self, name, abbr, is_supply_center, owner, polygons):
         self.name = name
         self.abbr = abbr
         self.is_supply_center = is_supply_center
         self.unit = None
         self.owner = owner
         self.home_owner = owner
+
+        self.polygons = polygons
+        self.label_pos = [0, 0]
 
         self.unit_coast = None
         self.north_coast = []
@@ -16,6 +22,70 @@ class Territory:
 
         self.adjacents = []
         self.contesting = []
+
+    def render(self, vertices, canvas):
+        poly0 = []
+        for polygon in self.polygons:
+            pts = []
+            for vertex_index in polygon:
+                vertex = vertices[vertex_index]
+                pts.append(vertex)
+
+            pts = np.array(pts, dtype=np.int32)
+
+            cv2.fillPoly(
+                canvas,
+                [pts],
+                self.get_color()
+            )
+
+            cv2.polylines(
+                canvas,
+                [pts],
+                isClosed=True,
+                color=(0, 0, 0),
+                thickness=2
+            )
+
+            if len(poly0) == 0:
+                poly0 = pts
+
+        # Render Supply Center Marker
+
+        # Render Abbreviation
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 1.0
+        thickness = 2
+        color = (0, 0, 0)
+
+        text_size, _ = cv2.getTextSize(self.abbr, font, font_scale, thickness)
+        text_w, text_h = text_size[0], text_size[1]
+
+        text_x = self.label_pos[0] - (text_w // 2)
+        text_y = self.label_pos[1] - (text_h // 2)
+
+        cv2.putText(
+            canvas, 
+            self.abbr, 
+            (text_x, text_y), 
+            font, 
+            font_scale, 
+            color, 
+            thickness
+        )
+
+    def render_unit(self):
+        pass
+
+    def get_color(self):
+        color = self.owner.color if self.owner is not None else '#E2C69E'
+        h = color.lstrip("#")
+        
+        # Parse R, G, B integers
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        
+        # Return BGR scalar tuple (OpenCV format)
+        return (b, g, r)
 
     def set_unit(self, unit, coast=None):
         self.unit_coast = coast
@@ -350,9 +420,18 @@ class Territory:
         return f'{self.name}{f'*' if self.is_supply_center else ''}'
 
 class LandTerritory(Territory):
-    def __init__(self, name, abbr, is_supply_center, owner):
-        super().__init__(name, abbr, is_supply_center, owner)
+    def __init__(self, name, abbr, is_supply_center, owner, polygons):
+        super().__init__(name, abbr, is_supply_center, owner, polygons)
         self.is_coast = False
+
+        self.supply_center_pos = [0, 0]
+        self.army_pos = [0, 0]
+        self.coast_pos = [0, 0]
+        self.north_coast_pos = [0, 0]
+        self.south_coast_pos = [0, 0]
+
+    def render_unit(self):
+        pass
 
     def set_adjacent(self, territory, coast=-1):
         if isinstance(territory, WaterTerritory):
@@ -371,5 +450,22 @@ class LandTerritory(Territory):
         territory.set_adjacent(self)
 
 class WaterTerritory(Territory):
-    def __init__(self, name, abbr, owner):
-        super().__init__(name, abbr, False, owner)
+    def __init__(self, name, abbr, owner, color, polygons):
+        super().__init__(name, abbr, False, owner, polygons)
+
+        self.color = color
+
+        self.fleet_pos = [0, 0]
+
+    def render_unit(self):
+        pass
+
+    def get_color(self):
+        color = self.color
+        h = color.lstrip("#")
+        
+        # Parse R, G, B integers
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        
+        # Return BGR scalar tuple (OpenCV format)
+        return (b, g, r)

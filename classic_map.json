@@ -3,40 +3,42 @@
         {
             "name": "Russia",
             "var_name": "russia",
-            "color": "#000000"
+            "color": "#A87E9F"
         },
         {
             "name": "England",
             "var_name": "england",
-            "color": "#000000"
+            "color": "#EFC4E4"
         },
         {
             "name": "France",
             "var_name": "france",
-            "color": "#000000"
+            "color": "#79AFC6"
         },
         {
             "name": "Italy",
             "var_name": "italy",
-            "color": "#000000"
+            "color": "#A4C499"
         },
         {
             "name": "Germany",
             "var_name": "germany",
-            "color": "#000000"
+            "color": "#A08A75"
         },
         {
             "name": "Austria-Hungary",
             "var_name": "austria_hungary",
-            "color": "#000000"
+            "color": "#C48F85"
         },
         {
             "name": "Turkey",
             "var_name": "turkey",
-            "color": "#000000"
+            "color": "#EAEAAF"
         }
     ],
-    "water_color": "#0E87CC",
+    "water_color": "#C5DFEA",
+    "width": 1080,
+    "height": 950,
     "vertices": [
         [
             644,

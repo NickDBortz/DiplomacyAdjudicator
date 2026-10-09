@@ -4,6 +4,8 @@ from unit import Unit
 from orders import Order, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder, BuildOrder, DisbandOrder
 from pathlib import Path
 import json
+import cv2
+import numpy as np
 
 class Map:
     def __init__(self, silent_mode=False, begin_empty=False, json_file=''):
@@ -11,6 +13,10 @@ class Map:
 
         self.players = []
         self.territories = []
+
+        self.width = 0
+        self.height = 0
+        self.vertices = []
 
         self.load_map_json(json_file)
 
@@ -35,9 +41,15 @@ class Map:
             # Load Players
             players = map_obj['players']
             for player_obj in players:
-                player = Player(player_obj['name'])
+                player = Player(player_obj['name'], player_obj['color'])
                 setattr(self, player_obj['var_name'], player)
                 self.players.append(player)
+
+            self.vertices = map_obj['vertices']
+
+            water_color = map_obj['water_color']
+            self.width = map_obj['width']
+            self.height = map_obj['height']
 
             # Load Territories
             territories = map_obj['territories']
@@ -47,11 +59,12 @@ class Map:
                 is_supply_center = territory_obj['supply_center']
                 owner_name = territory_obj['owner']
                 owner = next((player for player in self.players if player.name == owner_name), None)
+                polygons = territory_obj['polygons']
 
                 if territory_obj['land']:
-                    territory = LandTerritory(name, abbr, is_supply_center, owner)
+                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons)
                 else:
-                    territory = WaterTerritory(name, abbr, owner)
+                    territory = WaterTerritory(name, abbr, owner, water_color, polygons)
 
                 setattr(self, territory_obj['var_name'], territory)
                 self.territories.append(territory)
@@ -71,6 +84,14 @@ class Map:
                 for adj_name in territory_obj['adjacents']:
                     adj = next((t for t in self.territories if t.name == adj_name), None)
                     territory.set_adjacent(adj)
+
+    def render(self):
+        canvas = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        for territory in self.territories:
+            territory.render(self.vertices, canvas)
+        cv2.imshow("Diplomacy", canvas)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
     def advance_phase(self):
         self.resolution_phase += 1
