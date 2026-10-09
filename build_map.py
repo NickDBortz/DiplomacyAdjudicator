@@ -3,7 +3,7 @@ import numpy as np
 import json
 import math
 
-IMAGE_PATH = 'sampleMap.png'
+IMAGE_PATH = 'black_and_white_classic_map_cleaned.png'
 
 original = cv2.imread(IMAGE_PATH)
 display = original.copy()
@@ -15,6 +15,7 @@ with open('classic_map.json', 'r') as file:
 selected_vertex = None
 
 current_territory = ''
+selected_polygon = None
 
 zoom = 1.0
 pan_x = 0
@@ -51,7 +52,7 @@ def find_vertex(screen_x, screen_y, radius=10):
     return None
 
 def mouse_callback(event, x, y, flags, param):
-    global display, current_mask, selected_vertex, zoom, pan_x, pan_y, panning, pan_start_x, pan_start_y
+    global display, current_mask, selected_vertex, zoom, pan_x, pan_y, panning, pan_start_x, pan_start_y, selected_polygon
 
     if event == cv2.EVENT_LBUTTONDOWN:
         if flags & cv2.EVENT_FLAG_SHIFTKEY:
@@ -123,111 +124,162 @@ def mouse_callback(event, x, y, flags, param):
         display[y1:y2, x1:x2] = scaled[sy1:sy2, sx1:sx2]
 
     for territory in json_obj['territories']:
-        pts = []
-        for vertex_index in territory['vertices']:
-            vertex = json_obj['vertices'][vertex_index]
-            pts.append(world_to_screen(
-                vertex[0],
-                vertex[1]
-            ))
-        pts = np.array(pts, dtype=np.int32)
+        if selected_polygon is not None:
+            overlay_pts = []
+            for vertex_index in selected_polygon:
+                vx, vy = json_obj['vertices'][vertex_index]
+                overlay_pts.append(world_to_screen(vx, vy))
 
-        cv2.polylines(
-            display,
-            [pts],
-            isClosed=True,
-            color=(0, 255, 255),
-            thickness=2
-        )
+            overlay = display.copy()
 
-        for i, (x, y) in enumerate(pts):
-            if x < 0 or y < 0 or x > window_w or y > window_h:
-                continue
-            cv2.circle(
-                display,
-                (x, y),
-                5,
-                (0, 0, 255),
-                -1
+            cv2.fillPoly(
+                overlay,
+                [np.array(overlay_pts, np.int32)],
+                (0, 0, 255)
             )
 
+            display = cv2.addWeighted(
+                overlay,
+                0.35,
+                display,
+                0.65,
+                0
+            )
+
+        for polygon in territory['polygons']:
+            pts = []
+            off_screen = True
+            for vertex_index in polygon:
+                vertex = json_obj['vertices'][vertex_index]
+                vx, vy = world_to_screen(vertex[0], vertex[1])
+                if vx >= 0 and vy >= 0 and vx <= window_w and vy <= window_h:
+                    off_screen = False
+                pts.append(world_to_screen(
+                    vertex[0],
+                    vertex[1]
+                ))
+
+            if not off_screen:
+                pts = np.array(pts, dtype=np.int32)
+
+                cv2.polylines(
+                    display,
+                    [pts],
+                    isClosed=True,
+                    color=(0, 255, 255),
+                    thickness=2
+                )
+
+                for i, (px, py) in enumerate(pts):
+                    if px < 0 or py < 0 or px > window_w or py > window_h:
+                        continue
+                    cv2.circle(
+                        display,
+                        (px, py),
+                        5,
+                        (0, 0, 255),
+                        -1
+                    )
+
     if event == cv2.EVENT_RBUTTONDOWN:
-        working = original.copy()
-        window_h, window_w = working.shape[:2]
-
-        # OpenCV requires a mask 2 pixels larger
-        flood_mask = np.zeros((window_h+2, window_w+2), np.uint8)
-
         wx, wy = screen_to_world(x, y)
 
-        # Fill with a throwaway color
+        if (
+            wx < 0 or
+            wy < 0 or
+            wx >= original.shape[1] or
+            wy >= original.shape[0]
+        ):
+            return
+
+        gray = cv2.cvtColor(
+            original,
+            cv2.COLOR_BGR2GRAY
+        )
+
+        _, binary = cv2.threshold(
+            gray,
+            200,
+            255,
+            cv2.THRESH_BINARY
+        )
+
+        # Clicked on a border
+        if binary[wy, wx] < 200:
+            print('Clicked border')
+            return
+
+        working = binary.copy()
+
+        flood_mask = np.zeros(
+            (
+                working.shape[0] + 2,
+                working.shape[1] + 2
+            ),
+            np.uint8
+        )
+
         cv2.floodFill(
             working,
             flood_mask,
             (wx, wy),
-            (0, 255, 0),
-            loDiff=(5, 5, 5),
-            upDiff=(5, 5, 5)
+            128
         )
 
-        # Remove OpenCV border
-        current_mask = flood_mask[1:-1, 1:-1]
-
-        overlay = original.copy()
-
-        overlay[current_mask==1] = (0, 0, 255)
-
-        alpha = 0.4
-
-        display = cv2.addWeighted(
-            overlay,
-            alpha,
-            original,
-            1-alpha,
-            0
-        )
+        territory_mask = (
+            working == 128
+        ).astype(np.uint8)
 
         contours, _ = cv2.findContours(
-            current_mask,
+            territory_mask,
             cv2.RETR_EXTERNAL,
             cv2.CHAIN_APPROX_NONE
         )
 
-        cv2.drawContours(
-            display,
+        if not contours:
+            return
+
+        contour = max(
             contours,
-            -1,
-            (0, 255, 255),
-            2
+            key=cv2.contourArea
         )
 
-        contour = max(contours, key=cv2.contourArea)
-
-        perimeter = cv2.arcLength(contour, True)
-
-        epsilon = 0.001*perimeter
+        perimeter = cv2.arcLength(
+            contour,
+            True
+        )
 
         polygon = cv2.approxPolyDP(
             contour,
-            epsilon=epsilon,
+            epsilon=0.001 * perimeter,
             closed=True
         )
 
         vertices = polygon[:, 0, :].tolist()
 
-        cv2.fillPoly(
-            display,
-            [np.array(vertices, dtype=np.int32)],
-            (100, 100, 255)
+        vertex_indices = condense_vertices(
+            vertices
         )
 
-        vertex_indices = condense_vertices(vertices)
+        selected_polygon = vertex_indices
 
-        print(vertex_indices)
+        territory_obj = next(
+            (
+                territory
+                for territory in json_obj['territories']
+                if territory['name'] == current_territory
+            ),
+            None
+        )
 
-        territory_obj = next((territory for territory in json_obj['territories'] if territory['name'] == current_territory), None)
-        territory_obj['vertices'] = vertex_indices
-        get_next_territory()
+        territory_obj['polygons'].append(
+            vertex_indices
+        )
+
+        print(
+            f'{current_territory} -> '
+            f'{len(vertex_indices)} vertices'
+        )
 
 def condense_vertices(vertices):
     vertex_indices = []
@@ -281,5 +333,8 @@ while True:
         with open('classic_map.json', 'w', encoding='utf-8') as file:
             file.write(json_string)
         print('Saved!')
+
+    if key == 110:
+        get_next_territory()
 
 cv2.destroyAllWindows()
