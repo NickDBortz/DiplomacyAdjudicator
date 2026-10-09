@@ -24,7 +24,6 @@ class Territory:
         self.contesting = []
 
     def render(self, vertices, canvas):
-        poly0 = []
         for polygon in self.polygons:
             pts = []
             for vertex_index in polygon:
@@ -39,6 +38,15 @@ class Territory:
                 self.get_color()
             )
 
+    def render_borders(self, vertices, canvas):
+        for polygon in self.polygons:
+            pts = []
+            for vertex_index in polygon:
+                vertex = vertices[vertex_index]
+                pts.append(vertex)
+
+            pts = np.array(pts, dtype=np.int32)
+
             cv2.polylines(
                 canvas,
                 [pts],
@@ -47,21 +55,34 @@ class Territory:
                 thickness=1
             )
 
-            if len(poly0) == 0:
-                poly0 = pts
-
     def render_text(self, canvas):
         # Render Abbreviation
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.5
-        thickness = 2
+        thickness = 1
         color = (255, 255, 255)
+
+        outline_color = (0, 0, 0)
+
+        line_type = cv2.LINE_AA
 
         text_size, _ = cv2.getTextSize(self.abbr, font, font_scale, thickness)
         text_w, text_h = text_size[0], text_size[1]
 
         text_x = self.label_pos[0] - (text_w // 2)
         text_y = self.label_pos[1] + (text_h // 2)
+
+        for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
+            cv2.putText(
+                canvas, 
+                self.abbr, 
+                (text_x+dx, text_y+dy), 
+                font, 
+                font_scale, 
+                outline_color, 
+                thickness,
+                line_type
+            )
 
         cv2.putText(
             canvas, 
@@ -70,7 +91,8 @@ class Territory:
             font, 
             font_scale, 
             color, 
-            thickness
+            thickness,
+            line_type
         )
 
     def render_unit(self, canvas):
@@ -435,6 +457,13 @@ class LandTerritory(Territory):
                 (self.supply_center_pos[0], self.supply_center_pos[1]),
                 5,
                 (0, 173, 218),
+                -1
+            )
+            cv2.circle(
+                canvas,
+                (self.supply_center_pos[0], self.supply_center_pos[1]),
+                5,
+                (0,0,0), # (0, 173, 218),
                 3
             )
 

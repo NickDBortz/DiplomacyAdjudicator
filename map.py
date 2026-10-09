@@ -96,6 +96,8 @@ class Map:
         for territory in self.territories:
             territory.render(self.vertices, canvas)
         for territory in self.territories:
+            territory.render_borders(self.vertices, canvas)
+        for territory in self.territories:
             if isinstance(territory, LandTerritory):
                 territory.render_supply_center(canvas)
             territory.render_unit(canvas)
