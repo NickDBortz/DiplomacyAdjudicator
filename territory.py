@@ -129,11 +129,25 @@ class Territory:
         pt1 = (pos[0] - (sq_size//2), pos[1] - (sq_size//2))
         pt2 = (pos[0] + (sq_size//2), pos[1] + (sq_size//2))
 
+        b,r,g = self.get_color()
+        b -= 30
+        r -= 30
+        g -= 30
+
+        border_thickness = 2
+        cv2.rectangle(
+            canvas,
+            (pt1[0]-border_thickness, pt1[1]-border_thickness),
+            (pt2[0]+border_thickness, pt2[1]+border_thickness),
+            (0,0,0),
+            -1
+        )
+
         cv2.rectangle(
             canvas,
             pt1,
             pt2,
-            (32, 83, 75),
+            (b,r,g),
             -1
         )
 
@@ -142,11 +156,25 @@ class Territory:
         pt1 = (pos[0] - (sq_size), pos[1] - (sq_size//2))
         pt2 = (pos[0] + (sq_size), pos[1] + (sq_size//2))
 
+        b,r,g = self.get_color()
+        b -= 30
+        r -= 30
+        g -= 30
+
+        border_thickness = 2
+        cv2.rectangle(
+            canvas,
+            (pt1[0]-border_thickness, pt1[1]-border_thickness),
+            (pt2[0]+border_thickness, pt2[1]+border_thickness),
+            (0,0,0),
+            -1
+        )
+
         cv2.rectangle(
             canvas,
             pt1,
             pt2,
-            (255, 0, 0),
+            (b,r,g),
             -1
         )
 

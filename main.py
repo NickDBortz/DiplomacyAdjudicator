@@ -13,6 +13,8 @@ if __name__ == "__main__":
 
     map.parse_order_string('A BER - PRU', map.germany)
 
+    map.parse_order_string('A EDI T', map.england)
+
     map.resolve_orders()
 
     map.render()
