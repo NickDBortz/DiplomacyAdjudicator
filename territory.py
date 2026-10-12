@@ -1,8 +1,9 @@
 import numpy as np
 import cv2
+from scipy.interpolate import splprep, splev
 
 class Territory:
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos):
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos):
         self.name = name
         self.abbr = abbr
         self.is_supply_center = is_supply_center
@@ -23,33 +24,58 @@ class Territory:
         self.adjacents = []
         self.contesting = []
 
-    def render(self, vertices, canvas):
+        self.smooth_polygons(vertices, width, height)
+
+    def smooth_polygons(self, vertices, width, height):
+        EDGE_EPSILON = 10
+        def is_edge_point(p):
+            x, y = p
+
+            return (
+                x <= EDGE_EPSILON or
+                y <= EDGE_EPSILON or
+                x >= width - EDGE_EPSILON or
+                y >= height - EDGE_EPSILON
+            )
+
+        for i in range(len(self.polygons)):
+            pts = np.asarray([vertices[vertex_index] for vertex_index in self.polygons[i]], dtype=float)
+
+            for _ in range(2):
+                new_pts = []
+                n = len(pts)
+                for j in range(n):
+                    p0 = pts[j]
+                    p1 = pts[(j+1) % n]
+
+                    if is_edge_point(p0) or is_edge_point(p1):
+                        new_pts.append(p0)
+                        continue
+
+                    q = 0.75 * p0 + 0.25 * p1
+                    r = 0.25 * p0 + 0.75 * p1
+
+                    new_pts.extend(([q, r]))
+
+                pts = np.array(new_pts)
+
+            pts = pts.astype(np.int32)
+
+            self.polygons[i] = pts
+
+    def render(self, canvas):
         for polygon in self.polygons:
-            pts = []
-            for vertex_index in polygon:
-                vertex = vertices[vertex_index]
-                pts.append(vertex)
-
-            pts = np.array(pts, dtype=np.int32)
-
             cv2.fillPoly(
                 canvas,
-                [pts],
+                [polygon],
                 self.get_color()
             )
 
-    def render_borders(self, vertices, canvas):
+    def render_borders(self, canvas):
         for polygon in self.polygons:
-            pts = []
-            for vertex_index in polygon:
-                vertex = vertices[vertex_index]
-                pts.append(vertex)
-
-            pts = np.array(pts, dtype=np.int32)
-
             cv2.polylines(
                 canvas,
-                [pts],
+                [polygon],
                 isClosed=True,
                 color=(0, 0, 0),
                 thickness=1
@@ -476,8 +502,8 @@ class Territory:
         return f'{self.name}{f'*' if self.is_supply_center else ''}'
 
 class LandTerritory(Territory):
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos):
-        super().__init__(name, abbr, is_supply_center, owner, polygons, label_pos)
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos):
+        super().__init__(name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos)
         self.is_coast = False
 
         self.supply_center_pos = supply_center_pos
@@ -531,8 +557,8 @@ class LandTerritory(Territory):
         territory.set_adjacent(self)
 
 class WaterTerritory(Territory):
-    def __init__(self, name, abbr, owner, color, polygons, label_pos, fleet_pos):
-        super().__init__(name, abbr, False, owner, polygons, label_pos)
+    def __init__(self, name, abbr, owner, color, polygons, vertices, width, height, label_pos, fleet_pos):
+        super().__init__(name, abbr, False, owner, polygons, vertices, width, height, label_pos)
 
         self.color = color
 
