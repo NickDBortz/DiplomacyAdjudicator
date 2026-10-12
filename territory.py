@@ -98,6 +98,32 @@ class Territory:
     def render_unit(self, canvas):
         pass
 
+    def render_army(self, canvas, pos):
+        sq_size = 15
+        pt1 = (pos[0] - (sq_size//2), pos[1] - (sq_size//2))
+        pt2 = (pos[0] + (sq_size//2), pos[1] + (sq_size//2))
+
+        cv2.rectangle(
+            canvas,
+            pt1,
+            pt2,
+            (32, 83, 75),
+            -1
+        )
+
+    def render_fleet(self, canvas, pos):
+        sq_size = 15
+        pt1 = (pos[0] - (sq_size), pos[1] - (sq_size//2))
+        pt2 = (pos[0] + (sq_size), pos[1] + (sq_size//2))
+
+        cv2.rectangle(
+            canvas,
+            pt1,
+            pt2,
+            (255, 0, 0),
+            -1
+        )
+
     def get_color(self):
         color = self.owner.color if self.owner is not None else '#E2C69E'
         h = color.lstrip("#")
@@ -479,26 +505,14 @@ class LandTerritory(Territory):
     def render_unit(self, canvas):
         if self.unit is not None:
             if self.unit.type == 'Army':
-                cv2.circle(
-                    canvas,
-                    (self.army_pos[0], self.army_pos[1]),
-                    5,
-                    (32, 83, 75),
-                    -1
-                )
+                self.render_army(canvas, self.army_pos)
             else:
                 pos_x = self.coast_pos[0]
                 pos_y = self.coast_pos[1]
                 if self.unit_coast is not None and self.unit_coast == 'sc':
                     pos_x = self.south_coast_pos[0]
                     pos_y = self.south_coast_pos[1]
-                cv2.circle(
-                    canvas,
-                    (pos_x, pos_y),
-                    5,
-                    (255, 0, 0),
-                    -1
-                )
+                self.render_fleet(canvas, (pos_x, pos_y))
 
     def set_adjacent(self, territory, coast=-1):
         if isinstance(territory, WaterTerritory):
@@ -525,7 +539,8 @@ class WaterTerritory(Territory):
         self.fleet_pos = fleet_pos
 
     def render_unit(self, canvas):
-        pass
+        if self.unit is not None:
+            self.render_fleet(canvas, self.fleet_pos)
 
     def get_color(self):
         color = self.color
