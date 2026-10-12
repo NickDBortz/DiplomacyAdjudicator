@@ -59,7 +59,7 @@ class Territory:
         # Render Abbreviation
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.5
-        thickness = 1
+        thickness = 2
         color = (255, 255, 255)
 
         outline_color = (0, 0, 0)
