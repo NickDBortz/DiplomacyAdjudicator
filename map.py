@@ -110,20 +110,75 @@ class Map:
                     territory.set_adjacent(adj)
 
     def render(self):
+        # Create canvas
         canvas = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+
+        # Render the territories and their borders and decorations
         for territory in self.territories:
             territory.render(self.vertices, canvas)
         for territory in self.territories:
             territory.render_borders(self.vertices, canvas)
+
+        # Render the units on the territories
         for territory in self.territories:
             if isinstance(territory, LandTerritory):
                 territory.render_supply_center(canvas)
             territory.render_unit(canvas)
+
+        # Render the orders
+        self.render_orders(canvas)
+
+        # Render the text on the territories
         for territory in self.territories:
             territory.render_text(canvas)
+
+        # Display the canvas
         cv2.imshow("Diplomacy", canvas)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+    def render_orders(self, canvas):
+        # Render advances first
+        for order in self.queued_orders:
+            if order.name == 'Advance':
+                # Render a red arrow in the direction of the advance
+                cv2.arrowedLine(
+                    canvas,
+                    order.get_start_pos(),
+                    order.get_dest_pos(),
+                    (0, 0, 255),
+                    3,
+                    cv2.LINE_AA
+                )
+
+        # Then render all other orders
+        for order in self.queued_orders:
+            if order.name == 'Support':
+                # If we find a match, continue
+                found_match = False
+                for other in self.queued_orders:
+                    if other.match(order.supported_order):
+                        found_match = True
+                        break
+                if not found_match:
+                    continue
+
+                if order.supported_order.name == 'Advance':
+                    adv_start = order.supported_order.get_start_pos()
+                    adv_dest = order.supported_order.get_dest_pos()
+
+                    dest_pos = [(adv_start[0] - adv_dest[0]) // 2 + adv_dest[0], (adv_start[1] - adv_dest[1]) // 2 + adv_dest[1]]
+                else:
+                    dest_pos = order.supported_order.get_start_pos()
+                # Render a red arrow in the direction of the advance
+                cv2.arrowedLine(
+                    canvas,
+                    order.get_start_pos(),
+                    dest_pos,
+                    (0, 255, 0),
+                    3,
+                    cv2.LINE_AA
+                )
 
     def advance_phase(self):
         self.resolution_phase += 1
@@ -148,7 +203,7 @@ class Map:
         for i in range(len(self.territories)):
             territory = self.territories[i]
             if territory.is_supply_center and territory.owner == player:
-                unit_type = 'Army' if isinstance(territory, LandTerritory) and not territory.is_coast else 'Fleet'
+                unit_type = 'Army' if isinstance(territory, LandTerritory) else 'Fleet'
                 unit = Unit(player, unit_type, territory)
                 territory.set_unit(unit)
                 player.add_unit(unit)
@@ -186,7 +241,7 @@ class Map:
             return False 
         
         self.queued_orders.append(order)
-        if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
+        # if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
         return True
 
     def resolve_retreat_orders(self):
