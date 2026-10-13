@@ -160,7 +160,7 @@ class SupportOrder(Order):
         valid_location = False
         if unit_territory.unit_coast is not None:
             coast = unit_territory.unit_coast 
-            valid_location = coast == 0 and dest_territory in unit_territory.north_coast or coast == 1 and dest_territory in unit_territory.south_coast
+            valid_location = coast == 'nc' and dest_territory in unit_territory.north_coast or coast == 'sc' and dest_territory in unit_territory.south_coast
         else:
             valid_location = dest_territory in unit_territory.adjacents
 

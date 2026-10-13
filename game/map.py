@@ -111,11 +111,11 @@ class Map:
 
                 for nth_adj_name in territory_obj['north_coast']:
                     nth_adj = next((t for t in self.territories if t.name == nth_adj_name), None)
-                    territory.set_adjacent(nth_adj, 0)
+                    territory.set_adjacent(nth_adj, 'nc')
 
                 for sth_adj_name in territory_obj['south_coast']:
                     sth_adj = next((t for t in self.territories if t.name == sth_adj_name), None)
-                    territory.set_adjacent(sth_adj, 1)
+                    territory.set_adjacent(sth_adj, 'sc')
 
                 for adj_name in territory_obj['adjacents']:
                     adj = next((t for t in self.territories if t.name == adj_name), None)

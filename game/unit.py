@@ -64,7 +64,7 @@ class Unit:
 
         occupied_coast = self.territory.unit_coast
         if occupied_coast is not None:
-            if occupied_coast == 0 and territory not in self.territory.north_coast or occupied_coast == 1 and territory not in self.territory.south_coast:
+            if occupied_coast == 'nc' and territory not in self.territory.north_coast or occupied_coast == 'sc' and territory not in self.territory.south_coast:
                 return False
         
         if isinstance(territory, WaterTerritory):

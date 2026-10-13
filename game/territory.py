@@ -569,14 +569,14 @@ class LandTerritory(Territory):
                     pos_y = self.south_coast_pos[1]
                 self.render_fleet(canvas, (pos_x, pos_y))
 
-    def set_adjacent(self, territory, coast=-1):
+    def set_adjacent(self, territory, coast=None):
         if isinstance(territory, WaterTerritory):
             self.is_coast = True
 
-        if coast > -1:
-            if coast == 0:
+        if coast is not None:
+            if coast == 'nc':
                 self.north_coast.append(territory)
-            elif coast == 1:
+            elif coast == 'sc':
                 self.south_coast.append(territory)
 
         if territory in self.adjacents:

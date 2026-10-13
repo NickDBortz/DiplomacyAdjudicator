@@ -279,7 +279,7 @@ def test_support_to_unreachable_coast_allowed():
 def test_support_from_unreachable_coast_not_allowed():
     map = get_classic_map()
     french_fleet1 = add_fleet(map.marseilles, map.france)
-    french_fleet2 = add_fleet(map.spain, map.france, coast=0)
+    french_fleet2 = add_fleet(map.spain, map.france, coast='nc')
     italian_fleet = add_fleet(map.gulf_of_lyon, map.italy)
 
     map.parse_order_string('F MAR - LYO')
@@ -299,7 +299,7 @@ def test_support_cut_from_other_coast():
     map = get_classic_map()
     english_fleet1 = add_fleet(map.irish_sea, map.england)
     english_fleet2 = add_fleet(map.north_atlantic_ocean, map.england)
-    french_fleet1 = add_fleet(map.spain, map.france, coast=0)
+    french_fleet1 = add_fleet(map.spain, map.france, coast='nc')
     french_fleet2 = add_fleet(map.mid_atlantic_ocean, map.france)
     italian_fleet = add_fleet(map.gulf_of_lyon, map.italy)
 
@@ -391,7 +391,7 @@ def test_support_with_wrong_coast():
 # 6.B.11
 def test_coast_cannot_be_ordered_to_change():
     map = get_classic_map()
-    french_fleet = add_fleet(map.spain, map.france, coast=0)
+    french_fleet = add_fleet(map.spain, map.france, coast='nc')
 
     map.parse_order_string('F SPA - LYO')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
@@ -412,7 +412,7 @@ def test_army_movement_with_coastal_specifications():
 # 6.B.13
 def test_coastal_crawl_not_allowed():
     map = get_classic_map()
-    turkish_fleet1 = add_fleet(map.bulgaria, map.turkey, coast=1)
+    turkish_fleet1 = add_fleet(map.bulgaria, map.turkey, coast='sc')
     turkish_fleet2 = add_fleet(map.constantinople, map.turkey)
 
     map.parse_order_string('F BUL - CON')
@@ -1193,7 +1193,7 @@ def test_impossible_coast_move_cannot_be_supported():
     map = get_classic_map()
     italian_fleet1 = add_fleet(map.gulf_of_lyon, map.italy)
     italian_fleet2 = add_fleet(map.western_mediterranean, map.italy)
-    french_fleet1 = add_fleet(map.spain, map.france, coast=0)
+    french_fleet1 = add_fleet(map.spain, map.france, coast='nc')
     french_fleet2 = add_fleet(map.marseilles, map.france)
 
     map.parse_order_string('F LYO - SPA(sc)')
@@ -1214,7 +1214,7 @@ def test_impossible_coast_move_cannot_be_supported():
 def test_impossible_army_move_cannot_be_supported():
     map = get_classic_map()
     french_army = add_army(map.marseilles, map.france)
-    french_fleet = add_fleet(map.spain, map.france, coast=1)
+    french_fleet = add_fleet(map.spain, map.france, coast='sc')
     italian_fleet = add_fleet(map.gulf_of_lyon, map.italy)
     turkish_fleet1 = add_fleet(map.tyrrhenian_sea, map.turkey)
     turkish_fleet2 = add_fleet(map.western_mediterranean, map.turkey)
