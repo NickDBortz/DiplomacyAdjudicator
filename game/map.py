@@ -360,9 +360,9 @@ class Map:
 
     def queue_order(self, order, owner=None):
         # Cannot queue an order from the wrong owner or that is blank
-        if owner is not None and order.unit.owner != owner:
-            return False
         if order is None:
+            return False
+        if owner is not None and order.unit.owner != owner:
             return False
 
         # If the order is not valid, reset it
