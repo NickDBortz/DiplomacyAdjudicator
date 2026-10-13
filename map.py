@@ -26,6 +26,8 @@ class Map:
         self.height = 0
         self.vertices = []
 
+        self.rendering_enabled = load_rendering_data
+
         self.load_map_json(json_file, load_rendering_data)
 
         if not begin_empty:
@@ -117,6 +119,7 @@ class Map:
                     territory.set_adjacent(adj)
 
     def render(self):
+        self.cv2.destroyAllWindows()
         # Create canvas
         canvas = self.np.zeros((self.height, self.width, 3), dtype=self.np.uint8)
 
@@ -141,8 +144,7 @@ class Map:
 
         # Display the canvas
         self.cv2.imshow("Diplomacy", canvas)
-        self.cv2.waitKey(0)
-        self.cv2.destroyAllWindows()
+        self.cv2.waitKey(1)
 
     def render_orders(self, canvas):
         # Render advances first
@@ -187,6 +189,53 @@ class Map:
                     self.cv2.LINE_AA
                 )
 
+    def do_gameplay_loop(self):
+        while True:
+            # Render before the orders have been submitted
+            if self.rendering_enabled:
+                self.render()
+
+            phase = self.get_phase()
+            print(f'{phase} Phase, {self.year}')
+
+            # Request any number of orders until told to stop
+            self.get_user_orders()
+
+            # Render the orders
+            if self.rendering_enabled:
+                self.render()
+
+            if self.rendering_enabled:
+                # Wait for Enter before resolving the displayed orders
+                input('Press Enter to resolve...')
+
+            # Resolve the orders
+            self.resolve_orders()
+
+    def get_user_orders(self):
+        # Until told to stop, ask for orders
+        while True:
+            user_name = input('Name of Great Power (e.g. Russia; q to stop): ').lower()
+
+            # If q, stop
+            if user_name == 'q':
+                break
+
+            # Match user name to power
+            player = None
+            for p in self.players:
+                if user_name == p.name.lower():
+                    player = p
+            if player is None:
+                print('Invalid Great Power; please try again')
+                continue
+
+            # Get the order
+            order = input('Enter your order: ')
+            valid = self.parse_order_string(order, player)
+            if not valid:
+                print('Invalid Order; please try again')
+
     def advance_phase(self):
         self.resolution_phase += 1
         if self.resolution_phase >= len(self.resolution_phases):
@@ -196,7 +245,20 @@ class Map:
         # Skip retreat phases if there are no dislodged units that need to retreat
         dislodged = self.gather_dislodged()
         if (self.get_phase() == 'Spring Retreat' or self.get_phase() == 'Fall Retreat') and len(dislodged) == 0:
+            # Need to remove contesting, as they're only used for retreat phases
+            for territory in self.territories:
+                territory.clear_contesting()
             self.advance_phase()
+
+        # Skip Adjustment phase if each player has the correct number of units
+        if self.get_phase() == 'Adjustment':
+            needs_adjustment = False
+            for player in self.players:
+                units_to_build = player.units_to_build(self.territories)
+                if units_to_build != 0:
+                    needs_adjustment = True
+            if not needs_adjustment:
+                self.advance_phase()
 
     def get_phase(self):
         return self.resolution_phases[self.resolution_phase]
@@ -310,7 +372,11 @@ class Map:
             # Otherwise, retreat succeeds
             dislodged.dislodged = False
             dislodged.dislodge_to = None
-            dislodged.set_territory(dislodged.order.dest_territory)
+            destination = dislodged.order.dest_territory
+            destination_owner = destination.owner
+            dislodged.set_territory(destination)
+            destination.set_unit(dislodged, coast=dislodged.order.coast)
+            destination.owner = destination_owner
             dislodged.reset_order()
 
         # Clear the contesting of each territory
@@ -339,12 +405,13 @@ class Map:
         # After we're done, check and see if any players have too many troops
         for player in self.players:
             units_to_build = player.units_to_build(self.territories)
-            if units_to_build < 0:
+            while units_to_build < 0:
                 # Find the furthest unit from a home supply center and disband it
                 furthest_unit = player.get_furthest_unit(self.territories)
                 furthest_unit.territory.set_unit(None)
                 furthest_unit.territory = None
                 furthest_unit.owner.remove_unit(furthest_unit)
+                units_to_build = player.units_to_build(self.territories)
 
     def resolve_orders(self):
         # If this is the retreat phase, resolve retreat orders
@@ -463,6 +530,8 @@ class Map:
         if order is not None:
             if self.queue_order(order, owner):
                 order.unit.set_order(order)
+                return True
+        return False
 
     def _parse_order_string(self, order_string):
         # Helper functions
