@@ -1,9 +1,5 @@
-import numpy as np
-import cv2
-from scipy.interpolate import splprep, splev
-
 class Territory:
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos):
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos, np, cv2):
         self.name = name
         self.abbr = abbr
         self.is_supply_center = is_supply_center
@@ -13,6 +9,9 @@ class Territory:
 
         self.polygons = polygons
         self.label_pos = label_pos
+
+        self.np = np
+        self.cv2 = cv2
 
         self.unit_coast = None
         self.north_coast = []
@@ -24,9 +23,12 @@ class Territory:
         self.adjacents = []
         self.contesting = []
 
-        self.smooth_polygons(vertices, width, height)
+        if len(vertices) > 0:
+            self.smooth_polygons(vertices, width, height)
 
     def smooth_polygons(self, vertices, width, height):
+        from scipy.interpolate import splprep, splev
+
         EDGE_EPSILON = 10
         def is_edge_point(p):
             x, y = p
@@ -39,7 +41,7 @@ class Territory:
             )
 
         for i in range(len(self.polygons)):
-            pts = np.asarray([vertices[vertex_index] for vertex_index in self.polygons[i]], dtype=float)
+            pts = self.np.asarray([vertices[vertex_index] for vertex_index in self.polygons[i]], dtype=float)
 
             for _ in range(2):
                 new_pts = []
@@ -57,15 +59,15 @@ class Territory:
 
                     new_pts.extend(([q, r]))
 
-                pts = np.array(new_pts)
+                pts = self.np.array(new_pts)
 
-            pts = pts.astype(np.int32)
+            pts = pts.astype(self.np.int32)
 
             self.polygons[i] = pts
 
     def render(self, canvas):
         for polygon in self.polygons:
-            cv2.fillPoly(
+            self.cv2.fillPoly(
                 canvas,
                 [polygon],
                 self.get_color()
@@ -73,7 +75,7 @@ class Territory:
 
     def render_borders(self, canvas):
         for polygon in self.polygons:
-            cv2.polylines(
+            self.cv2.polylines(
                 canvas,
                 [polygon],
                 isClosed=True,
@@ -83,23 +85,23 @@ class Territory:
 
     def render_text(self, canvas):
         # Render Abbreviation
-        font = cv2.FONT_HERSHEY_SIMPLEX
+        font = self.cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.5
         thickness = 2
         color = (255, 255, 255)
 
         outline_color = (0, 0, 0)
 
-        line_type = cv2.LINE_AA
+        line_type = self.cv2.LINE_AA
 
-        text_size, _ = cv2.getTextSize(self.abbr, font, font_scale, thickness)
+        text_size, _ = self.cv2.getTextSize(self.abbr, font, font_scale, thickness)
         text_w, text_h = text_size[0], text_size[1]
 
         text_x = self.label_pos[0] - (text_w // 2)
         text_y = self.label_pos[1] + (text_h // 2)
 
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
-            cv2.putText(
+            self.cv2.putText(
                 canvas, 
                 self.abbr, 
                 (text_x+dx, text_y+dy), 
@@ -110,7 +112,7 @@ class Territory:
                 line_type
             )
 
-        cv2.putText(
+        self.cv2.putText(
             canvas, 
             self.abbr, 
             (text_x, text_y), 
@@ -135,7 +137,7 @@ class Territory:
         g -= 30
 
         border_thickness = 2
-        cv2.rectangle(
+        self.cv2.rectangle(
             canvas,
             (pt1[0]-border_thickness, pt1[1]-border_thickness),
             (pt2[0]+border_thickness, pt2[1]+border_thickness),
@@ -143,7 +145,7 @@ class Territory:
             -1
         )
 
-        cv2.rectangle(
+        self.cv2.rectangle(
             canvas,
             pt1,
             pt2,
@@ -162,7 +164,7 @@ class Territory:
         g -= 30
 
         border_thickness = 2
-        cv2.rectangle(
+        self.cv2.rectangle(
             canvas,
             (pt1[0]-border_thickness, pt1[1]-border_thickness),
             (pt2[0]+border_thickness, pt2[1]+border_thickness),
@@ -170,7 +172,7 @@ class Territory:
             -1
         )
 
-        cv2.rectangle(
+        self.cv2.rectangle(
             canvas,
             pt1,
             pt2,
@@ -530,8 +532,8 @@ class Territory:
         return f'{self.name}{f'*' if self.is_supply_center else ''}'
 
 class LandTerritory(Territory):
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos):
-        super().__init__(name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos)
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos, np, cv2):
+        super().__init__(name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos, np, cv2)
         self.is_coast = False
 
         self.supply_center_pos = supply_center_pos
@@ -541,14 +543,14 @@ class LandTerritory(Territory):
 
     def render_supply_center(self, canvas):
         if self.is_supply_center:
-            cv2.circle(
+            self.cv2.circle(
                 canvas,
                 (self.supply_center_pos[0], self.supply_center_pos[1]),
                 5,
                 (0, 173, 218),
                 -1
             )
-            cv2.circle(
+            self.cv2.circle(
                 canvas,
                 (self.supply_center_pos[0], self.supply_center_pos[1]),
                 5,
@@ -585,8 +587,8 @@ class LandTerritory(Territory):
         territory.set_adjacent(self)
 
 class WaterTerritory(Territory):
-    def __init__(self, name, abbr, owner, color, polygons, vertices, width, height, label_pos, fleet_pos):
-        super().__init__(name, abbr, False, owner, polygons, vertices, width, height, label_pos)
+    def __init__(self, name, abbr, owner, color, polygons, vertices, width, height, label_pos, fleet_pos, np, cv2):
+        super().__init__(name, abbr, False, owner, polygons, vertices, width, height, label_pos, np, cv2)
 
         self.color = color
 

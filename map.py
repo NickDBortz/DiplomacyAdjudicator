@@ -4,11 +4,18 @@ from unit import Unit
 from orders import Order, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder, BuildOrder, DisbandOrder
 from pathlib import Path
 import json
-import cv2
-import numpy as np
 
 class Map:
     def __init__(self, silent_mode=False, begin_empty=False, json_file='', load_rendering_data=True, allow_transformations=True):
+        if load_rendering_data:
+            import cv2
+            import numpy as np
+            self.cv2 = cv2
+            self.np = np
+        else:
+            self.cv2 = None
+            self.np = None
+
         self.silent_mode = silent_mode
         self.allow_transformations = allow_transformations
 
@@ -82,13 +89,13 @@ class Map:
                         army_pos = []
                         coast_pos = []
                         south_coast_pos = []
-                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, self.vertices, self.width, self.height, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos)
+                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, self.vertices, self.width, self.height, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos, self.np, self.cv2)
                 else:
                     if load_rendering_data:
                         fleet_pos = territory_obj['fleet_pos']
                     else:
                         fleet_pos = []
-                    territory = WaterTerritory(name, abbr, owner, water_color, polygons, self.vertices, self.width, self.height, label_pos, fleet_pos)
+                    territory = WaterTerritory(name, abbr, owner, water_color, polygons, self.vertices, self.width, self.height, label_pos, fleet_pos, self.np, self.cv2)
 
                 setattr(self, territory_obj['var_name'], territory)
                 self.territories.append(territory)
@@ -111,7 +118,7 @@ class Map:
 
     def render(self):
         # Create canvas
-        canvas = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        canvas = self.np.zeros((self.height, self.width, 3), dtype=self.np.uint8)
 
         # Render the territories and their borders and decorations
         for territory in self.territories:
@@ -133,22 +140,22 @@ class Map:
             territory.render_text(canvas)
 
         # Display the canvas
-        cv2.imshow("Diplomacy", canvas)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        self.cv2.imshow("Diplomacy", canvas)
+        self.cv2.waitKey(0)
+        self.cv2.destroyAllWindows()
 
     def render_orders(self, canvas):
         # Render advances first
         for order in self.queued_orders:
             if order.name == 'Advance':
                 # Render a red arrow in the direction of the advance
-                cv2.arrowedLine(
+                self.cv2.arrowedLine(
                     canvas,
                     order.get_start_pos(),
                     order.get_dest_pos(),
                     (0, 0, 255),
                     3,
-                    cv2.LINE_AA
+                    self.cv2.LINE_AA
                 )
 
         # Then render all other orders
@@ -171,13 +178,13 @@ class Map:
                 else:
                     dest_pos = order.supported_order.get_start_pos()
                 # Render a red arrow in the direction of the advance
-                cv2.arrowedLine(
+                self.cv2.arrowedLine(
                     canvas,
                     order.get_start_pos(),
                     dest_pos,
                     (0, 255, 0),
                     3,
-                    cv2.LINE_AA
+                    self.cv2.LINE_AA
                 )
 
     def advance_phase(self):
