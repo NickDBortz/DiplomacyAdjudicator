@@ -34,12 +34,17 @@ class Unit:
 
     def handle_collapse(self):
         if self.is_collapsed:
+            coast = None
+            # Get the coast if this is an advance order with a coast
+            if self.order is not None and self.order.name == 'Advance':
+                coast = self.order.coast
+
             if self.territory.unit == self:
-                self.territory.set_unit(None)
+                self.territory.set_unit(None, coast)
 
             self.territory = self.collapse_to
             if self.territory is not None:
-                self.territory.set_unit(self)
+                self.territory.set_unit(self, coast)
 
             self.collapse_to = None
             self.is_collapsed = False
