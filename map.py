@@ -214,6 +214,25 @@ class Map:
     def get_user_orders(self):
         phase = self.get_phase()
 
+        # If the phase is a retreat phase, list the players that need to retreat troops
+        if phase in ['Spring Retreat', 'Fall Retreat']:
+            players = []
+            dislodged = self.gather_dislodged()
+            for d in dislodged:
+                if d.owner not in players:
+                    players.append(d.owner)
+            for player in players:
+                print(f'{player.name} has dislodged units that need to retreat.')
+
+        # If the phase is an adjustment phase, list the players that need to build/disband troops
+        if phase == 'Adjustment':
+            for player in self.players:
+                units_to_build = player.units_to_build(self.territories)
+                if units_to_build > 0:
+                    print(f'{player.name} has {units_to_build} units to build.')
+                elif units_to_build < 0:
+                    print(f'{player.name} has {-units_to_build} units to disband.')
+
         # Until told to stop, ask for orders
         while True:
             user_name = input('Name of Great Power (e.g. Russia; q to stop): ').lower()
@@ -231,11 +250,33 @@ class Map:
                 print('Invalid Great Power; please try again')
                 continue
 
-            # Get the order
-            order = input('Enter your order: ')
-            valid = self.parse_order_string(order, player)
-            if not valid:
-                print('Invalid Order; please try again')
+            while True:
+                # If the phase is a retreat phase, list the units this player has that still need to retreat
+                if phase in ['Spring Retreat', 'Fall Retreat']:
+                    dislodged = self.gather_dislodged()
+                    for d in dislodged:
+                        if d.owner == player and d.order is None:
+                            unit_type = d.type
+                            territory = d.dislodged_from
+                            print(f'{unit_type} in {territory} has been dislodged and needs to retreat.')
+
+                # If the phase is an adjustment phase, list the units this player still needs to build/disband
+                if phase == 'Adjustment':
+                    units_to_build = player.units_to_build(self.territories)
+                    if units_to_build > 0:
+                        print(f'{player.name} has {units_to_build} units to build.')
+                    elif units_to_build < 0:
+                        print(f'{player.name} has {-units_to_build} units to disband.')
+                    else:
+                        print(f'{player.name} has no units to build/disband.')
+
+                # Get the order
+                order = input('Enter your order (q to stop): ')
+                if order.lower() == 'q':
+                    break
+                valid = self.parse_order_string(order, player)
+                if not valid:
+                    print('Invalid Order; please try again')
 
     def advance_phase(self):
         self.resolution_phase += 1
@@ -272,7 +313,6 @@ class Map:
     def queue_order(self, order, owner=None):
         # Cannot queue an order from the wrong owner or that is blank
         if owner is not None and order.unit.owner != owner:
-            if not self.silent_mode: print(f'{order.pretty_print()}: Cannot order a unit that is not your own!')
             return False
         if order is None:
             return False
@@ -280,7 +320,6 @@ class Map:
         # If the order is not valid, reset it
         if not order.is_valid:
             order.unit.reset_order()
-            if not self.silent_mode: print(f'{order.unit.pretty_print()} already has orders. Skipped {order.pretty_print()}')
             return False
 
         # If the phase is a retreat phase, only allow advance orders acting on dislodged units
@@ -302,7 +341,6 @@ class Map:
             return False 
         
         self.queued_orders.append(order)
-        # if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
         return True
 
     def resolve_retreat_orders(self):
@@ -404,6 +442,10 @@ class Map:
                 furthest_unit.territory = None
                 furthest_unit.owner.remove_unit(furthest_unit)
                 units_to_build = player.units_to_build(self.territories)
+
+            # Reset orders
+            for unit in player.units:
+                unit.reset_order()
 
     def resolve_orders(self):
         # If this is the retreat phase, resolve retreat orders
