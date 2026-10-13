@@ -6,7 +6,7 @@ from pathlib import Path
 import json
 
 class Map:
-    def __init__(self, silent_mode=False, begin_empty=False, json_file='', load_rendering_data=True, allow_transformations=True):
+    def __init__(self, silent_mode=False, start_phase='Adjustment', json_file='', load_rendering_data=True, allow_transformations=True):
         if load_rendering_data:
             import cv2
             import numpy as np
@@ -30,15 +30,16 @@ class Map:
 
         self.load_map_json(json_file, load_rendering_data)
 
-        if not begin_empty:
-            for player in self.players:
-                self.init_player_units(player)
-
         self.queued_orders = []
 
-        self.resolution_phases = ['Spring', 'Spring Retreat', 'Fall', 'Fall Retreat', 'Adjustment']
-        self.resolution_phase = 0
+        self.resolution_phases = ['Adjustment', 'Spring', 'Spring Retreat', 'Fall', 'Fall Retreat']
+        if start_phase in self.resolution_phases:
+            self.resolution_phase = self.resolution_phases.index(start_phase)
+        else:
+            self.resolution_phase = 0
         self.year = 1800 # Set to what it should be
+        self.winner = None
+        self.draw = False
 
     def load_map_json(self, json_file, load_rendering_data):
         json_file_path = Path(json_file)
@@ -54,6 +55,8 @@ class Map:
                 player = Player(player_obj['name'], player_obj['color'])
                 setattr(self, player_obj['var_name'], player)
                 self.players.append(player)
+
+            self.supply_centers_to_win = map_obj['win_count']
 
             if load_rendering_data:
                 self.vertices = map_obj['vertices']
@@ -201,6 +204,15 @@ class Map:
             # Request any number of orders until told to stop
             self.get_user_orders()
 
+            # If a draw proposal has succeeded, render the final frame and break
+            if self.draw:
+                print('All remaining players have chosen to draw.')
+                if self.rendering_enabled:
+                    self.render()
+                    self.cv2.waitKey(0)
+                    self.cv2.destroyAllWindows()
+                break
+
             # Render the orders
             if self.rendering_enabled:
                 self.render()
@@ -212,10 +224,46 @@ class Map:
             # Resolve the orders
             self.resolve_orders()
 
+            # If there is a winner, render the final frame and break
+            if self.winner is not None:
+                print(f'{self.winner.name} wins!')
+                if self.rendering_enabled:
+                    self.render()
+                    self.cv2.waitKey(0)
+                    self.cv2.destroyAllWindows()
+                break
+
     def get_user_orders(self):
+        phase = self.get_phase()
+
+        # If the phase is a retreat phase, list the players that need to retreat troops
+        if phase in ['Spring Retreat', 'Fall Retreat']:
+            players = []
+            dislodged = self.gather_dislodged()
+            for d in dislodged:
+                if d.owner not in players:
+                    players.append(d.owner)
+            for player in players:
+                print(f'{player.name} has dislodged units that need to retreat.')
+
+        # If the phase is an adjustment phase, list the players that need to build/disband troops
+        if phase == 'Adjustment':
+            for player in self.players:
+                units_to_build = player.units_to_build(self.territories)
+                if units_to_build > 0:
+                    print(f'{player.name} has {units_to_build} units to build.')
+                elif units_to_build < 0:
+                    print(f'{player.name} has {-units_to_build} units to disband.')
+
+        # List of players who can choose to draw (must be an active player)
+        no_draw_list = [player.name for player in self.players if player.get_supply_centers(self.territories) > 0]
+        draw_proposed = False
+
         # Until told to stop, ask for orders
         while True:
-            user_name = input('Name of Great Power (e.g. Russia; q to stop): ').lower()
+            if draw_proposed:
+                print('A draw has been proposed. Order "draw" to vote to draw.')
+            user_name = input('Name of Great Power (e.g. Russia; q to stop): ').lower().strip()
 
             # If q, stop
             if user_name == 'q':
@@ -230,17 +278,59 @@ class Map:
                 print('Invalid Great Power; please try again')
                 continue
 
-            # Get the order
-            order = input('Enter your order: ')
-            valid = self.parse_order_string(order, player)
-            if not valid:
-                print('Invalid Order; please try again')
+            while True:
+                # If the phase is a retreat phase, list the units this player has that still need to retreat
+                if phase in ['Spring Retreat', 'Fall Retreat']:
+                    dislodged = self.gather_dislodged()
+                    for d in dislodged:
+                        if d.owner == player and d.order is None:
+                            unit_type = d.type
+                            territory = d.dislodged_from
+                            print(f'{unit_type} in {territory} has been dislodged and needs to retreat.')
+
+                # If the phase is an adjustment phase, list the units this player still needs to build/disband
+                if phase == 'Adjustment':
+                    units_to_build = player.units_to_build(self.territories)
+                    if units_to_build > 0:
+                        print(f'{player.name} has {units_to_build} units to build.')
+                    elif units_to_build < 0:
+                        print(f'{player.name} has {-units_to_build} units to disband.')
+                    else:
+                        print(f'{player.name} has no units to build/disband.')
+
+                # Get the order
+                order = input('Enter your order (q to stop, draw to propose a draw): ').strip()
+                if order.lower() == 'q':
+                    break
+
+                # If the order is to propose a draw, add to draw list
+                if order.lower() == 'draw':
+                    if player.name in no_draw_list:
+                        no_draw_list.remove(player.name)
+                        draw_proposed = True
+                        if not no_draw_list:
+                            self.draw = True
+                            return
+                        break
+
+                valid = self.parse_order_string(order, player)
+                if not valid:
+                    print('Invalid Order; please try again')
+
+        if len(no_draw_list) == 0 and draw_proposed:
+            self.draw = True
 
     def advance_phase(self):
         self.resolution_phase += 1
         if self.resolution_phase >= len(self.resolution_phases):
             self.resolution_phase = 0
             self.year += 1
+
+            # Check for winner
+            for player in self.players:
+                if player.get_supply_centers(self.territories) >= self.supply_centers_to_win:
+                    # This player wins
+                    self.winner = player
 
         # Skip retreat phases if there are no dislodged units that need to retreat
         dislodged = self.gather_dislodged()
@@ -268,19 +358,9 @@ class Map:
             return
         self.resolution_phase = self.resolution_phases.index(phase)
 
-    def init_player_units(self, player):
-        for i in range(len(self.territories)):
-            territory = self.territories[i]
-            if territory.is_supply_center and territory.owner == player:
-                unit_type = 'Army' if isinstance(territory, LandTerritory) else 'Fleet'
-                unit = Unit(player, unit_type, territory)
-                territory.set_unit(unit)
-                player.add_unit(unit)
-
     def queue_order(self, order, owner=None):
         # Cannot queue an order from the wrong owner or that is blank
         if owner is not None and order.unit.owner != owner:
-            if not self.silent_mode: print(f'{order.pretty_print()}: Cannot order a unit that is not your own!')
             return False
         if order is None:
             return False
@@ -288,7 +368,6 @@ class Map:
         # If the order is not valid, reset it
         if not order.is_valid:
             order.unit.reset_order()
-            if not self.silent_mode: print(f'{order.unit.pretty_print()} already has orders. Skipped {order.pretty_print()}')
             return False
 
         # If the phase is a retreat phase, only allow advance orders acting on dislodged units
@@ -310,7 +389,6 @@ class Map:
             return False 
         
         self.queued_orders.append(order)
-        # if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
         return True
 
     def resolve_retreat_orders(self):
@@ -412,6 +490,10 @@ class Map:
                 furthest_unit.territory = None
                 furthest_unit.owner.remove_unit(furthest_unit)
                 units_to_build = player.units_to_build(self.territories)
+
+            # Reset orders
+            for unit in player.units:
+                unit.reset_order()
 
     def resolve_orders(self):
         # If this is the retreat phase, resolve retreat orders
