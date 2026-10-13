@@ -514,7 +514,7 @@ class Territory:
         visited = [self]
         check_this_depth = [t for t in self.adjacents]
         check_next_depth = []
-        while True:
+        while len(check_this_depth) > 0:
             while len(check_this_depth) > 0:
                 t = check_this_depth.pop()
                 visited.append(t)
