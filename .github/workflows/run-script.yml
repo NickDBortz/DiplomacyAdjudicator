@@ -1,9 +1,7 @@
 name: Run Tests
 
 # Triggers the workflow on every push to any branch
-on: 
-  push
-  workflow_dispatch
+on: push
 
 jobs:
   execute_script:
