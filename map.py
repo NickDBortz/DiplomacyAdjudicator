@@ -6,7 +6,7 @@ from pathlib import Path
 import json
 
 class Map:
-    def __init__(self, silent_mode=False, begin_empty=False, json_file='', load_rendering_data=True, allow_transformations=True):
+    def __init__(self, silent_mode=False, start_phase='Adjustment', json_file='', load_rendering_data=True, allow_transformations=True):
         if load_rendering_data:
             import cv2
             import numpy as np
@@ -30,14 +30,13 @@ class Map:
 
         self.load_map_json(json_file, load_rendering_data)
 
-        if not begin_empty:
-            for player in self.players:
-                self.init_player_units(player)
-
         self.queued_orders = []
 
-        self.resolution_phases = ['Spring', 'Spring Retreat', 'Fall', 'Fall Retreat', 'Adjustment']
-        self.resolution_phase = 0
+        self.resolution_phases = ['Adjustment', 'Spring', 'Spring Retreat', 'Fall', 'Fall Retreat']
+        if start_phase in self.resolution_phases:
+            self.resolution_phase = self.resolution_phases.index(start_phase)
+        else:
+            self.resolution_phase = 0
         self.year = 1800 # Set to what it should be
 
     def load_map_json(self, json_file, load_rendering_data):
@@ -213,6 +212,8 @@ class Map:
             self.resolve_orders()
 
     def get_user_orders(self):
+        phase = self.get_phase()
+
         # Until told to stop, ask for orders
         while True:
             user_name = input('Name of Great Power (e.g. Russia; q to stop): ').lower()
@@ -267,15 +268,6 @@ class Map:
         if phase not in self.resolution_phases:
             return
         self.resolution_phase = self.resolution_phases.index(phase)
-
-    def init_player_units(self, player):
-        for i in range(len(self.territories)):
-            territory = self.territories[i]
-            if territory.is_supply_center and territory.owner == player:
-                unit_type = 'Army' if isinstance(territory, LandTerritory) else 'Fleet'
-                unit = Unit(player, unit_type, territory)
-                territory.set_unit(unit)
-                player.add_unit(unit)
 
     def queue_order(self, order, owner=None):
         # Cannot queue an order from the wrong owner or that is blank

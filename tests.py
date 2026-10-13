@@ -53,7 +53,7 @@ def get_army(player_name, territory_name, territory_abbreviation, is_primary):
     return player, territory, army
 
 def get_classic_map(begin_empty=True):
-    return Map(silent_mode=True, begin_empty=begin_empty, load_rendering_data=False)
+    return Map(silent_mode=True, start_phase='Spring', load_rendering_data=False)
 
 def add_army(territory, owner):
     unit = Unit(owner, 'Army', territory)
