@@ -55,6 +55,8 @@ class Map:
                 setattr(self, player_obj['var_name'], player)
                 self.players.append(player)
 
+            self.supply_centers_to_win = map_obj['win_count']
+
             if load_rendering_data:
                 self.vertices = map_obj['vertices']
 
@@ -296,7 +298,7 @@ class Map:
 
             # Check for winner
             for player in self.players:
-                if player.get_supply_centers(self.territories) >= 18:
+                if player.get_supply_centers(self.territories) >= self.supply_centers_to_win:
                     # This player wins
                     self.winner = player
 
