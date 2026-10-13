@@ -367,7 +367,6 @@ class Map:
 
         # If the order is not valid, reset it
         if not order.is_valid:
-            order.unit.reset_order()
             return False
 
         # If the phase is a retreat phase, only allow advance orders acting on dislodged units
