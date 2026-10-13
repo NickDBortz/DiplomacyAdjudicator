@@ -231,7 +231,7 @@ class Map:
                 continue
 
             # Get the order
-            order = input('Enter your order: ').upper()
+            order = input('Enter your order: ')
             valid = self.parse_order_string(order, player)
             if not valid:
                 print('Invalid Order; please try again')
