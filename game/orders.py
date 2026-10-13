@@ -347,4 +347,4 @@ class DisbandOrder(Order):
         self.unit.owner.remove_unit(self.unit)
 
     def __str__(self):
-        return f'{self.unit} Removed from {self.territory}'
+        return f'{self.unit} Removed from {self.unit.territory}'
