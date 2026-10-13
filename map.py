@@ -39,6 +39,7 @@ class Map:
             self.resolution_phase = 0
         self.year = 1800 # Set to what it should be
         self.winner = None
+        self.draw = False
 
     def load_map_json(self, json_file, load_rendering_data):
         json_file_path = Path(json_file)
@@ -203,6 +204,15 @@ class Map:
             # Request any number of orders until told to stop
             self.get_user_orders()
 
+            # If a draw proposal has succeeded, render the final frame and break
+            if self.draw:
+                print('All remaining players have chosen to draw.')
+                if self.rendering_enabled:
+                    self.render()
+                    self.cv2.waitKey(0)
+                    self.cv2.destroyAllWindows()
+                break
+
             # Render the orders
             if self.rendering_enabled:
                 self.render()
@@ -245,9 +255,15 @@ class Map:
                 elif units_to_build < 0:
                     print(f'{player.name} has {-units_to_build} units to disband.')
 
+        # List of players who can choose to draw (must be an active player)
+        no_draw_list = [player.name for player in self.players if player.get_supply_centers(self.territories) > 0]
+        draw_proposed = False
+
         # Until told to stop, ask for orders
         while True:
-            user_name = input('Name of Great Power (e.g. Russia; q to stop): ').lower()
+            if draw_proposed:
+                print('A draw has been proposed. Order "draw" to vote to draw.')
+            user_name = input('Name of Great Power (e.g. Russia; q to stop): ').lower().strip()
 
             # If q, stop
             if user_name == 'q':
@@ -283,12 +299,23 @@ class Map:
                         print(f'{player.name} has no units to build/disband.')
 
                 # Get the order
-                order = input('Enter your order (q to stop): ')
+                order = input('Enter your order (q to stop, draw to propose a draw): ').strip()
                 if order.lower() == 'q':
                     break
+
+                # If the order is to propose a draw, add to draw list
+                if order.lower() == 'draw':
+                    if player.name in no_draw_list:
+                        no_draw_list.remove(player.name)
+                        draw_proposed = True
+                        break
+
                 valid = self.parse_order_string(order, player)
                 if not valid:
                     print('Invalid Order; please try again')
+
+        if len(no_draw_list) == 0 and draw_proposed:
+            self.draw = True
 
     def advance_phase(self):
         self.resolution_phase += 1
