@@ -38,6 +38,7 @@ class Map:
         else:
             self.resolution_phase = 0
         self.year = 1800 # Set to what it should be
+        self.winner = None
 
     def load_map_json(self, json_file, load_rendering_data):
         json_file_path = Path(json_file)
@@ -211,6 +212,15 @@ class Map:
             # Resolve the orders
             self.resolve_orders()
 
+            # If there is a winner, render the final frame and break
+            if self.winner is not None:
+                print(f'{self.winner.name} wins!')
+                if self.rendering_enabled:
+                    self.render()
+                    self.cv2.waitKey(0)
+                    self.cv2.destroyAllWindows()
+                break
+
     def get_user_orders(self):
         phase = self.get_phase()
 
@@ -283,6 +293,12 @@ class Map:
         if self.resolution_phase >= len(self.resolution_phases):
             self.resolution_phase = 0
             self.year += 1
+
+            # Check for winner
+            for player in self.players:
+                if player.get_supply_centers(self.territories) >= 18:
+                    # This player wins
+                    self.winner = player
 
         # Skip retreat phases if there are no dislodged units that need to retreat
         dislodged = self.gather_dislodged()
