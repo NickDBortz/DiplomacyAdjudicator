@@ -308,6 +308,9 @@ class Map:
                     if player.name in no_draw_list:
                         no_draw_list.remove(player.name)
                         draw_proposed = True
+                        if not no_draw_list:
+                            self.draw = True
+                            return
                         break
 
                 valid = self.parse_order_string(order, player)
