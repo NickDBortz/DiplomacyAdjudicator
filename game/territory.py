@@ -413,7 +413,7 @@ class Territory:
         # Failed to find a valid convoy route
         return False
 
-    def is_blocked(self, current_order, visited=[]):
+    def is_blocked(self, current_order, visited):
         # Start with a given advance order
         start_territory = current_order.unit.territory
         # If start territory in visited, we've looped and not been blocked
