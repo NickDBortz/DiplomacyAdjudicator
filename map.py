@@ -208,8 +208,9 @@ class Map:
             # Resolve the orders
             self.resolve_orders()
 
-            # Wait for enter pressed to resolve
-            input('Press Enter to continue...')
+            if self.rendering_enabled:
+                # Wait for enter pressed to resolve
+                input('Press Enter to continue...')
 
     def get_user_orders(self):
         # Until told to stop, ask for orders
@@ -245,6 +246,16 @@ class Map:
         dislodged = self.gather_dislodged()
         if (self.get_phase() == 'Spring Retreat' or self.get_phase() == 'Fall Retreat') and len(dislodged) == 0:
             self.advance_phase()
+
+        # Skip Adjustment phase if each player has the correct number of units
+        if self.get_phase() == 'Adjustment':
+            needs_adjustment = False
+            for player in self.players:
+                units_to_build = player.units_to_build(self.territories)
+                if units_to_build != 0:
+                    needs_adjustment = True
+            if not needs_adjustment:
+                self.advance_phase()
 
     def get_phase(self):
         return self.resolution_phases[self.resolution_phase]
@@ -388,12 +399,13 @@ class Map:
         # After we're done, check and see if any players have too many troops
         for player in self.players:
             units_to_build = player.units_to_build(self.territories)
-            if units_to_build < 0:
+            while units_to_build < 0:
                 # Find the furthest unit from a home supply center and disband it
                 furthest_unit = player.get_furthest_unit(self.territories)
                 furthest_unit.territory.set_unit(None)
                 furthest_unit.territory = None
                 furthest_unit.owner.remove_unit(furthest_unit)
+                units_to_build = player.units_to_build(self.territories)
 
     def resolve_orders(self):
         # If this is the retreat phase, resolve retreat orders
