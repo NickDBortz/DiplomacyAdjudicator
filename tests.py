@@ -52,7 +52,7 @@ def get_army(player_name, territory_name, territory_abbreviation, is_primary):
     assert_equal('Army order', army.order, None)
     return player, territory, army
 
-def get_classic_map(begin_empty=True):
+def get_classic_map():
     return Map(silent_mode=True, start_phase='Spring', load_rendering_data=False)
 
 def add_army(territory, owner):
