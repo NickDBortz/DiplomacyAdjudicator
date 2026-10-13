@@ -245,6 +245,9 @@ class Map:
         # Skip retreat phases if there are no dislodged units that need to retreat
         dislodged = self.gather_dislodged()
         if (self.get_phase() == 'Spring Retreat' or self.get_phase() == 'Fall Retreat') and len(dislodged) == 0:
+            # Need to remove contesting, as they're only used for retreat phases
+            for territory in self.territories:
+                territory.clear_contesting()
             self.advance_phase()
 
         # Skip Adjustment phase if each player has the correct number of units
@@ -454,10 +457,6 @@ class Map:
             for unit in player.units:
                 unit.handle_collapse()
                 unit.reset_order()
-
-        # Remove territory contestants
-        for territory in self.territories:
-            territory.clear_contesting()
 
     def gather_dislodged(self):
         dislodged = []
