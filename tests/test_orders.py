@@ -1,7 +1,7 @@
-from player import Player
-from territory import Territory
-from unit import Unit
-from map import Map
+from game.player import Player
+from game.territory import Territory
+from game.unit import Unit
+from game.map import Map
 import subprocess
 
 passed = 0

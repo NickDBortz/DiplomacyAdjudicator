@@ -1,4 +1,4 @@
-from territory import LandTerritory, WaterTerritory
+from game.territory import LandTerritory, WaterTerritory
 
 class Unit:
     def __init__(self, owner, type, territory=None):

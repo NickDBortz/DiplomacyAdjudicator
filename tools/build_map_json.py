@@ -1,5 +1,5 @@
-from map import Map
-from territory import LandTerritory
+from game.map import Map
+from game.territory import LandTerritory
 import json
 import re
 

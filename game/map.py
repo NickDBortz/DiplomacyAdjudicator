@@ -1,7 +1,7 @@
-from player import Player
-from territory import LandTerritory, WaterTerritory
-from unit import Unit
-from orders import Order, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder, BuildOrder, DisbandOrder
+from game.player import Player
+from game.territory import LandTerritory, WaterTerritory
+from game.unit import Unit
+from game.orders import Order, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder, BuildOrder, DisbandOrder
 from pathlib import Path
 import json
 
@@ -44,7 +44,7 @@ class Map:
     def load_map_json(self, json_file, load_rendering_data):
         json_file_path = Path(json_file)
         if not json_file_path.is_file():
-            json_file = 'classic_map.json'
+            json_file = 'data/maps/classic_map.json'
 
         with open(json_file, 'r') as file:
             map_obj = json.load(file)

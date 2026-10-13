@@ -1,5 +1,5 @@
-from map import Map
-from unit import Unit
+from game.map import Map
+from game.unit import Unit
 
 def add_army(territory, owner):
     unit = Unit(owner, 'Army', territory)
