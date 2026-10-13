@@ -565,7 +565,7 @@ class LandTerritory(Territory):
             else:
                 pos_x = self.coast_pos[0]
                 pos_y = self.coast_pos[1]
-                if self.unit_coast is not None and self.unit_coast == 'sc':
+if self.unit_coast in ('sc', 1):
                     pos_x = self.south_coast_pos[0]
                     pos_y = self.south_coast_pos[1]
                 self.render_fleet(canvas, (pos_x, pos_y))
