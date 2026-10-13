@@ -205,12 +205,12 @@ class Map:
             if self.rendering_enabled:
                 self.render()
 
+            if self.rendering_enabled:
+                # Wait for Enter before resolving the displayed orders
+                input('Press Enter to resolve...')
+
             # Resolve the orders
             self.resolve_orders()
-
-            if self.rendering_enabled:
-                # Wait for enter pressed to resolve
-                input('Press Enter to continue...')
 
     def get_user_orders(self):
         # Until told to stop, ask for orders
