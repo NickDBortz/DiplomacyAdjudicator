@@ -26,6 +26,8 @@ class Map:
         self.height = 0
         self.vertices = []
 
+        self.rendering_enabled = load_rendering_data
+
         self.load_map_json(json_file, load_rendering_data)
 
         if not begin_empty:
@@ -117,6 +119,7 @@ class Map:
                     territory.set_adjacent(adj)
 
     def render(self):
+        self.cv2.destroyAllWindows()
         # Create canvas
         canvas = self.np.zeros((self.height, self.width, 3), dtype=self.np.uint8)
 
@@ -141,8 +144,7 @@ class Map:
 
         # Display the canvas
         self.cv2.imshow("Diplomacy", canvas)
-        self.cv2.waitKey(0)
-        self.cv2.destroyAllWindows()
+        self.cv2.waitKey(1)
 
     def render_orders(self, canvas):
         # Render advances first
@@ -186,6 +188,52 @@ class Map:
                     3,
                     self.cv2.LINE_AA
                 )
+
+    def do_gameplay_loop(self):
+        while True:
+            # Render before the orders have been submitted
+            if self.rendering_enabled:
+                self.render()
+
+            phase = self.get_phase()
+            print(f'{phase} Phase, {self.year}')
+
+            # Request any number of orders until told to stop
+            self.get_user_orders()
+
+            # Render the orders
+            if self.rendering_enabled:
+                self.render()
+
+            # Resolve the orders
+            self.resolve_orders()
+
+            # Wait for enter pressed to resolve
+            input('Press Enter to continue...')
+
+    def get_user_orders(self):
+        # Until told to stop, ask for orders
+        while True:
+            user_name = input('Name of Great Power (e.g. Russia; q to stop): ').lower()
+
+            # If q, stop
+            if user_name == 'q':
+                break
+
+            # Match user name to power
+            player = None
+            for p in self.players:
+                if user_name == p.name.lower():
+                    player = p
+            if player is None:
+                print('Invalid Great Power; please try again')
+                continue
+
+            # Get the order
+            order = input('Enter your order: ').upper()
+            valid = self.parse_order_string(order, player)
+            if not valid:
+                print('Invalid Order; please try again')
 
     def advance_phase(self):
         self.resolution_phase += 1
@@ -311,6 +359,7 @@ class Map:
             dislodged.dislodged = False
             dislodged.dislodge_to = None
             dislodged.set_territory(dislodged.order.dest_territory)
+            dislodged.order.dest_territory.set_unit(dislodged)
             dislodged.reset_order()
 
         # Clear the contesting of each territory
@@ -394,6 +443,10 @@ class Map:
                 unit.handle_collapse()
                 unit.reset_order()
 
+        # Remove territory contestants
+        for territory in self.territories:
+            territory.clear_contesting()
+
     def gather_dislodged(self):
         dislodged = []
         for player in self.players:
@@ -463,6 +516,8 @@ class Map:
         if order is not None:
             if self.queue_order(order, owner):
                 order.unit.set_order(order)
+                return True
+        return False
 
     def _parse_order_string(self, order_string):
         # Helper functions
