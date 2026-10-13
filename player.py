@@ -1,7 +1,9 @@
 class Player:
-    def __init__(self, name):
+    def __init__(self, name, color):
         self.name = name
         self.units = []
+
+        self.color = color
 
     def add_unit(self, unit):
         self.units.append(unit)

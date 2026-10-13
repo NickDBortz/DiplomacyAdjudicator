@@ -6,13 +6,27 @@ from pathlib import Path
 import json
 
 class Map:
-    def __init__(self, silent_mode=False, begin_empty=False, json_file=''):
+    def __init__(self, silent_mode=False, begin_empty=False, json_file='', load_rendering_data=True, allow_transformations=True):
+        if load_rendering_data:
+            import cv2
+            import numpy as np
+            self.cv2 = cv2
+            self.np = np
+        else:
+            self.cv2 = None
+            self.np = None
+
         self.silent_mode = silent_mode
+        self.allow_transformations = allow_transformations
 
         self.players = []
         self.territories = []
 
-        self.load_map_json(json_file)
+        self.width = 0
+        self.height = 0
+        self.vertices = []
+
+        self.load_map_json(json_file, load_rendering_data)
 
         if not begin_empty:
             for player in self.players:
@@ -24,7 +38,7 @@ class Map:
         self.resolution_phase = 0
         self.year = 1800 # Set to what it should be
 
-    def load_map_json(self, json_file):
+    def load_map_json(self, json_file, load_rendering_data):
         json_file_path = Path(json_file)
         if not json_file_path.is_file():
             json_file = 'classic_map.json'
@@ -35,9 +49,18 @@ class Map:
             # Load Players
             players = map_obj['players']
             for player_obj in players:
-                player = Player(player_obj['name'])
+                player = Player(player_obj['name'], player_obj['color'])
                 setattr(self, player_obj['var_name'], player)
                 self.players.append(player)
+
+            if load_rendering_data:
+                self.vertices = map_obj['vertices']
+
+                water_color = map_obj['water_color']
+                self.width = map_obj['width']
+                self.height = map_obj['height']
+            else:
+                water_color = []
 
             # Load Territories
             territories = map_obj['territories']
@@ -48,10 +71,31 @@ class Map:
                 owner_name = territory_obj['owner']
                 owner = next((player for player in self.players if player.name == owner_name), None)
 
-                if territory_obj['land']:
-                    territory = LandTerritory(name, abbr, is_supply_center, owner)
+                if load_rendering_data:
+                    polygons = territory_obj['polygons']
+                    label_pos = territory_obj['label_pos']
                 else:
-                    territory = WaterTerritory(name, abbr, owner)
+                    polygons = []
+                    label_pos = []
+
+                if territory_obj['land']:
+                    if load_rendering_data:
+                        supply_center_pos = territory_obj['supply_center_pos']
+                        army_pos = territory_obj['army_pos']
+                        coast_pos = territory_obj['coast_pos']
+                        south_coast_pos = territory_obj['south_coast_pos']
+                    else:
+                        supply_center_pos = []
+                        army_pos = []
+                        coast_pos = []
+                        south_coast_pos = []
+                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, self.vertices, self.width, self.height, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos, self.np, self.cv2)
+                else:
+                    if load_rendering_data:
+                        fleet_pos = territory_obj['fleet_pos']
+                    else:
+                        fleet_pos = []
+                    territory = WaterTerritory(name, abbr, owner, water_color, polygons, self.vertices, self.width, self.height, label_pos, fleet_pos, self.np, self.cv2)
 
                 setattr(self, territory_obj['var_name'], territory)
                 self.territories.append(territory)
@@ -71,6 +115,77 @@ class Map:
                 for adj_name in territory_obj['adjacents']:
                     adj = next((t for t in self.territories if t.name == adj_name), None)
                     territory.set_adjacent(adj)
+
+    def render(self):
+        # Create canvas
+        canvas = self.np.zeros((self.height, self.width, 3), dtype=self.np.uint8)
+
+        # Render the territories and their borders and decorations
+        for territory in self.territories:
+            territory.render(canvas)
+        for territory in self.territories:
+            territory.render_borders(canvas)
+
+        # Render the units on the territories
+        for territory in self.territories:
+            if isinstance(territory, LandTerritory):
+                territory.render_supply_center(canvas)
+            territory.render_unit(canvas)
+
+        # Render the orders
+        self.render_orders(canvas)
+
+        # Render the text on the territories
+        for territory in self.territories:
+            territory.render_text(canvas)
+
+        # Display the canvas
+        self.cv2.imshow("Diplomacy", canvas)
+        self.cv2.waitKey(0)
+        self.cv2.destroyAllWindows()
+
+    def render_orders(self, canvas):
+        # Render advances first
+        for order in self.queued_orders:
+            if order.name == 'Advance':
+                # Render a red arrow in the direction of the advance
+                self.cv2.arrowedLine(
+                    canvas,
+                    order.get_start_pos(),
+                    order.get_dest_pos(),
+                    (0, 0, 255),
+                    3,
+                    self.cv2.LINE_AA
+                )
+
+        # Then render all other orders
+        for order in self.queued_orders:
+            if order.name == 'Support':
+                # If we find a match, continue
+                found_match = False
+                for other in self.queued_orders:
+                    if other.match(order.supported_order):
+                        found_match = True
+                        break
+                if not found_match:
+                    continue
+
+                if order.supported_order.name == 'Advance':
+                    adv_start = order.supported_order.get_start_pos()
+                    adv_dest = order.supported_order.get_dest_pos()
+
+                    dest_pos = [(adv_start[0] - adv_dest[0]) // 2 + adv_dest[0], (adv_start[1] - adv_dest[1]) // 2 + adv_dest[1]]
+                else:
+                    dest_pos = order.supported_order.get_start_pos()
+                # Render a red arrow in the direction of the advance
+                self.cv2.arrowedLine(
+                    canvas,
+                    order.get_start_pos(),
+                    dest_pos,
+                    (0, 255, 0),
+                    3,
+                    self.cv2.LINE_AA
+                )
 
     def advance_phase(self):
         self.resolution_phase += 1
@@ -133,7 +248,7 @@ class Map:
             return False 
         
         self.queued_orders.append(order)
-        if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
+        # if not self.silent_mode: print(f'Orders set! {order.pretty_print()}')
         return True
 
     def resolve_retreat_orders(self):
@@ -380,7 +495,7 @@ class Map:
             if idx < 0 or idx >= len(split_order_string):
                 raise Exception()
             order_type = split_order_string[idx]
-            if order_type not in ['H', '-', 'S', 'T', 'C', 'B']:
+            if order_type not in ['H', '-', 'S', 'T', 'T(nc)', 'T(sc)', 'C', 'B']:
                 raise Exception()
             return order_type
 
@@ -444,8 +559,14 @@ class Map:
                 if not isinstance(supported_order, Order):
                     raise Exception()
                 return SupportOrder(unit, supported_order)
-            elif order_type == 'T':
-                return TransformOrder(unit)
+            elif order_type.startswith('T') and self.allow_transformations: # This is a house rule and isn't always allowed
+                split_terr_coast = order_type.split('(')
+                coast = None
+                if len(split_terr_coast) > 1:
+                    coast = split_terr_coast[1].split(')')[0]
+                    if coast not in ('nc', 'sc'):
+                        raise Exception()
+                return TransformOrder(unit, coast)
             elif order_type == 'C':
                 if unit_type != 'Fleet':
                     raise Exception()
@@ -454,5 +575,7 @@ class Map:
                 if not isinstance(advance_order, AdvanceOrder):
                     raise Exception()
                 return ConvoyOrder(unit, advance_order.unit, advance_order.dest_territory)
+            else:
+                raise Exception()
         except Exception:
             return None

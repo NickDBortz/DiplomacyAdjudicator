@@ -35,6 +35,22 @@ class Order:
             self.deactivated_supporters.append(supporter)
             self.passive_power -= 1
 
+    def get_start_pos(self):
+        t = self.unit.territory
+        if isinstance(t, LandTerritory):
+            if self.unit.type == 'Army':
+                return t.army_pos
+            else:
+                if len(t.north_coast) > 0:
+                    if t.unit_coast in ('nc', 0):
+                        return t.coast_pos
+                    else:
+                        return t.south_coast_pos
+                else:
+                    return t.coast_pos
+        else:
+            return t.fleet_pos
+
     def __str__(self):
         return f'{self.name} {self.unit}'
 
@@ -69,6 +85,22 @@ class AdvanceOrder(Order):
         if not isinstance(other, AdvanceOrder):
             return False
         return other.unit == self.unit and other.dest_territory == self.dest_territory and (other.coast == self.coast if other.coast is not None else True)
+
+    def get_dest_pos(self):
+        t = self.dest_territory
+        if isinstance(t, LandTerritory):
+            if self.unit.type == 'Army':
+                return t.army_pos
+            else:
+                if len(t.north_coast) > 0:
+                    if self.coast == 'nc':
+                        return t.coast_pos
+                    else:
+                        return t.south_coast_pos
+                else:
+                    return t.coast_pos
+        else:
+            return t.fleet_pos
 
     def validate(self):
         if self.unit.territory is None:
@@ -161,7 +193,8 @@ class SupportOrder(Order):
         return f'{self.unit} Supports {self.supported_order}'
 
 class TransformOrder(Order):
-    def __init__(self, unit):
+    def __init__(self, unit, coast=None):
+        self.coast = coast
         super().__init__('Transform', unit)
 
     def match(self, other):
@@ -170,8 +203,20 @@ class TransformOrder(Order):
         return other.unit == self.unit
 
     def validate(self):
-        # Valid if on coast only
-        return isinstance(self.unit.territory, LandTerritory) and self.unit.territory.is_coast
+        if isinstance(self.unit.territory, WaterTerritory):
+            return False
+
+        if self.unit.territory.is_coast:
+            if len(self.unit.territory.north_coast) > 0:
+                if self.coast is None:
+                    return False
+                return True
+            elif self.coast is not None:
+                return False
+            else:
+                return True
+        else:
+            return False
 
     def activate(self):
         # Functions like a hold order, does not contest

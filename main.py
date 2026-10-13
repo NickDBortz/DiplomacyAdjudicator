@@ -3,11 +3,18 @@ from map import Map
 if __name__ == "__main__":
     map = Map()
 
-    print('Players:')
-    for player in map.players:
-        print(f'  {player}')
-    print()
+    map.parse_order_string('A STP - LIV', map.russia)
+    map.parse_order_string('A MOS S A STP - LIV', map.russia)
 
-    print('Territories:')
-    for territory in map.territories:
-        print(f'  {territory}')
+    map.resolve_orders()
+
+    map.parse_order_string('A WAR - PRU', map.russia)
+    map.parse_order_string('A LIV S A WAR - PRU', map.russia)
+
+    map.parse_order_string('A BER - PRU', map.germany)
+
+    map.parse_order_string('A EDI T', map.england)
+
+    map.resolve_orders()
+
+    map.render()

@@ -53,7 +53,7 @@ def get_army(player_name, territory_name, territory_abbreviation, is_primary):
     return player, territory, army
 
 def get_classic_map(begin_empty=True):
-    return Map(silent_mode=True, begin_empty=begin_empty)
+    return Map(silent_mode=True, begin_empty=begin_empty, load_rendering_data=False)
 
 def add_army(territory, owner):
     unit = Unit(owner, 'Army', territory)
@@ -79,14 +79,14 @@ def test_advance_not_neighbor():
 def test_move_army_to_sea():
     map = get_classic_map()
     unit = add_army(map.liverpool, map.england)
-    map.parse_order_string('A LVP - IRI')
+    map.parse_order_string('A LPL - IRI')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
 
 # 6.A.3
 def test_move_fleet_to_land():
     map = get_classic_map()
     unit = add_fleet(map.kiel, map.germany)
-    map.parse_order_string('F KIE - MUN')
+    map.parse_order_string('F KIE - MUC')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
 
 # 6.A.4
@@ -107,7 +107,7 @@ def test_move_to_own_territory_with_convoy():
 
     map.parse_order_string('F NTH C A YOR - YOR')
     map.parse_order_string('A YOR - YOR')
-    map.parse_order_string('A LVP S A YOR - YOR')
+    map.parse_order_string('A LPL S A YOR - YOR')
     map.parse_order_string('F LON - YOR')
     map.parse_order_string('A WAL S F LON - YOR')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
@@ -215,7 +215,7 @@ def test_triple_bounce():
     italian_army = add_army(map.venice, map.italy)
 
     map.parse_order_string('A VIE - TYR')
-    map.parse_order_string('A MUN - TYR')
+    map.parse_order_string('A MUC - TYR')
     map.parse_order_string('A VEN - TYR')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
@@ -265,7 +265,7 @@ def test_support_to_unreachable_coast_allowed():
 
     map.parse_order_string('F GAS - SPA(nc)')
     map.parse_order_string('F MAR S F GAS - SPA(nc)')
-    map.parse_order_string('F WME - SPA(sc)')
+    map.parse_order_string('F WES - SPA(sc)')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
     map.resolve_orders()
@@ -282,9 +282,9 @@ def test_support_from_unreachable_coast_not_allowed():
     french_fleet2 = add_fleet(map.spain, map.france, coast=0)
     italian_fleet = add_fleet(map.gulf_of_lyon, map.italy)
 
-    map.parse_order_string('F MAR - GOL')
-    map.parse_order_string('F SPA S F MAR - GOL')
-    map.parse_order_string('F GOL H')
+    map.parse_order_string('F MAR - LYO')
+    map.parse_order_string('F SPA S F MAR - LYO')
+    map.parse_order_string('F LYO H')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
 
     map.resolve_orders()
@@ -307,7 +307,7 @@ def test_support_cut_from_other_coast():
     map.parse_order_string('F NAO - MAO')
     map.parse_order_string('F SPA S F MAO H')
     map.parse_order_string('F MAO H')
-    map.parse_order_string('F GOL - SPA(sc)')
+    map.parse_order_string('F LYO - SPA(sc)')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
 
     map.resolve_orders()
@@ -329,8 +329,8 @@ def test_support_own_unit_with_unspecified_coast():
 
     map.parse_order_string('F POR S F MAO - SPA')
     map.parse_order_string('F MAO - SPA(nc)')
-    map.parse_order_string('F GOL S F WME - SPA(sc)')
-    map.parse_order_string('F WME - SPA(sc)')
+    map.parse_order_string('F LYO S F WES - SPA(sc)')
+    map.parse_order_string('F WES - SPA(sc)')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
 
     map.resolve_orders()
@@ -351,8 +351,8 @@ def test_support_with_unspecified_coast_when_only_one_coast_possible():
 
     map.parse_order_string('F POR S F GAS - SPA')
     map.parse_order_string('F GAS - SPA(nc)')
-    map.parse_order_string('F GOL S F WME - SPA(sc)')
-    map.parse_order_string('F WME - SPA(sc)')
+    map.parse_order_string('F LYO S F WES - SPA(sc)')
+    map.parse_order_string('F WES - SPA(sc)')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
 
     map.resolve_orders()
@@ -373,8 +373,8 @@ def test_support_with_wrong_coast():
 
     map.parse_order_string('F POR S F MAO - SPA(nc)')
     map.parse_order_string('F MAO - SPA(sc)')
-    map.parse_order_string('F GOL S F WME - SPA(sc)')
-    map.parse_order_string('F WME - SPA(sc)')
+    map.parse_order_string('F LYO S F WES - SPA(sc)')
+    map.parse_order_string('F WES - SPA(sc)')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
 
     map.resolve_orders()
@@ -386,14 +386,14 @@ def test_support_with_wrong_coast():
     assert_equal('Italian Fleet 2 Territory', italian_fleet2.territory, map.spain)
 
 # 6.B.10
-# This assumes we allow specifying moves like F SPA(nc) - GOL. We don't allow coast specifications on start territory
+# This assumes we allow specifying moves like F SPA(nc) - LYO. We don't allow coast specifications on start territory
 
 # 6.B.11
 def test_coast_cannot_be_ordered_to_change():
     map = get_classic_map()
     french_fleet = add_fleet(map.spain, map.france, coast=0)
 
-    map.parse_order_string('F SPA - GOL')
+    map.parse_order_string('F SPA - LYO')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
 
 # 6.B.12
@@ -441,8 +441,8 @@ def test_support_foreign_unit_unspecified_coast():
 
     map.parse_order_string('F POR S F MAO - SPA')
     map.parse_order_string('F MAO - SPA(nc)')
-    map.parse_order_string('F GOL S F WME - SPA(sc)')
-    map.parse_order_string('F WME - SPA(sc)')
+    map.parse_order_string('F LYO S F WES - SPA(sc)')
+    map.parse_order_string('F WES - SPA(sc)')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
 
     map.resolve_orders()
@@ -780,9 +780,9 @@ def test_support_to_hold_on_unit_supporting_move_allowed():
     russian_fleet = add_fleet(map.baltic_sea, map.russia)
     russian_army = add_army(map.prussia, map.russia)
 
-    map.parse_order_string('A BER S A MUN - SIL')
+    map.parse_order_string('A BER S A MUC - SIL')
     map.parse_order_string('F KIE S A BER H')
-    map.parse_order_string('A MUN - SIL')
+    map.parse_order_string('A MUC - SIL')
     map.parse_order_string('F BAL S A PRU - BER')
     map.parse_order_string('A PRU - BER')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
@@ -809,7 +809,7 @@ def test_support_to_hold_on_convoying_unit_allowed():
     map.parse_order_string('F BAL C A BER - SWE')
     map.parse_order_string('F PRU S F BAL H')
     map.parse_order_string('F LIV - BAL')
-    map.parse_order_string('F GOB S F LIV - BAL')
+    map.parse_order_string('F BOT S F LIV - BAL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
 
     map.resolve_orders()
@@ -833,7 +833,7 @@ def test_support_to_hold_on_moving_unit_not_allowed():
     map.parse_order_string('F BAL - SWE')
     map.parse_order_string('F PRU S F BAL H')
     map.parse_order_string('F LIV - BAL')
-    map.parse_order_string('F GOB S F LIV - BAL')
+    map.parse_order_string('F BOT S F LIV - BAL')
     map.parse_order_string('A FIN - SWE')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
 
@@ -902,7 +902,7 @@ def test_self_dislodgement_prohibited():
 
     map.parse_order_string('A BER H')
     map.parse_order_string('F KIE - BER')
-    map.parse_order_string('A MUN S F KIE - BER')
+    map.parse_order_string('A MUC S F KIE - BER')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
     map.resolve_orders()
@@ -922,7 +922,7 @@ def test_no_self_dislodgement_of_returning_unit():
 
     map.parse_order_string('A BER - PRU')
     map.parse_order_string('F KIE - BER')
-    map.parse_order_string('A MUN S F KIE - BER')
+    map.parse_order_string('A MUC S F KIE - BER')
     map.parse_order_string('A WAR - PRU')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
 
@@ -1151,9 +1151,9 @@ def test_dislodging_dows_not_cancel_a_support_cut():
     map.parse_order_string('F TRI H')
     map.parse_order_string('A VEN - TRI')
     map.parse_order_string('A TYR S A VEN - TRI')
-    map.parse_order_string('A MUN - TYR')
-    map.parse_order_string('A SIL - MUN')
-    map.parse_order_string('A BER S A SIL - MUN')
+    map.parse_order_string('A MUC - TYR')
+    map.parse_order_string('A SIL - MUC')
+    map.parse_order_string('A BER S A SIL - MUC')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 6)
 
     map.resolve_orders()
@@ -1174,10 +1174,10 @@ def test_impossible_fleet_move_cannot_be_supported():
     russian_army1 = add_army(map.munich, map.russia)
     russian_army2 = add_army(map.berlin, map.russia)
 
-    map.parse_order_string('F KIE - MUN')
-    map.parse_order_string('A BUR S F KIE - MUN')
-    map.parse_order_string('A MUN - KIE')
-    map.parse_order_string('A BER S A MUN - KIE')
+    map.parse_order_string('F KIE - MUC')
+    map.parse_order_string('A BUR S F KIE - MUC')
+    map.parse_order_string('A MUC - KIE')
+    map.parse_order_string('A BER S A MUC - KIE')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
     map.resolve_orders()
@@ -1196,10 +1196,10 @@ def test_impossible_coast_move_cannot_be_supported():
     french_fleet1 = add_fleet(map.spain, map.france, coast=0)
     french_fleet2 = add_fleet(map.marseilles, map.france)
 
-    map.parse_order_string('F GOL - SPA(sc)')
-    map.parse_order_string('F WME S F GOL - SPA(sc)')
-    map.parse_order_string('F SPA - GOL')
-    map.parse_order_string('F MAR S F SPA - GOL')
+    map.parse_order_string('F LYO - SPA(sc)')
+    map.parse_order_string('F WES S F LYO - SPA(sc)')
+    map.parse_order_string('F SPA - LYO')
+    map.parse_order_string('F MAR S F SPA - LYO')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
     map.resolve_orders()
@@ -1219,11 +1219,11 @@ def test_impossible_army_move_cannot_be_supported():
     turkish_fleet1 = add_fleet(map.tyrrhenian_sea, map.turkey)
     turkish_fleet2 = add_fleet(map.western_mediterranean, map.turkey)
 
-    map.parse_order_string('A MAR - GOL')
-    map.parse_order_string('F SPA S A MAR - GOL')
-    map.parse_order_string('F GOL H')
-    map.parse_order_string('F TYS S F WME - GOL')
-    map.parse_order_string('F WME - GOL')
+    map.parse_order_string('A MAR - LYO')
+    map.parse_order_string('F SPA S A MAR - LYO')
+    map.parse_order_string('F LYO H')
+    map.parse_order_string('F TYS S F WES - LYO')
+    map.parse_order_string('F WES - LYO')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
 
     map.resolve_orders()
@@ -1394,8 +1394,8 @@ def test_missing_fleet():
     french_fleet = add_fleet(map.london, map.france)
     german_army = add_army(map.yorkshire, map.germany)
 
-    map.parse_order_string('F EDI S A LVP - YOR')
-    map.parse_order_string('A LVP - YOR')
+    map.parse_order_string('F EDI S A LPL - YOR')
+    map.parse_order_string('A LPL - YOR')
     map.parse_order_string('F LON S A YOR H')
     map.parse_order_string('A YOR - HOL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
@@ -1490,7 +1490,7 @@ def test_no_self_dislodgement_in_head_to_head_battle():
 
     map.parse_order_string('A BER - KIE')
     map.parse_order_string('F KIE - BER')
-    map.parse_order_string('A MUN S A BER - KIE')
+    map.parse_order_string('A MUC S A BER - KIE')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
     map.resolve_orders()
@@ -1508,7 +1508,7 @@ def test_no_help_in_dislodging_own_unit():
     english_fleet = add_fleet(map.kiel, map.england)
 
     map.parse_order_string('A BER - KIE')
-    map.parse_order_string('A MUN S F KIE - BER')
+    map.parse_order_string('A MUC S F KIE - BER')
     map.parse_order_string('F KIE - BER')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
@@ -1538,9 +1538,9 @@ def test_non_dislodged_loser_still_has_effect():
     map.parse_order_string('F SKA S F HOL - NTH')
     map.parse_order_string('F NTH - HOL')
     map.parse_order_string('F BEL S F NTH - HOL')
-    map.parse_order_string('F EDI S F NRG - NTH')
-    map.parse_order_string('F YOR S F NRG - NTH')
-    map.parse_order_string('F NRG - NTH')
+    map.parse_order_string('F EDI S F NWG - NTH')
+    map.parse_order_string('F YOR S F NWG - NTH')
+    map.parse_order_string('F NWG - NTH')
     map.parse_order_string('A KIE S A RUH - HOL')
     map.parse_order_string('A RUH - HOL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 10)
@@ -1579,10 +1579,10 @@ def test_loser_dislodged_by_another_army_still_has_effect():
     map.parse_order_string('F SKA S F HOL - NTH')
     map.parse_order_string('F NTH - HOL')
     map.parse_order_string('F BEL S F NTH - HOL')
-    map.parse_order_string('F EDI S F NRG - NTH')
-    map.parse_order_string('F YOR S F NRG - NTH')
-    map.parse_order_string('F NRG - NTH')
-    map.parse_order_string('F LON S F NRG - NTH')
+    map.parse_order_string('F EDI S F NWG - NTH')
+    map.parse_order_string('F YOR S F NWG - NTH')
+    map.parse_order_string('F NWG - NTH')
+    map.parse_order_string('F LON S F NWG - NTH')
     map.parse_order_string('A KIE S A RUH - HOL')
     map.parse_order_string('A RUH - HOL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 11)
@@ -1644,11 +1644,11 @@ def test_no_self_dislodgement_with_beleaguered_garrison():
     russian_fleet2 = add_fleet(map.norway, map.russia)
 
     map.parse_order_string('F NTH H')
-    map.parse_order_string('F YOR S F NOR - NTH')
+    map.parse_order_string('F YOR S F NWY - NTH')
     map.parse_order_string('F HOL S F HEL - NTH')
     map.parse_order_string('F HEL - NTH')
-    map.parse_order_string('F SKA S F NOR - NTH')
-    map.parse_order_string('F NOR - NTH')
+    map.parse_order_string('F SKA S F NWY - NTH')
+    map.parse_order_string('F NWY - NTH')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 6)
 
     map.resolve_orders()
@@ -1671,12 +1671,12 @@ def test_no_self_dislodgement_with_beleaguered_garrison_and_head_to_head_battle(
     russian_fleet1 = add_fleet(map.skagerrak, map.russia)
     russian_fleet2 = add_fleet(map.norway, map.russia)
 
-    map.parse_order_string('F NTH - NOR')
-    map.parse_order_string('F YOR S F NOR - NTH')
+    map.parse_order_string('F NTH - NWY')
+    map.parse_order_string('F YOR S F NWY - NTH')
     map.parse_order_string('F HOL S F HEL - NTH')
     map.parse_order_string('F HEL - NTH')
-    map.parse_order_string('F SKA S F NOR - NTH')
-    map.parse_order_string('F NOR - NTH')
+    map.parse_order_string('F SKA S F NWY - NTH')
+    map.parse_order_string('F NWY - NTH')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 6)
 
     map.resolve_orders()
@@ -1699,12 +1699,12 @@ def test_almost_self_dislodgement_with_beleaguered_garrison():
     russian_fleet1 = add_fleet(map.skagerrak, map.russia)
     russian_fleet2 = add_fleet(map.norway, map.russia)
 
-    map.parse_order_string('F NTH - NRG')
-    map.parse_order_string('F YOR S F NOR - NTH')
+    map.parse_order_string('F NTH - NWG')
+    map.parse_order_string('F YOR S F NWY - NTH')
     map.parse_order_string('F HOL S F HEL - NTH')
     map.parse_order_string('F HEL - NTH')
-    map.parse_order_string('F SKA S F NOR - NTH')
-    map.parse_order_string('F NOR - NTH')
+    map.parse_order_string('F SKA S F NWY - NTH')
+    map.parse_order_string('F NWY - NTH')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 6)
 
     map.resolve_orders()
@@ -1729,12 +1729,12 @@ def test_almost_circular_movement_with_no_self_dislodgement_with_beleaguered_gar
     russian_fleet2 = add_fleet(map.norway, map.russia)
 
     map.parse_order_string('F NTH - DEN')
-    map.parse_order_string('F YOR S F NOR - NTH')
+    map.parse_order_string('F YOR S F NWY - NTH')
     map.parse_order_string('F HOL S F HEL - NTH')
     map.parse_order_string('F HEL - NTH')
     map.parse_order_string('F DEN - HEL')
-    map.parse_order_string('F SKA S F NOR - NTH')
-    map.parse_order_string('F NOR - NTH')
+    map.parse_order_string('F SKA S F NWY - NTH')
+    map.parse_order_string('F NWY - NTH')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
     map.resolve_orders()
@@ -1761,11 +1761,11 @@ def test_no_self_dislodgement_with_beleaguered_garrison_unit_swap_with_adjacent_
 
     map.parse_order_string('A SPA - POR via convoy')
     map.parse_order_string('F MAO C A SPA - POR')
-    map.parse_order_string('F GOL S F POR - SPA(nc)')
+    map.parse_order_string('F LYO S F POR - SPA(nc)')
     map.parse_order_string('A MAR S A GAS - SPA')
     map.parse_order_string('A GAS - SPA')
     map.parse_order_string('F POR - SPA(nc)')
-    map.parse_order_string('F WME S F POR - SPA(nc)')
+    map.parse_order_string('F WES S F POR - SPA(nc)')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
     map.resolve_orders()
@@ -1820,8 +1820,8 @@ def test_three_way_beleaguered_garrison():
     map.parse_order_string('F BEL - NTH')
     map.parse_order_string('F ENG S F BEL - NTH')
     map.parse_order_string('F NTH H')
-    map.parse_order_string('F NRG - NTH')
-    map.parse_order_string('F NOR S F NRG - NTH')
+    map.parse_order_string('F NWG - NTH')
+    map.parse_order_string('F NWY S F NWG - NTH')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
     map.resolve_orders()
@@ -1841,8 +1841,8 @@ def test_illegal_head_to_head_battle_can_still_defend():
     english_army = add_army(map.liverpool, map.england)
     russian_fleet = add_fleet(map.edinburgh, map.russia)
 
-    map.parse_order_string('A LVP - EDI')
-    map.parse_order_string('F EDI - LVP')
+    map.parse_order_string('A LPL - EDI')
+    map.parse_order_string('F EDI - LPL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
 
     map.resolve_orders()
@@ -1868,7 +1868,7 @@ def test_the_friendly_head_to_head_battle():
     map.parse_order_string('F HOL S A RUH - KIE')
     map.parse_order_string('A RUH - KIE')
     map.parse_order_string('A KIE - BER')
-    map.parse_order_string('A MUN S A KIE - BER')
+    map.parse_order_string('A MUC S A KIE - BER')
     map.parse_order_string('A SIL S A KIE - BER')
     map.parse_order_string('A BER - KIE')
     map.parse_order_string('F DEN S A BER - KIE')
@@ -2245,9 +2245,9 @@ def test_simple_convoy_paradox_with_additional_convoy():
     map.parse_order_string('F WAL - ENG')
     map.parse_order_string('A BRE - LON')
     map.parse_order_string('F ENG C A BRE - LON')
-    map.parse_order_string('F IRI C A AFR - WAL')
-    map.parse_order_string('F MAO C A AFR - WAL')
-    map.parse_order_string('A AFR - WAL')
+    map.parse_order_string('F IRI C A NAF - WAL')
+    map.parse_order_string('F MAO C A NAF - WAL')
+    map.parse_order_string('A NAF - WAL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
     map.resolve_orders()
@@ -2387,8 +2387,8 @@ def test_unwanted_multi_route_convoy_paradox():
     map.parse_order_string('F TYS C A TUN - NAP')
     map.parse_order_string('F NAP S F ION H')
     map.parse_order_string('F ION C A TUN - NAP')
-    map.parse_order_string('F AEG S F EMS - ION')
-    map.parse_order_string('F EMS - ION')
+    map.parse_order_string('F AEG S F EAS - ION')
+    map.parse_order_string('F EAS - ION')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 6)
 
     map.resolve_orders()
@@ -2413,13 +2413,13 @@ def test_dads_army_convoy():
     english_fleet1 = add_fleet(map.north_atlantic_ocean, map.england)
     english_fleet2 = add_fleet(map.clyde, map.england)
 
-    map.parse_order_string('A EDI S A NOR - CLY')
-    map.parse_order_string('F NRG C A NOR - CLY')
-    map.parse_order_string('A NOR - CLY')
+    map.parse_order_string('A EDI S A NWY - CLY')
+    map.parse_order_string('F NWG C A NWY - CLY')
+    map.parse_order_string('A NWY - CLY')
     map.parse_order_string('F IRI S F MAO - NAO')
     map.parse_order_string('F MAO - NAO')
-    map.parse_order_string('A LVP - CLY via convoy')
-    map.parse_order_string('F NAO C A LVP - CLY')
+    map.parse_order_string('A LPL - CLY via convoy')
+    map.parse_order_string('F NAO C A LPL - CLY')
     map.parse_order_string('F CLY S F NAO H')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 8)
 
@@ -2453,8 +2453,8 @@ def test_second_order_paradox_with_two_resolutions():
     map.parse_order_string('F ENG C A BRE - LON')
     map.parse_order_string('F BEL S F PIC - ENG')
     map.parse_order_string('F PIC - ENG')
-    map.parse_order_string('A NOR - BEL')
-    map.parse_order_string('F NTH C A NOR - BEL')
+    map.parse_order_string('A NWY - BEL')
+    map.parse_order_string('F NTH C A NWY - BEL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 8)
 
     map.resolve_orders()
@@ -2491,8 +2491,8 @@ def test_second_order_paradox_with_two_exclusive_convoys():
     map.parse_order_string('F LON S F NTH H')
     map.parse_order_string('F MAO - ENG')
     map.parse_order_string('F IRI S F MAO - ENG')
-    map.parse_order_string('A NOR - BEL')
-    map.parse_order_string('F NTH C A NOR - BEL')
+    map.parse_order_string('A NWY - BEL')
+    map.parse_order_string('F NTH C A NWY - BEL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 10)
 
     map.resolve_orders()
@@ -2529,8 +2529,8 @@ def test_second_order_paradox_with_no_resolution():
     map.parse_order_string('A BRE - LON')
     map.parse_order_string('F ENG C A BRE - LON')
     map.parse_order_string('F BEL S F ENG H')
-    map.parse_order_string('A NOR - BEL')
-    map.parse_order_string('F NTH C A NOR - BEL')
+    map.parse_order_string('A NWY - BEL')
+    map.parse_order_string('F NTH C A NWY - BEL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 9)
 
     map.resolve_orders()
@@ -2564,15 +2564,15 @@ def test_cut_support_last():
 
     map.parse_order_string('A RUH - BEL')
     map.parse_order_string('A HOL S A RUH - BEL')
-    map.parse_order_string('A DEN - NOR')
-    map.parse_order_string('F SKA C A DEN - NOR')
-    map.parse_order_string('A FIN S A DEN - NOR')
+    map.parse_order_string('A DEN - NWY')
+    map.parse_order_string('F SKA C A DEN - NWY')
+    map.parse_order_string('A FIN S A DEN - NWY')
     map.parse_order_string('A YOR - HOL')
     map.parse_order_string('F NTH C A YOR - HOL')
     map.parse_order_string('F HEL S A YOR - HOL')
     map.parse_order_string('A BEL H')
-    map.parse_order_string('F NRG - NTH')
-    map.parse_order_string('F NOR S F NRG - NTH')
+    map.parse_order_string('F NWG - NTH')
+    map.parse_order_string('F NWY S F NWG - NTH')
     map.parse_order_string('F SWE - SKA')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 12)
 
@@ -2600,9 +2600,9 @@ def test_two_units_can_swap_provinces_by_convoy():
     english_fleet = add_fleet(map.skagerrak, map.england)
     russian_army = add_army(map.sweden, map.russia)
 
-    map.parse_order_string('A NOR - SWE')
-    map.parse_order_string('F SKA C A NOR - SWE')
-    map.parse_order_string('A SWE - NOR')
+    map.parse_order_string('A NWY - SWE')
+    map.parse_order_string('F SKA C A NWY - SWE')
+    map.parse_order_string('A SWE - NWY')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
     map.resolve_orders()
@@ -2619,9 +2619,9 @@ def test_kidnapping_an_army():
     russian_fleet = add_fleet(map.sweden, map.russia)
     german_fleet = add_fleet(map.skagerrak, map.germany)
 
-    map.parse_order_string('A NOR - SWE')
-    map.parse_order_string('F SWE - NOR')
-    map.parse_order_string('F SKA C A NOR - SWE')
+    map.parse_order_string('A NWY - SWE')
+    map.parse_order_string('F SWE - NWY')
+    map.parse_order_string('F SKA C A NWY - SWE')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
     map.resolve_orders()
@@ -2717,13 +2717,13 @@ def test_swapping_with_unintended_intent():
     russian_fleet1 = add_fleet(map.norwegian_sea, map.russia)
     russian_fleet2 = add_fleet(map.north_atlantic_ocean, map.russia)
 
-    map.parse_order_string('A LVP - EDI')
-    map.parse_order_string('F ENG C A LVP - EDI')
-    map.parse_order_string('A EDI - LVP')
+    map.parse_order_string('A LPL - EDI')
+    map.parse_order_string('F ENG C A LPL - EDI')
+    map.parse_order_string('A EDI - LPL')
     map.parse_order_string('F IRI H')
     map.parse_order_string('F NTH H')
-    map.parse_order_string('F NRG C A LVP - EDI')
-    map.parse_order_string('F NAO C A LVP - EDI')
+    map.parse_order_string('F NWG C A LPL - EDI')
+    map.parse_order_string('F NAO C A LPL - EDI')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
     map.resolve_orders()
@@ -2745,10 +2745,10 @@ def test_swapping_with_illegal_intent():
     russian_army = add_army(map.sweden, map.russia)
     russian_fleet = add_fleet(map.gulf_of_bothnia, map.russia)
 
-    map.parse_order_string('F SKA C A SWE - NOR')
-    map.parse_order_string('F NOR - SWE')
-    map.parse_order_string('A SWE - NOR')
-    map.parse_order_string('F GOB C A SWE - NOR')
+    map.parse_order_string('F SKA C A SWE - NWY')
+    map.parse_order_string('F NWY - SWE')
+    map.parse_order_string('A SWE - NWY')
+    map.parse_order_string('F BOT C A SWE - NWY')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
     map.resolve_orders()
@@ -2786,10 +2786,10 @@ def test_swapped_or_dislodged():
     english_fleet2 = add_fleet(map.finland, map.england)
     russian_army = add_army(map.sweden, map.russia)
 
-    map.parse_order_string('A NOR - SWE')
-    map.parse_order_string('F SKA C A NOR - SWE')
-    map.parse_order_string('F FIN S A NOR - SWE')
-    map.parse_order_string('A SWE - NOR')
+    map.parse_order_string('A NWY - SWE')
+    map.parse_order_string('F SKA C A NWY - SWE')
+    map.parse_order_string('F FIN S A NWY - SWE')
+    map.parse_order_string('A SWE - NWY')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 4)
 
     map.resolve_orders()
@@ -2812,14 +2812,14 @@ def test_swapped_or_a_head_to_head_battle():
     french_fleet1 = add_fleet(map.norwegian_sea, map.france)
     french_fleet2 = add_fleet(map.north_sea, map.france)
 
-    map.parse_order_string('A NOR - SWE via convoy')
-    map.parse_order_string('F DEN S A NOR - SWE')
-    map.parse_order_string('F FIN S A NOR - SWE')
-    map.parse_order_string('F SKA C A NOR - SWE')
-    map.parse_order_string('A SWE - NOR')
-    map.parse_order_string('F BAR S A SWE - NOR')
-    map.parse_order_string('F NRG - NOR')
-    map.parse_order_string('F NTH S F NRG - NOR')
+    map.parse_order_string('A NWY - SWE via convoy')
+    map.parse_order_string('F DEN S A NWY - SWE')
+    map.parse_order_string('F FIN S A NWY - SWE')
+    map.parse_order_string('F SKA C A NWY - SWE')
+    map.parse_order_string('A SWE - NWY')
+    map.parse_order_string('F BAR S A SWE - NWY')
+    map.parse_order_string('F NWG - NWY')
+    map.parse_order_string('F NTH S F NWG - NWY')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 8)
 
     map.resolve_orders()
@@ -2844,11 +2844,11 @@ def test_convoy_to_an_adjacent_province_with_a_paradox():
     russian_fleet1 = add_fleet(map.skagerrak, map.russia)
     russian_fleet2 = add_fleet(map.barents_sea, map.russia)
 
-    map.parse_order_string('F NOR S F NTH - SKA')
+    map.parse_order_string('F NWY S F NTH - SKA')
     map.parse_order_string('F NTH - SKA')
-    map.parse_order_string('A SWE - NOR')
-    map.parse_order_string('F SKA C A SWE - NOR')
-    map.parse_order_string('F BAR S A SWE - NOR')
+    map.parse_order_string('A SWE - NWY')
+    map.parse_order_string('F SKA C A SWE - NWY')
+    map.parse_order_string('F BAR S A SWE - NWY')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
 
     map.resolve_orders()
@@ -2871,13 +2871,13 @@ def test_swapping_two_units_with_two_convoys():
     german_fleet2 = add_fleet(map.english_channel, map.germany)
     german_fleet3 = add_fleet(map.irish_sea, map.germany)
 
-    map.parse_order_string('A LVP - EDI via convoy')
-    map.parse_order_string('F NAO C A LVP - EDI')
-    map.parse_order_string('F NRG C A LVP - EDI')
-    map.parse_order_string('A EDI - LVP via convoy')
-    map.parse_order_string('F NTH C A EDI - LVP')
-    map.parse_order_string('F ENG C A EDI - LVP')
-    map.parse_order_string('F IRI C A EDI - LVP')
+    map.parse_order_string('A LPL - EDI via convoy')
+    map.parse_order_string('F NAO C A LPL - EDI')
+    map.parse_order_string('F NWG C A LPL - EDI')
+    map.parse_order_string('A EDI - LPL via convoy')
+    map.parse_order_string('F NTH C A EDI - LPL')
+    map.parse_order_string('F ENG C A EDI - LPL')
+    map.parse_order_string('F IRI C A EDI - LPL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
     map.resolve_orders()
@@ -2925,14 +2925,14 @@ def test_bounce_by_convoy_to_adjacent_province():
     russian_army = add_army(map.sweden, map.russia)
     russian_fleet = add_fleet(map.barents_sea, map.russia)
 
-    map.parse_order_string('A NOR - SWE')
-    map.parse_order_string('F DEN S A NOR - SWE')
-    map.parse_order_string('F FIN S A NOR - SWE')
-    map.parse_order_string('F NRG - NOR')
-    map.parse_order_string('F NTH S F NRG - NOR')
-    map.parse_order_string('F SKA C A SWE - NOR')
-    map.parse_order_string('A SWE - NOR via convoy')
-    map.parse_order_string('F BAR S A SWE - NOR')
+    map.parse_order_string('A NWY - SWE')
+    map.parse_order_string('F DEN S A NWY - SWE')
+    map.parse_order_string('F FIN S A NWY - SWE')
+    map.parse_order_string('F NWG - NWY')
+    map.parse_order_string('F NTH S F NWG - NWY')
+    map.parse_order_string('F SKA C A SWE - NWY')
+    map.parse_order_string('A SWE - NWY via convoy')
+    map.parse_order_string('F BAR S A SWE - NWY')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 8)
 
     map.resolve_orders()
@@ -2986,13 +2986,13 @@ def test_the_two_unit_in_one_area_bug_moving_by_convoy():
     russian_fleet1 = add_fleet(map.skagerrak, map.russia)
     russian_fleet2 = add_fleet(map.norwegian_sea, map.russia)
 
-    map.parse_order_string('A NOR - SWE')
-    map.parse_order_string('A DEN S A NOR - SWE')
-    map.parse_order_string('F BAL S A NOR - SWE')
-    map.parse_order_string('F NTH - NOR')
-    map.parse_order_string('A SWE - NOR via convoy')
-    map.parse_order_string('F SKA C A SWE - NOR')
-    map.parse_order_string('F NRG S A SWE - NOR')
+    map.parse_order_string('A NWY - SWE')
+    map.parse_order_string('A DEN S A NWY - SWE')
+    map.parse_order_string('F BAL S A NWY - SWE')
+    map.parse_order_string('F NTH - NWY')
+    map.parse_order_string('A SWE - NWY via convoy')
+    map.parse_order_string('F SKA C A SWE - NWY')
+    map.parse_order_string('F NWG S A SWE - NWY')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
     map.resolve_orders()
@@ -3017,13 +3017,13 @@ def test_the_two_unit_in_one_area_bug_moving_over_land():
     russian_army = add_army(map.sweden, map.russia)
     russian_fleet = add_fleet(map.norwegian_sea, map.russia)
 
-    map.parse_order_string('A NOR - SWE via convoy')
-    map.parse_order_string('A DEN S A NOR - SWE')
-    map.parse_order_string('F BAL S A NOR - SWE')
-    map.parse_order_string('F SKA C A NOR - SWE')
-    map.parse_order_string('F NTH - NOR')
-    map.parse_order_string('A SWE - NOR')
-    map.parse_order_string('F NRG S A SWE - NOR')
+    map.parse_order_string('A NWY - SWE via convoy')
+    map.parse_order_string('A DEN S A NWY - SWE')
+    map.parse_order_string('F BAL S A NWY - SWE')
+    map.parse_order_string('F SKA C A NWY - SWE')
+    map.parse_order_string('F NTH - NWY')
+    map.parse_order_string('A SWE - NWY')
+    map.parse_order_string('F NWG S A SWE - NWY')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
     map.resolve_orders()
@@ -3080,8 +3080,8 @@ def test_swapping_with_intent_of_unnecessary_convoy():
     italian_army = add_army(map.spain, map.italy)
 
     map.parse_order_string('A MAR - SPA')
-    map.parse_order_string('F WME C A MAR - SPA')
-    map.parse_order_string('F GOL C A MAR - SPA')
+    map.parse_order_string('F WES C A MAR - SPA')
+    map.parse_order_string('F LYO C A MAR - SPA')
     map.parse_order_string('A SPA - MAR')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
 
@@ -3184,14 +3184,14 @@ def test_no_supports_from_retreating_unit():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
-    map.parse_order_string('A LVP - EDI')
-    map.parse_order_string('F YOR S A LVP - EDI')
-    map.parse_order_string('F NOR H')
+    map.parse_order_string('A LPL - EDI')
+    map.parse_order_string('F YOR S A LPL - EDI')
+    map.parse_order_string('F NWY H')
     map.parse_order_string('A KIE S A RUH - HOL')
     map.parse_order_string('A RUH - HOL')
     map.parse_order_string('F EDI H')
-    map.parse_order_string('A SWE S A FIN - NOR')
-    map.parse_order_string('A FIN - NOR')
+    map.parse_order_string('A SWE S A FIN - NWY')
+    map.parse_order_string('A FIN - NWY')
     map.parse_order_string('F HOL H')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 9)
 
@@ -3210,7 +3210,7 @@ def test_no_supports_from_retreating_unit():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
 
-    map.parse_order_string('F NOR - NTH')
+    map.parse_order_string('F NWY - NTH')
     map.parse_order_string('F EDI - NTH')
     map.parse_order_string('F HOL S F EDI - NTH')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
@@ -3292,7 +3292,7 @@ def test_no_other_moves_during_retreat():
     assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
 
     map.parse_order_string('A HOL - BEL')
-    map.parse_order_string('F NTH - NRG')
+    map.parse_order_string('F NTH - NWG')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
 
     map.resolve_orders()
@@ -3350,7 +3350,7 @@ def test_unit_may_not_retreat_to_a_contested_area():
 
     map.parse_order_string('A BUD S A TRI - VIE')
     map.parse_order_string('A TRI - VIE')
-    map.parse_order_string('A MUN - BOH')
+    map.parse_order_string('A MUC - BOH')
     map.parse_order_string('A SIL - BOH')
     map.parse_order_string('A VIE H')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
@@ -3391,7 +3391,7 @@ def test_multiple_retreat_to_same_area_will_disband_units():
 
     map.parse_order_string('A BUD S A TRI - VIE')
     map.parse_order_string('A TRI - VIE')
-    map.parse_order_string('A MUN S A SIL - BOH')
+    map.parse_order_string('A MUC S A SIL - BOH')
     map.parse_order_string('A SIL - BOH')
     map.parse_order_string('A VIE H')
     map.parse_order_string('A BOH H')
@@ -3438,14 +3438,14 @@ def test_triple_retreat_to_same_area_will_disband_units():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
-    map.parse_order_string('A LVP - EDI')
-    map.parse_order_string('F YOR S A LVP - EDI')
-    map.parse_order_string('F NOR H')
+    map.parse_order_string('A LPL - EDI')
+    map.parse_order_string('F YOR S A LPL - EDI')
+    map.parse_order_string('F NWY H')
     map.parse_order_string('A KIE S A RUH - HOL')
     map.parse_order_string('A RUH - HOL')
     map.parse_order_string('F EDI H')
-    map.parse_order_string('A SWE S A FIN - NOR')
-    map.parse_order_string('A FIN - NOR')
+    map.parse_order_string('A SWE S A FIN - NWY')
+    map.parse_order_string('A FIN - NWY')
     map.parse_order_string('F HOL H')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 9)
 
@@ -3464,7 +3464,7 @@ def test_triple_retreat_to_same_area_will_disband_units():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
 
-    map.parse_order_string('F NOR - NTH')
+    map.parse_order_string('F NWY - NTH')
     map.parse_order_string('F EDI - NTH')
     map.parse_order_string('F HOL - NTH')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
@@ -3540,7 +3540,7 @@ def test_not_retreating_to_attackers_does_not_mean_contested():
 
     map.parse_order_string('A KIE H')
     map.parse_order_string('A BER - KIE')
-    map.parse_order_string('A MUN S A BER - KIE')
+    map.parse_order_string('A MUC S A BER - KIE')
     map.parse_order_string('A PRU H')
     map.parse_order_string('A WAR - PRU')
     map.parse_order_string('A SIL S A WAR - PRU')
@@ -3587,8 +3587,8 @@ def test_retreat_when_dislodged_by_adjacent_convoy():
     map.parse_order_string('A GAS - MAR via convoy')
     map.parse_order_string('A BUR S A GAS - MAR')
     map.parse_order_string('F MAO C A GAS - MAR')
-    map.parse_order_string('F WME C A GAS - MAR')
-    map.parse_order_string('F GOL C A GAS - MAR')
+    map.parse_order_string('F WES C A GAS - MAR')
+    map.parse_order_string('F LYO C A GAS - MAR')
     map.parse_order_string('A MAR H')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 6)
 
@@ -3631,16 +3631,16 @@ def test_retreat_when_dislodged_by_adjacent_convoy_while_trying_to_do_the_same()
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
-    map.parse_order_string('A LVP - EDI via convoy')
-    map.parse_order_string('F IRI C A LVP - EDI')
-    map.parse_order_string('F ENG C A LVP - EDI')
-    map.parse_order_string('F NTH C A LVP - EDI')
+    map.parse_order_string('A LPL - EDI via convoy')
+    map.parse_order_string('F IRI C A LPL - EDI')
+    map.parse_order_string('F ENG C A LPL - EDI')
+    map.parse_order_string('F NTH C A LPL - EDI')
     map.parse_order_string('F BRE - ENG')
     map.parse_order_string('F MAO S F BRE - ENG')
-    map.parse_order_string('A EDI - LVP via convoy')
-    map.parse_order_string('F NRG C A EDI - LVP')
-    map.parse_order_string('F NAO C A EDI - LVP')
-    map.parse_order_string('A CLY S A EDI - LVP')
+    map.parse_order_string('A EDI - LPL via convoy')
+    map.parse_order_string('F NWG C A EDI - LPL')
+    map.parse_order_string('F NAO C A EDI - LPL')
+    map.parse_order_string('A CLY S A EDI - LPL')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 10)
 
     map.resolve_orders()
@@ -3659,7 +3659,7 @@ def test_retreat_when_dislodged_by_adjacent_convoy_while_trying_to_do_the_same()
 
     assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
 
-    map.parse_order_string('A LVP - EDI')
+    map.parse_order_string('A LPL - EDI')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
 
     map.resolve_orders()
@@ -3725,7 +3725,7 @@ def test_no_retreat_with_support_in_movement_phase():
     map.parse_order_string('A PAR - PIC')
     map.parse_order_string('A BRE S A PAR - PIC')
     map.parse_order_string('A BUR H')
-    map.parse_order_string('A MUN S A MAR - BUR')
+    map.parse_order_string('A MUC S A MAR - BUR')
     map.parse_order_string('A MAR - BUR')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 7)
 
@@ -3803,9 +3803,9 @@ def test_contested_for_both_coasts():
 
     map.parse_order_string('F MAO - SPA(nc)')
     map.parse_order_string('F GAS - SPA(nc)')
-    map.parse_order_string('F WME H')
-    map.parse_order_string('F TUN S F TYS - WME')
-    map.parse_order_string('F TYS - WME')
+    map.parse_order_string('F WES H')
+    map.parse_order_string('F TUN S F TYS - WES')
+    map.parse_order_string('F TYS - WES')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 5)
 
     map.resolve_orders()
@@ -3819,7 +3819,7 @@ def test_contested_for_both_coasts():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring Retreat')
 
-    map.parse_order_string('F WME - SPA(sc)')
+    map.parse_order_string('F WES - SPA(sc)')
     assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
 
     map.resolve_orders()
@@ -3846,7 +3846,7 @@ def test_too_many_build_orders():
 
     map.parse_order_string('Build A WAR', owner=map.germany)
     map.parse_order_string('Build A KIE', owner=map.germany)
-    map.parse_order_string('Build A MUN', owner=map.germany)
+    map.parse_order_string('Build A MUC', owner=map.germany)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
 
     map.resolve_orders()
@@ -4034,7 +4034,7 @@ def test_too_many_disband_orders():
     map.set_phase('Adjustment')
     assert_equal('Map Phase', map.get_phase(), 'Adjustment')
 
-    map.parse_order_string('Remove F GOL', owner=map.france)
+    map.parse_order_string('Remove F LYO', owner=map.france)
     map.parse_order_string('Remove A PIC', owner=map.france)
     map.parse_order_string('Remove A PAR', owner=map.france)
     assert_equal('Map Queued orders Count', len(map.queued_orders), 2)
@@ -4357,6 +4357,113 @@ def test_distance_to_owned_supply_center():
 
     assert_equal('Map Phase', map.get_phase(), 'Spring')
 
+# Transform Orders
+# T.1
+def test_transform_coastal_army():
+    map = get_classic_map()
+    french_army = add_army(map.norway, map.france)
+
+    map.parse_order_string('A NWY T')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet Territory', french_army.territory, map.norway)
+    assert_equal('French Fleet Type', french_army.type, 'Fleet')
+
+# T.2
+def test_transform_inland_army():
+    map = get_classic_map()
+    french_army = add_army(map.moscow, map.france)
+
+    map.parse_order_string('A MOS T')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army Territory', french_army.territory, map.moscow)
+    assert_equal('French Army Type', french_army.type, 'Army')
+
+# T.3
+def test_transform_coastal_fleet():
+    map = get_classic_map()
+    french_fleet = add_fleet(map.sweden, map.france)
+
+    map.parse_order_string('F SWE T')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army Territory', french_fleet.territory, map.sweden)
+    assert_equal('French Army Type', french_fleet.type, 'Army')
+
+# T.4
+def test_transform_coastal_army_to_south_coast():
+    map = get_classic_map()
+    french_army = add_army(map.st_petersburg, map.france)
+
+    map.parse_order_string('A STP T(sc)')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 1)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet Territory', french_army.territory, map.st_petersburg)
+    assert_equal('French Fleet Territory Coast', french_army.territory.unit_coast, 'sc')
+    assert_equal('French Fleet Type', french_army.type, 'Fleet')
+
+# T.5
+def test_transform_coastal_army_to_invalid_south_coast():
+    map = get_classic_map()
+    french_army = add_army(map.norway, map.france)
+
+    map.parse_order_string('A NWY T(sc)')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Army Territory', french_army.territory, map.norway)
+    assert_equal('French Army Territory Coast', french_army.territory.unit_coast, None)
+    assert_equal('French Army Type', french_army.type, 'Army')
+
+# T.6
+def test_transform_fleet_in_water():
+    map = get_classic_map()
+    french_fleet = add_fleet(map.north_atlantic_ocean, map.france)
+
+    map.parse_order_string('F NAO T')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_equal('French Fleet Territory', french_fleet.territory, map.north_atlantic_ocean)
+    assert_equal('French Fleet Type', french_fleet.type, 'Fleet')
+
+# T.7
+def test_dislodged_army_cannot_transform():
+    map = get_classic_map()
+    french_army = add_army(map.gascony, map.france)
+    german_army1 = add_army(map.marseilles, map.germany)
+    german_army2 = add_army(map.spain, map.germany)
+
+    map.parse_order_string('A GAS T')
+    map.parse_order_string('A MAR - GAS')
+    map.parse_order_string('A SPA S A MAR - GAS')
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 3)
+
+    map.resolve_orders()
+    assert_equal('Map Queued orders Count', len(map.queued_orders), 0)
+
+    assert_not_equal('French Army Territory', french_army.territory, map.gascony)
+    assert_equal('German Army 1 Territory', german_army1.territory, map.gascony)
+    assert_equal('German Army 2 Territory', german_army2.territory, map.spain)
+    assert_equal('French Army Type', french_army.type, 'Army')
+
 def main():
     global prefix, test_num
 
@@ -4572,7 +4679,7 @@ def main():
     # 6.J Civil Disorder and Disbands
     prefix = '6.J.'
     test_num = 1
-    print('Civil Disorder and Disbands')
+    print('Civil Disorder and Disbands:')
     run_test(test_too_many_disband_orders)
     run_test(test_removing_the_same_unit_twice)
     run_test(test_civil_disorder_two_armies_with_different_distance)
@@ -4584,6 +4691,19 @@ def main():
     run_test(test_civil_disorder_must_be_counted_from_both_coasts)
     run_test(test_civil_disorder_counting_convoying_distance)
     run_test(test_distance_to_owned_supply_center)
+    print()
+
+    # T Transform Orders
+    prefix = 'T.'
+    test_num = 1
+    print('Transform Orders:')
+    run_test(test_transform_coastal_army)
+    run_test(test_transform_inland_army)
+    run_test(test_transform_coastal_fleet)
+    run_test(test_transform_coastal_army_to_south_coast)
+    run_test(test_transform_coastal_army_to_invalid_south_coast)
+    run_test(test_transform_fleet_in_water)
+    run_test(test_dislodged_army_cannot_transform)
     print()
 
     print(f'{passed}/{count} Tests Passed')
