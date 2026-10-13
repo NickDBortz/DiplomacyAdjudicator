@@ -42,7 +42,7 @@ class Order:
                 return t.army_pos
             else:
                 if len(t.north_coast) > 0:
-if t.unit_coast in ('nc', 0):
+                    if t.unit_coast in ('nc', 0):
                         return t.coast_pos
                     else:
                         return t.south_coast_pos

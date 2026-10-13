@@ -26,8 +26,7 @@ class Territory:
         if len(vertices) > 0:
             self.smooth_polygons(vertices, width, height)
 
-def smooth_polygons(self, vertices, width, height):
-
+    def smooth_polygons(self, vertices, width, height):
         EDGE_EPSILON = 10
         def is_edge_point(p):
             x, y = p
@@ -242,7 +241,7 @@ def smooth_polygons(self, vertices, width, height):
         elif winner is not None and winner.unit == self.unit:
             if winner.name == 'Transform':
                 current_type = winner.unit.type
-if current_type == 'Fleet':
+                if current_type == 'Fleet':
                     winner.unit.type = 'Army'
                     self.unit_coast = None
                 else:
@@ -565,7 +564,7 @@ class LandTerritory(Territory):
             else:
                 pos_x = self.coast_pos[0]
                 pos_y = self.coast_pos[1]
-if self.unit_coast in ('sc', 1):
+                if self.unit_coast in ('sc', 1):
                     pos_x = self.south_coast_pos[0]
                     pos_y = self.south_coast_pos[1]
                 self.render_fleet(canvas, (pos_x, pos_y))

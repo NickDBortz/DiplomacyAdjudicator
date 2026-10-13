@@ -495,7 +495,7 @@ class Map:
             if idx < 0 or idx >= len(split_order_string):
                 raise Exception()
             order_type = split_order_string[idx]
-if order_type not in ['H', '-', 'S', 'T', 'T(nc)', 'T(sc)', 'C', 'B']:
+            if order_type not in ['H', '-', 'S', 'T', 'T(nc)', 'T(sc)', 'C', 'B']:
                 raise Exception()
             return order_type
 
