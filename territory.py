@@ -26,8 +26,7 @@ class Territory:
         if len(vertices) > 0:
             self.smooth_polygons(vertices, width, height)
 
-    def smooth_polygons(self, vertices, width, height):
-        from scipy.interpolate import splprep, splev
+def smooth_polygons(self, vertices, width, height):
 
         EDGE_EPSILON = 10
         def is_edge_point(p):
