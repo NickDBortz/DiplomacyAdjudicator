@@ -2,6 +2,7 @@ from player import Player
 from territory import Territory
 from unit import Unit
 from map import Map
+import subprocess
 
 passed = 0
 count = 0
@@ -9,12 +10,10 @@ prefix = ''
 test_num = 0
 
 def assert_equal(text, actual, expected):
-    if actual != expected:
-        raise Exception(f'{text}: Expected {expected}, got {actual}')
+    assert actual == expected
 
 def assert_not_equal(text, actual, not_expected):
-    if actual == not_expected:
-        raise Exception(f'{text}: Expected not {actual}')
+    assert actual != not_expected
 
 def run_test(test):
     global passed, count, prefix, test_num
