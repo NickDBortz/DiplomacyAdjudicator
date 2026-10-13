@@ -372,8 +372,11 @@ class Map:
             # Otherwise, retreat succeeds
             dislodged.dislodged = False
             dislodged.dislodge_to = None
-            dislodged.set_territory(dislodged.order.dest_territory)
-            dislodged.order.dest_territory.set_unit(dislodged)
+            destination = dislodged.order.dest_territory
+            destination_owner = destination.owner
+            dislodged.set_territory(destination)
+            destination.set_unit(dislodged, coast=dislodged.order.coast)
+            destination.owner = destination_owner
             dislodged.reset_order()
 
         # Clear the contesting of each territory
