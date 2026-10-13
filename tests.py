@@ -10,10 +10,10 @@ prefix = ''
 test_num = 0
 
 def assert_equal(text, actual, expected):
-    assert actual == expected
+    assert actual == expected, text
 
 def assert_not_equal(text, actual, not_expected):
-    assert actual != not_expected
+    assert actual != not_expected, text
 
 def run_test(test):
     global passed, count, prefix, test_num
