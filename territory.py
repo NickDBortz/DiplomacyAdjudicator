@@ -242,8 +242,9 @@ def smooth_polygons(self, vertices, width, height):
         elif winner is not None and winner.unit == self.unit:
             if winner.name == 'Transform':
                 current_type = winner.unit.type
-                if current_type == 'Fleet':
+if current_type == 'Fleet':
                     winner.unit.type = 'Army'
+                    self.unit_coast = None
                 else:
                     winner.unit.type = 'Fleet'
                     if len(self.north_coast) > 0:
