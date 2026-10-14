@@ -56,6 +56,14 @@ class Adjudicator:
 
             if phase == FALL_PHASE:
                 self._check_for_winner()
+
+                if skip_retreat:
+                    needs_adjustment = False
+                    for player in self.game_state.player_list:
+                        units_to_build = player.units_to_build(self.game_state.territory_list)
+                        if units_to_build != 0:
+                            needs_adjustment = True
+                    skip_adjustment = not needs_adjustment
         elif phase == SPRING_RETREAT_PHASE or phase == FALL_RETREAT_PHASE:
             self._resolve_retreat_orders()
             if phase == FALL_RETREAT_PHASE:
