@@ -107,10 +107,11 @@ class CV2Renderer(Renderer):
         for order in orders:
             if order.type == ADVANCE:
                 # Render a red arrow in the direction of the advance
+                start_territory = order.unit_territory or order.unit.dislodged_from
                 self.cv2.arrowedLine(
                     canvas,
-                    self._get_unit_pos(order.unit_territory or order.unit.dislodged_from, order.unit.type),
-                    self._get_unit_pos(order.dest_territory, order.unit.type),
+                    self._get_unit_pos(start_territory, order.unit.type, start_territory.unit_coast),
+                    self._get_unit_pos(order.dest_territory, order.unit.type, order.coast),
                     (0, 0, 255),
                     3,
                     self.cv2.LINE_AA
@@ -129,16 +130,16 @@ class CV2Renderer(Renderer):
                     continue
 
                 if order.supported_order.type == ADVANCE:
-                    adv_start = self._get_unit_pos(order.supported_order.unit_territory, order.supported_order.unit.type)
-                    adv_dest = self._get_unit_pos(order.supported_order.dest_territory, order.supported_order.unit.type)
+                    adv_start = self._get_unit_pos(order.supported_order.unit_territory, order.supported_order.unit.type, order.supported_order.unit_territory.unit_coast)
+                    adv_dest = self._get_unit_pos(order.supported_order.dest_territory, order.supported_order.unit.type, order.supported_order.coast)
 
                     dest_pos = [(adv_start[0] - adv_dest[0]) // 2 + adv_dest[0], (adv_start[1] - adv_dest[1]) // 2 + adv_dest[1]]
                 else:
-                    dest_pos = self._get_unit_pos(order.supported_order.unit_territory, order.supported_order.unit.type)
+                    dest_pos = self._get_unit_pos(order.supported_order.unit_territory, order.supported_order.unit.type, order.supported_order.unit_territory.unit_coast)
                 # Render a red arrow in the direction of the advance
                 self.cv2.arrowedLine(
                     canvas,
-                    self._get_unit_pos(order.unit_territory, order.unit.type),
+                    self._get_unit_pos(order.unit_territory, order.unit.type, order.unit_territory.unit_coast),
                     dest_pos,
                     (0, 255, 0),
                     3,
@@ -310,14 +311,14 @@ class CV2Renderer(Renderer):
         # Return BGR scalar tuple (OpenCV format)
         return (b, g, r)
 
-    def _get_unit_pos(self, t, unit_type):
+    def _get_unit_pos(self, t, unit_type, coast=None):
         t_obj = self._get_territory_obj(t.name)
         if t_obj['land']:
             if unit_type == ARMY:
                 return t_obj['army_pos']
             else:
                 if len(t.north_coast) > 0:
-                    if t.unit_coast == NORTH_COAST:
+                    if coast == NORTH_COAST:
                         return t_obj['coast_pos']
                     else:
                         return t_obj['south_coast_pos']
