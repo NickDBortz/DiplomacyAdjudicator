@@ -24,4 +24,4 @@ jobs:
         
     # Step 3: Run test script
     - name: Run Tests
-      run: pytest -m pytest
+      run: python -m pytest
