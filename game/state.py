@@ -4,12 +4,12 @@ class GameState:
     def __init__(self, players, territories):
         self.players = {}
         for player in players:
-            self.players[player.name] = player 
+            self.players[player.name.lower()] = player 
         self.player_list = players
         self.territories = {}
         for territory in territories:
-            self.territories[territory.name] = territory
-            self.territories[territory.abbr] = territory
+            self.territories[territory.name.lower()] = territory
+            self.territories[territory.abbr.lower()] = territory
         self.territory_list = territories
 
         self.resolution_phases = [ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE]
@@ -22,11 +22,13 @@ class GameState:
         self.queued_orders = []
 
     def get_player(self, name):
+        name = name.lower().strip()
         if name in self.players:
             return self.players[name]
         return None
 
     def get_territory(self, name):
+        name = name.lower().strip()
         if name in self.territories:
             return self.territories[name]
         return None
