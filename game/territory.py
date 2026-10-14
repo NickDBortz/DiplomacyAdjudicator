@@ -1,14 +1,13 @@
+from game.enums import NORTH_COAST, SOUTH_COAST
+
 class Territory:
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos):
+    def __init__(self, name, abbr, is_supply_center, owner):
         self.name = name
         self.abbr = abbr
         self.is_supply_center = is_supply_center
         self.unit = None
         self.owner = owner
         self.home_owner = owner
-
-        self.polygons = polygons
-        self.label_pos = label_pos
 
         self.unit_coast = None
         self.north_coast = []
@@ -19,9 +18,6 @@ class Territory:
 
         self.adjacents = []
         self.contesting = []
-
-    def get_color(self):
-        return self.owner.color if self.owner is not None else '#E2C69E'
 
     def set_unit(self, unit, coast=None):
         self.unit_coast = coast
@@ -366,23 +362,18 @@ class Territory:
         return f'{self.name}{f'*' if self.is_supply_center else ''}'
 
 class LandTerritory(Territory):
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos):
-        super().__init__(name, abbr, is_supply_center, owner, polygons, label_pos)
+    def __init__(self, name, abbr, is_supply_center, owner):
+        super().__init__(name, abbr, is_supply_center, owner)
         self.is_coast = False
-
-        self.supply_center_pos = supply_center_pos
-        self.army_pos = army_pos
-        self.coast_pos = coast_pos
-        self.south_coast_pos = south_coast_pos
 
     def set_adjacent(self, territory, coast=None):
         if isinstance(territory, WaterTerritory):
             self.is_coast = True
 
         if coast is not None:
-            if coast == 'nc':
+            if coast == NORTH_COAST:
                 self.north_coast.append(territory)
-            elif coast == 'sc':
+            elif coast == SOUTH_COAST:
                 self.south_coast.append(territory)
 
         if territory in self.adjacents:
@@ -392,12 +383,5 @@ class LandTerritory(Territory):
         territory.set_adjacent(self)
 
 class WaterTerritory(Territory):
-    def __init__(self, name, abbr, owner, color, polygons, label_pos, fleet_pos):
-        super().__init__(name, abbr, False, owner, polygons, label_pos)
-
-        self.color = color
-
-        self.fleet_pos = fleet_pos
-
-    def get_color(self):
-        return self.color
+    def __init__(self, name, abbr, owner):
+        super().__init__(name, abbr, False, owner)

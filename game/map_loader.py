@@ -27,10 +27,6 @@ class MapLoader:
             for player_obj in players_obj:
                 player = Player(player_obj['name'], player_obj['color'])
                 players.append(player)
-                # setattr(self, player_obj['var_name'], player)
-                # self.players.append(player)
-
-            water_color = map_obj['water_color']
 
             # Load Territories
             territories_obj = map_obj['territories']
@@ -42,23 +38,11 @@ class MapLoader:
                 owner_name = territory_obj['owner']
                 owner = next((player for player in players if player.name == owner_name), None)
 
-                label_pos = territory_obj['label_pos']
-                polygons = []
-                if load_rendering_data:
-                    polygons = territory_obj['polygons']
-
                 if territory_obj['land']:
-                    supply_center_pos = territory_obj['supply_center_pos']
-                    army_pos = territory_obj['army_pos']
-                    coast_pos = territory_obj['coast_pos']
-                    south_coast_pos = territory_obj['south_coast_pos']
-                    territory = LandTerritory(name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos)
+                    territory = LandTerritory(name, abbr, is_supply_center, owner)
                 else:
-                    fleet_pos = territory_obj['fleet_pos']
-                    territory = WaterTerritory(name, abbr, owner, water_color, polygons, label_pos, fleet_pos)
+                    territory = WaterTerritory(name, abbr, owner)
 
-                # setattr(self, territory_obj['var_name'], territory)
-                # self.territories.append(territory)
                 territories.append(territory)
 
             # Set Adjacents
@@ -99,9 +83,8 @@ class MapLoader:
 
             renderer = None
             if load_rendering_data:
-                renderer = CV2Renderer(width, height, vertices, game_state)
-                for territory in territories:
-                    renderer.smooth_polygons(territory)
+                water_color = map_obj['water_color']
+                renderer = CV2Renderer(width, height, vertices, water_color, territories_obj, game_state)
             else:
                 renderer = BlankRenderer()
 

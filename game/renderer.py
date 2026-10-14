@@ -1,4 +1,5 @@
 from game.territory import LandTerritory
+from game.enums import NORTH_COAST, SOUTH_COAST
 
 class Renderer:
     def __init__(self):
@@ -12,7 +13,7 @@ class BlankRenderer(Renderer):
         pass
 
 class CV2Renderer(Renderer):
-    def __init__(self, width, height, vertices, game_state):
+    def __init__(self, width, height, vertices, water_color, territory_objs, game_state):
         super().__init__()
 
         import cv2
@@ -21,11 +22,15 @@ class CV2Renderer(Renderer):
         self.np = np
         
         self.width = width 
-        self.height = height 
-        self.vertices = vertices
+        self.height = height
+        self.water_color = water_color
+        self.territory_objs = territory_objs
         self.game_state = game_state
 
-    def smooth_polygons(self, territory):
+        for territory_obj in territory_objs:
+            self.smooth_polygons(vertices, territory_obj)
+
+    def smooth_polygons(self, vertices, territory_obj):
         EDGE_EPSILON = 10
         def is_edge_point(p):
             x, y = p
@@ -37,9 +42,9 @@ class CV2Renderer(Renderer):
                 y >= self.height - EDGE_EPSILON
             )
 
-        polygons = territory.polygons
+        polygons = territory_obj['polygons']
         for i in range(len(polygons)):
-            pts = self.np.asarray([self.vertices[vertex_index] for vertex_index in polygons[i]], dtype=float)
+            pts = self.np.asarray([vertices[vertex_index] for vertex_index in polygons[i]], dtype=float)
 
             for _ in range(2):
                 new_pts = []
@@ -69,7 +74,7 @@ class CV2Renderer(Renderer):
         canvas = self.np.zeros((self.height, self.width, 3), dtype=self.np.uint8)
 
         # Render the territories and their borders and decorations
-        territories = self.game_state.territories
+        territories = self.territory_objs
         for territory in territories:
             self._render_territory_polygons(canvas, territory)
         for territory in territories:
@@ -140,16 +145,18 @@ class CV2Renderer(Renderer):
                     self.cv2.LINE_AA
                 )
 
-    def _render_territory_polygons(self, canvas, territory):
-        for polygon in territory.polygons:
+    def _render_territory_polygons(self, canvas, territory_obj):
+        territory = self.game_state.get_territory(territory_obj['name'])
+        color = self._get_color(territory)
+        for polygon in territory_obj['polygons']:
             self.cv2.fillPoly(
                 canvas,
                 [polygon],
-                self._parse_color_string(territory.get_color())
+                color
             )
 
-    def _render_territory_borders(self, canvas, territory):
-        for polygon in territory.polygons:
+    def _render_territory_borders(self, canvas, territory_obj):
+        for polygon in territory_obj['polygons']:
             self.cv2.polylines(
                 canvas,
                 [polygon],
@@ -158,36 +165,40 @@ class CV2Renderer(Renderer):
                 thickness=1
             )
 
-    def _render_supply_center(self, canvas, territory):
+    def _render_supply_center(self, canvas, territory_obj):
+        territory = self.game_state.get_territory(territory_obj['name'])
         if territory.is_supply_center:
             self.cv2.circle(
                 canvas,
-                territory.supply_center_pos,
+                territory_obj['supply_center_pos'],
                 5,
                 (0, 173, 218),
                 -1
             )
             self.cv2.circle(
                 canvas,
-                territory.supply_center_pos,
+                territory_obj['supply_center_pos'],
                 5,
                 (0,0,0), # (0, 173, 218),
                 3
             )
 
-    def _render_unit(self, canvas, territory):
+    def _render_unit(self, canvas, territory_obj):
+        territory = self.game_state.get_territory(territory_obj['name'])
+        color = self._get_color(territory)
         if territory.unit is not None:
-            color = self._parse_color_string(territory.get_color())
             if isinstance(territory, LandTerritory):    
                 if territory.unit.type == 'Army':
-                    self._render_army(canvas, territory.army_pos, color)
+                    pos = territory_obj['army_pos']
+                    self._render_army(canvas, pos, color)
                 else:
-                    pos = territory.coast_pos
-                    if territory.unit_coast == 'sc':
-                        pos = territory.south_coast_pos
+                    pos = territory['coast_pos']
+                    if territory.unit_coast == SOUTH_COAST:
+                        pos = territory['south_coast_pos']
                     self._render_fleet(canvas, pos, color)
             else:
-                self._render_fleet(canvas, territory.fleet_pos, color)
+                pos = territory_obj['fleet_pos']
+                self._render_fleet(canvas, pos, color)
 
     def _render_army(self, canvas, pos, color):
         sq_size = 15
@@ -243,7 +254,7 @@ class CV2Renderer(Renderer):
             -1
         )
 
-    def _render_text(self, canvas, territory):
+    def _render_text(self, canvas, territory_obj):
         # Render Abbreviation
         font = self.cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.5
@@ -254,16 +265,17 @@ class CV2Renderer(Renderer):
 
         line_type = self.cv2.LINE_AA
 
-        text_size, _ = self.cv2.getTextSize(territory.abbr, font, font_scale, thickness)
+        abbr = territory_obj['abbr']
+        text_size, _ = self.cv2.getTextSize(abbr, font, font_scale, thickness)
         text_w, text_h = text_size[0], text_size[1]
 
-        text_x = territory.label_pos[0] - (text_w // 2)
-        text_y = territory.label_pos[1] + (text_h // 2)
+        text_x = territory_obj['label_pos'][0] - (text_w // 2)
+        text_y = territory_obj['label_pos'][1] + (text_h // 2)
 
         for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
             self.cv2.putText(
                 canvas, 
-                territory.abbr, 
+                abbr, 
                 (text_x+dx, text_y+dy), 
                 font, 
                 font_scale, 
@@ -274,7 +286,7 @@ class CV2Renderer(Renderer):
 
         self.cv2.putText(
             canvas, 
-            territory.abbr, 
+            abbr, 
             (text_x, text_y), 
             font, 
             font_scale, 
@@ -282,6 +294,12 @@ class CV2Renderer(Renderer):
             thickness,
             line_type
         )
+
+    def _get_color(self, territory):
+        land_color = territory.owner.color if territory.owner is not None else '#E2C69E'
+        water_color = self.water_color
+        color = land_color if isinstance(territory, LandTerritory) else water_color
+        return self._parse_color_string(color)
 
     def _parse_color_string(self, color):
         h = color.lstrip("#")

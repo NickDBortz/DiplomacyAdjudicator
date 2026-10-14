@@ -1,0 +1,2 @@
+NORTH_COAST = 'nc'
+SOUTH_COAST = 'sc'

@@ -1,4 +1,5 @@
 from game.territory import LandTerritory, WaterTerritory
+from game.enums import NORTH_COAST, SOUTH_COAST
 
 class Order:
     def __init__(self, name, unit):
@@ -42,7 +43,7 @@ class Order:
                 return t.army_pos
             else:
                 if len(t.north_coast) > 0:
-                    if t.unit_coast in ('nc', 0):
+                    if t.unit_coast == NORTH_COAST:
                         return t.coast_pos
                     else:
                         return t.south_coast_pos
@@ -93,7 +94,7 @@ class AdvanceOrder(Order):
                 return t.army_pos
             else:
                 if len(t.north_coast) > 0:
-                    if self.coast == 'nc':
+                    if self.coast == NORTH_COAST:
                         return t.coast_pos
                     else:
                         return t.south_coast_pos
@@ -160,7 +161,7 @@ class SupportOrder(Order):
         valid_location = False
         if unit_territory.unit_coast is not None:
             coast = unit_territory.unit_coast 
-            valid_location = coast == 'nc' and dest_territory in unit_territory.north_coast or coast == 'sc' and dest_territory in unit_territory.south_coast
+            valid_location = coast == NORTH_COAST and dest_territory in unit_territory.north_coast or coast == SOUTH_COAST and dest_territory in unit_territory.south_coast
         else:
             valid_location = dest_territory in unit_territory.adjacents
 
