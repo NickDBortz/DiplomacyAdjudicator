@@ -358,6 +358,8 @@ class Territory:
             depth += 1
             check_this_depth = check_next_depth
             check_next_depth = []
+        # In the case where the target is unreachable, return a large number
+        return 999
 
     def __str__(self):
         return f'{self.name}{f'*' if self.is_supply_center else ''}'
