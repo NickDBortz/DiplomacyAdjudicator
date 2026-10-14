@@ -1,4 +1,5 @@
 from game.orders import HoldOrder, BuildOrder
+from game.enums import HOLD, ADVANCE, SUPPORT, TRANSFORM, CONVOY, BUILD, DISBAND, ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE
 
 class Adjudicator:
     def __init__(self, game_state, supply_centers_to_win):
@@ -18,21 +19,21 @@ class Adjudicator:
 
         # If the phase is a retreat phase, only allow advance orders acting on dislodged units
         phase = self.game_state.get_phase()
-        if phase == 'Spring Retreat' or phase == 'Fall Retreat':
+        if phase == SPRING_RETREAT_PHASE or phase == FALL_RETREAT_PHASE:
             dislodged = self.gather_dislodged()
-            if order.name != 'Advance' or order.is_utilizing_convoy or order.unit not in dislodged:
+            if order.type != ADVANCE or order.is_utilizing_convoy or order.unit not in dislodged:
                 return False
 
         # If the phase is not a build phase, disallow build and disband orders
-        if phase != 'Adjustment' and (order.name == 'Build' or order.name == 'Disband'):
+        if phase != ADJUSTMENT_PHASE and (order.type == BUILD or order.type == DISBAND):
             return False
         
         # If the phase is a build phase, disallow non-build and non-disband orders
-        if phase == 'Adjustment' and order.name != 'Build' and order.name != 'Disband':
+        if phase == ADJUSTMENT_PHASE and order.type != BUILD and order.type != DISBAND:
             return False
 
         # If the order is a build order on a territory that is not initially owned by the owner, fail
-        if phase == 'Adjustment' and order.name == 'Build' and order.dest_territory.home_owner != owner:
+        if phase == ADJUSTMENT_PHASE and order.type == BUILD and order.dest_territory.home_owner != owner:
             return False 
         
         self.game_state.queue_order(order)
@@ -43,7 +44,7 @@ class Adjudicator:
         skip_adjustment = False
         # If this is the retreat phase, resolve retreat orders
         phase = self.game_state.get_phase()
-        if phase == 'Spring' or phase == 'Fall':
+        if phase == SPRING_PHASE or phase == FALL_PHASE:
             self._resolve_general_orders()
 
             dislodged = self.gather_dislodged()
@@ -52,9 +53,9 @@ class Adjudicator:
                 for territory in self.game_state.territories:
                     territory.clear_contesting()
                 skip_retreat = True
-        elif phase == 'Spring Retreat' or phase == 'Fall Retreat':
+        elif phase == SPRING_RETREAT_PHASE or phase == FALL_RETREAT_PHASE:
             self._resolve_retreat_orders()
-            if phase == 'Fall Retreat':
+            if phase == FALL_RETREAT_PHASE:
                 self._check_for_winner()
 
                 needs_adjustment = False
@@ -63,7 +64,7 @@ class Adjudicator:
                     if units_to_build != 0:
                         needs_adjustment = True
                 skip_adjustment = not needs_adjustment
-        elif phase == 'Adjustment':
+        elif phase == ADJUSTMENT_PHASE:
             self._resolve_adjustment_orders()
 
         # Clear orders
@@ -94,13 +95,13 @@ class Adjudicator:
 
         # Order so we handle territories that have unmoving units first
         order_mapping = {
-            'Support': 1,
-            'Hold': 1,
-            'Transform': 1,
-            'Advance': 2,
-            'Convoy': 1,
+            SUPPORT: 1,
+            HOLD: 1,
+            TRANSFORM: 1,
+            ADVANCE: 2,
+            CONVOY: 1,
         }
-        territories_to_resolve.sort(key=lambda territory: order_mapping[territory.unit.order.name] if territory.unit is not None else 0)
+        territories_to_resolve.sort(key=lambda territory: order_mapping[territory.unit.order.type] if territory.unit is not None else 0)
 
         # Resolve all remaining territories
         for territory in territories_to_resolve:
@@ -225,7 +226,7 @@ class Adjudicator:
             self.game_state.queue_order(order)
 
         # Match supports to the valid orders. For supports that don't match, remove and set to hold, as they are invalid
-        support_orders = [order for order in self.game_state.get_orders() if order.name == 'Support']
+        support_orders = [order for order in self.game_state.get_orders() if order.type == SUPPORT]
         for order in support_orders:
             # Match supporting order
             supported_order = order.supported_order
@@ -235,9 +236,9 @@ class Adjudicator:
                 order.supported_order = matching_order
             else:
                 # If there is an order with a matching unit that is not an advance and the supported order expects a hold, support it
-                matching_orders = [o for o in self.game_state.get_orders() if o.unit == supported_order.unit and o.name != 'Advance']
+                matching_orders = [o for o in self.game_state.get_orders() if o.unit == supported_order.unit and o.type != ADVANCE]
                 matching_order = matching_orders[0] if len(matching_orders) > 0 else None
-                if matching_order is not None and supported_order.name == 'Hold':
+                if matching_order is not None and supported_order.type == HOLD:
                     order.supported_order = matching_order
 
             if order.supported_order == supported_order:
@@ -259,17 +260,17 @@ class Adjudicator:
         # and attack is from a territory other than the target territory
         # and attacker is not from same country as supporter
         # and supporting unit is not immune due to a special convoy/head-to-head exception
-        support_orders = [order for order in self.game_state.get_orders() if order.name == 'Support']
+        support_orders = [order for order in self.game_state.get_orders() if order.type == SUPPORT]
         for order in support_orders:
             territory = order.unit.territory
             friendly_country = territory.unit.owner
-            dest_territory = order.supported_order.dest_territory if order.supported_order.name == 'Advance' else None 
+            dest_territory = order.supported_order.dest_territory if order.supported_order.type == ADVANCE else None 
             if territory.has_contesting(friendly_country, dest_territory):
                 # Support is cut
                 order.supported_order.cut_support(order)
 
             # If the supported order is advancing on a friendly, cut support, assuming friendly stays put
-            if dest_territory is not None and dest_territory.unit is not None and dest_territory.unit.owner == friendly_country and dest_territory.unit.order.name != 'Advance':
+            if dest_territory is not None and dest_territory.unit is not None and dest_territory.unit.owner == friendly_country and dest_territory.unit.order.type != ADVANCE:
                 order.supported_order.cut_support(order)
 
     def _check_for_winner(self):

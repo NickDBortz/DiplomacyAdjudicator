@@ -1,3 +1,5 @@
+from game.enums import FLEET
+
 class Player:
     def __init__(self, name, color):
         self.name = name
@@ -45,7 +47,7 @@ class Player:
             return furthest_units[0]
 
         # Fleets take precedence in civil disobedience
-        furthest_fleets = [unit for unit in furthest_units if unit.type == 'Fleet']
+        furthest_fleets = [unit for unit in furthest_units if unit.type == FLEET]
         if len(furthest_fleets) > 0:
             furthest_units = furthest_fleets
 

@@ -1,5 +1,6 @@
 from game.orders import Order, BuildOrder, DisbandOrder, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder
 from game.unit import Unit
+from game.enums import NORTH_COAST, SOUTH_COAST, ARMY, FLEET, BUILD, DISBAND, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class OrderParser:
     def __init__(self, adjudicator, game_state):
@@ -24,9 +25,9 @@ class OrderParser:
             if idx < 0 or idx >= len(split_order_string):
                 raise Exception()
             unit_type = split_order_string[idx]
-            if unit_type not in ['A', 'F', 'Build', 'Remove']:
+            if unit_type not in ['A', 'F', BUILD, DISBAND]:
                 raise Exception()
-            return 'Army' if unit_type == 'A' else 'Fleet' if unit_type == 'F' else unit_type
+            return ARMY if unit_type == 'A' else FLEET if unit_type == 'F' else unit_type
 
         def expect_territory_abbr(split_order_string, idx, allow_coast=False):
             if idx < 0 or idx >= len(split_order_string):
@@ -38,7 +39,7 @@ class OrderParser:
                 if len(split_terr_coast) > 1:
                     territory_abbr = split_terr_coast[0]
                     coast = split_terr_coast[1].split(')')[0]
-                    if coast not in ('nc', 'sc'):
+                    if coast not in (NORTH_COAST, SOUTH_COAST):
                         raise Exception()
             terr = self.game_state.get_territory(territory_abbr)
             if terr is not None:
@@ -61,7 +62,7 @@ class OrderParser:
             unit_type = expect_unit_type(split_order_string, idx)
             idx += 1
 
-            if unit_type == 'Build':
+            if unit_type == BUILD:
                 unit_type = expect_unit_type(split_order_string, idx)
                 idx += 1
                 territory, coast = expect_territory_abbr(split_order_string, idx, allow_coast=True)
@@ -69,7 +70,7 @@ class OrderParser:
                 unit = Unit(territory.owner, unit_type, territory)
                 return BuildOrder(unit, territory, coast)
 
-            if unit_type == 'Remove':
+            if unit_type == DISBAND:
                 unit_type = expect_unit_type(split_order_string, idx)
                 idx += 1
                 territory, _ = expect_territory_abbr(split_order_string, idx)
@@ -88,7 +89,7 @@ class OrderParser:
 
             # Get troop from territory
             phase = self.game_state.get_phase()
-            if phase == 'Spring Retreat' or phase == 'Fall Retreat':
+            if phase == SPRING_RETREAT_PHASE or phase == FALL_RETREAT_PHASE:
                 unit = None
                 for dislodged in self.adjudicator.gather_dislodged():
                     if dislodged.dislodged_from == territory:
@@ -119,11 +120,11 @@ class OrderParser:
                 coast = None
                 if len(split_terr_coast) > 1:
                     coast = split_terr_coast[1].split(')')[0]
-                    if coast not in ('nc', 'sc'):
+                    if coast not in (NORTH_COAST, SOUTH_COAST):
                         raise Exception()
                 return TransformOrder(unit, coast)
             elif order_type == 'C':
-                if unit_type != 'Fleet':
+                if unit_type != FLEET:
                     raise Exception()
                 advance_order_string = ' '.join(split_order_string[idx:])
                 advance_order = self._parse_order_string(advance_order_string)

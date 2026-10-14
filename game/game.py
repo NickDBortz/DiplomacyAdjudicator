@@ -1,7 +1,8 @@
 from game.map_loader import MapLoader
+from game.enums import ADJUSTMENT_PHASE, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class Game:
-    def __init__(self, json_file='data/maps/classic_map.json', start_phase='Adjustment', render=True, allow_transformations=False):
+    def __init__(self, json_file='data/maps/classic_map.json', start_phase=ADJUSTMENT_PHASE, render=True, allow_transformations=False):
         # Create a map loader to load the json file and populate the rest of the objects
         loader = MapLoader(json_file)
 
@@ -53,7 +54,7 @@ class Game:
         phase = self.game_state.get_phase()
 
         # If the phase is a retreat phase, list the players that need to retreat troops
-        if phase in ['Spring Retreat', 'Fall Retreat']:
+        if phase in [SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE]:
             players = []
             dislodged = self.adjudicator.gather_dislodged()
             for d in dislodged:
@@ -63,7 +64,7 @@ class Game:
                 print(f'{player.name} has dislodged units that need to retreat.')
 
         # If the phase is an adjustment phase, list the players that need to build/disband troops
-        if phase == 'Adjustment':
+        if phase == ADJUSTMENT_PHASE:
             for player in self.game_state.players:
                 units_to_build = player.units_to_build(self.game_state.territories)
                 if units_to_build > 0:
@@ -93,7 +94,7 @@ class Game:
 
             while True:
                 # If the phase is a retreat phase, list the units this player has that still need to retreat
-                if phase in ['Spring Retreat', 'Fall Retreat']:
+                if phase in [SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE]:
                     dislodged = self.adjudicator.gather_dislodged()
                     for d in dislodged:
                         if d.owner == player and d.order is None:
@@ -102,7 +103,7 @@ class Game:
                             print(f'{unit_type} in {territory} has been dislodged and needs to retreat.')
 
                 # If the phase is an adjustment phase, list the units this player still needs to build/disband
-                if phase == 'Adjustment':
+                if phase == ADJUSTMENT_PHASE:
                     units_to_build = player.units_to_build(self.game_state.territories)
                     if units_to_build > 0:
                         print(f'{player.name} has {units_to_build} units to build.')

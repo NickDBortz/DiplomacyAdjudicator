@@ -1,9 +1,9 @@
 from game.territory import LandTerritory, WaterTerritory
-from game.enums import NORTH_COAST, SOUTH_COAST
+from game.enums import NORTH_COAST, SOUTH_COAST, ARMY, FLEET, HOLD, ADVANCE, SUPPORT, TRANSFORM, CONVOY, BUILD, DISBAND
 
 class Order:
-    def __init__(self, name, unit):
-        self.name = name
+    def __init__(self, type, unit):
+        self.type = type
         self.unit = unit 
         self.unit_territory = unit.territory
 
@@ -39,7 +39,7 @@ class Order:
     def get_start_pos(self):
         t = self.unit.territory
         if isinstance(t, LandTerritory):
-            if self.unit.type == 'Army':
+            if self.unit.type == ARMY:
                 return t.army_pos
             else:
                 if len(t.north_coast) > 0:
@@ -53,11 +53,11 @@ class Order:
             return t.fleet_pos
 
     def __str__(self):
-        return f'{self.name} {self.unit}'
+        return f'{self.type} {self.unit}'
 
 class HoldOrder(Order):
     def __init__(self, unit):
-        super().__init__('Hold', unit)
+        super().__init__(HOLD, unit)
 
     def match(self, other):
         if not isinstance(other, HoldOrder):
@@ -80,7 +80,7 @@ class AdvanceOrder(Order):
         self.dest_territory = dest_territory
         self.coast = coast
         self.is_utilizing_convoy = force_via_convoy
-        super().__init__('Advance', unit)
+        super().__init__(ADVANCE, unit)
 
     def match(self, other):
         if not isinstance(other, AdvanceOrder):
@@ -90,7 +90,7 @@ class AdvanceOrder(Order):
     def get_dest_pos(self):
         t = self.dest_territory
         if isinstance(t, LandTerritory):
-            if self.unit.type == 'Army':
+            if self.unit.type == ARMY:
                 return t.army_pos
             else:
                 if len(t.north_coast) > 0:
@@ -115,7 +115,7 @@ class AdvanceOrder(Order):
             return True
 
         self.is_utilizing_convoy = True
-        if not self.unit.type == 'Army':
+        if not self.unit.type == ARMY:
             return False
 
         # If the army unit, valid if there is a string of fleets in water territories between current territory and destination land territory
@@ -123,14 +123,14 @@ class AdvanceOrder(Order):
         traversed = []
         traverse_list = []
         for territory in self.unit.territory.adjacents:
-            if isinstance(territory, WaterTerritory) and territory.unit is not None and territory.unit.type == 'Fleet':
+            if isinstance(territory, WaterTerritory) and territory.unit is not None and territory.unit.type == FLEET:
                 traverse_list.append(territory)
 
         while len(traverse_list) > 0:
             territory = traverse_list.pop()
             for adj in territory.adjacents:
                 if adj == self.dest_territory: return True
-                if isinstance(adj, WaterTerritory) and adj not in traversed and adj.unit is not None and adj.unit.type == 'Fleet':
+                if isinstance(adj, WaterTerritory) and adj not in traversed and adj.unit is not None and adj.unit.type == FLEET:
                     traverse_list.append(adj)
             traversed.append(territory)
 
@@ -146,7 +146,7 @@ class AdvanceOrder(Order):
 class SupportOrder(Order):
     def __init__(self, unit, supported_order):
         self.supported_order = supported_order
-        super().__init__('Support', unit)
+        super().__init__(SUPPORT, unit)
 
     def match(self, other):
         if not isinstance(other, SupportOrder):
@@ -157,7 +157,7 @@ class SupportOrder(Order):
         # TODO: A support order of a convoy advance is invalid if the unit supporting is a necessary fleet in the convoy
         # Valid if supported order unit is in an adjacent territory to the current unit's territory and traversible by unit type
         unit_territory = self.unit.territory
-        dest_territory = self.supported_order.dest_territory if self.supported_order.name == 'Advance' else self.supported_order.unit.territory
+        dest_territory = self.supported_order.dest_territory if self.supported_order.type == ADVANCE else self.supported_order.unit.territory
         valid_location = False
         if unit_territory.unit_coast is not None:
             coast = unit_territory.unit_coast 
@@ -166,7 +166,7 @@ class SupportOrder(Order):
             valid_location = dest_territory in unit_territory.adjacents
 
         # Check if the supported order is a convoy, and then check for valid routes, excluding the current unit's territory, as that unit must be supporting
-        if self.supported_order.name == 'Advance' and self.supported_order.is_utilizing_convoy:
+        if self.supported_order.type == ADVANCE and self.supported_order.is_utilizing_convoy:
             visited = []
             to_visit = [t for t in self.supported_order.unit.territory.adjacents if isinstance(t, WaterTerritory) and t.unit is not None and t != unit_territory]
             found = False
@@ -184,7 +184,7 @@ class SupportOrder(Order):
                             to_visit.append(t)
             valid_location = found and valid_location
 
-        return valid_location and self.unit.can_traverse(dest_territory, for_support=self.supported_order.unit.type == 'Fleet')
+        return valid_location and self.unit.can_traverse(dest_territory, for_support=self.supported_order.unit.type == FLEET)
 
     def activate(self):
         # Add support to supported order
@@ -196,7 +196,7 @@ class SupportOrder(Order):
 class TransformOrder(Order):
     def __init__(self, unit, coast=None):
         self.coast = coast
-        super().__init__('Transform', unit)
+        super().__init__(TRANSFORM, unit)
 
     def match(self, other):
         if not isinstance(other, TransformOrder):
@@ -230,7 +230,7 @@ class ConvoyOrder(Order):
     def __init__(self, unit, convoying_unit, dest_territory):
         self.convoying_unit = convoying_unit
         self.dest_territory = dest_territory
-        super().__init__('Convoy', unit)
+        super().__init__(CONVOY, unit)
 
     def match(self, other):
         if not isinstance(other, ConvoyOrder):
@@ -240,7 +240,7 @@ class ConvoyOrder(Order):
     def validate(self):
         # If the army unit, valid if there is a string of fleets in water territories between current territory and destination land territory
         # If fleet unit, valid if path from itself through fleets in water territories to convoying unit and the destination land territory
-        if not self.unit.type == 'Fleet':
+        if not self.unit.type == FLEET:
             return False
 
         # Cannot convoy a unit from it's territory to the same territory
@@ -257,7 +257,7 @@ class ConvoyOrder(Order):
             if territory == self.dest_territory:
                 found_dest_territory = True
             if found_convoying_unit and found_dest_territory: return True
-            if isinstance(territory, WaterTerritory) and territory.unit is not None and territory.unit.type == 'Fleet':
+            if isinstance(territory, WaterTerritory) and territory.unit is not None and territory.unit.type == FLEET:
                 traverse_list.append(territory)
 
         while len(traverse_list) > 0:
@@ -270,7 +270,7 @@ class ConvoyOrder(Order):
                 if adj.unit == self.convoying_unit:
                     found_convoying_unit = True
                 if found_convoying_unit and found_dest_territory: return True
-                if isinstance(adj, WaterTerritory) and adj not in traversed and adj.unit is not None and adj.unit.type == 'Fleet':
+                if isinstance(adj, WaterTerritory) and adj not in traversed and adj.unit is not None and adj.unit.type == FLEET:
                     traverse_list.append(adj)
             traversed.append(territory)
 
@@ -279,7 +279,7 @@ class ConvoyOrder(Order):
     def activate(self):
         # If the convoyed unit is a friendly unit, infer that the intent of the order is to convoy, if not specified by order
         # This is only possible if the entire convoy route is friendly fleets
-        if self.convoying_unit.owner == self.unit.owner and self.convoying_unit.order.name == 'Advance' and self.convoying_unit.order.dest_territory == self.dest_territory:
+        if self.convoying_unit.owner == self.unit.owner and self.convoying_unit.order.type == ADVANCE and self.convoying_unit.order.dest_territory == self.dest_territory:
             # Check convoy using only friendly fleets
             # if self.unit.territory.check_convoy_from(self.convoying_unit, self.convoying_unit.territory, self.dest_territory, force_owner=self.unit.owner):
             self.convoying_unit.order.is_utilizing_convoy = True
@@ -291,7 +291,7 @@ class BuildOrder(Order):
     def __init__(self, unit, territory, coast=None):
         self.dest_territory = territory
         self.coast = coast
-        super().__init__('Build', unit)
+        super().__init__(BUILD, unit)
 
     def match(self, other):
         if not isinstance(other, BuildOrder):
@@ -300,15 +300,15 @@ class BuildOrder(Order):
 
     def validate(self):
         # If the destination has multiple coasts and we don't specify one and the unit is a fleet, fail
-        if len(self.dest_territory.north_coast) > 0 and self.coast is None and self.unit.type == 'Fleet' or self.dest_territory.unit is not None:
+        if len(self.dest_territory.north_coast) > 0 and self.coast is None and self.unit.type == FLEET or self.dest_territory.unit is not None:
             return False
 
         # If the destination is a water territory and the unit is an army, fail
-        if isinstance(self.dest_territory, WaterTerritory) and self.unit.type == 'Army':
+        if isinstance(self.dest_territory, WaterTerritory) and self.unit.type == ARMY:
             return False
 
         # If the destination is an inland territory and the unit is a fleet, fail
-        if isinstance(self.dest_territory, LandTerritory) and not self.dest_territory.is_coast and self.unit.type == 'Fleet':
+        if isinstance(self.dest_territory, LandTerritory) and not self.dest_territory.is_coast and self.unit.type == FLEET:
             return False
 
         # If the destination is occupied, fail
@@ -329,7 +329,7 @@ class BuildOrder(Order):
 
 class DisbandOrder(Order):
     def __init__(self, unit):
-        super().__init__('Disband', unit)
+        super().__init__(DISBAND, unit)
 
     def match(self, other):
         if not isinstance(other, DisbandOrder):

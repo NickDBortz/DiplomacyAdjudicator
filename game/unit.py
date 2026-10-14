@@ -1,4 +1,5 @@
 from game.territory import LandTerritory, WaterTerritory
+from game.enums import NORTH_COAST, SOUTH_COAST, ARMY, FLEET, ADVANCE
 
 class Unit:
     def __init__(self, owner, type, territory=None):
@@ -36,7 +37,7 @@ class Unit:
         if self.is_collapsed:
             coast = None
             # Get the coast if this is an advance order with a coast
-            if self.order is not None and self.order.name == 'Advance':
+            if self.order is not None and self.order.type == ADVANCE:
                 coast = self.order.coast
 
             if self.territory.unit == self:
@@ -56,20 +57,20 @@ class Unit:
 
     def transform(self):
         transformation_map = {
-            'Army': 'Fleet',
-            'Fleet': 'Army'
+            ARMY: FLEET,
+            FLEET: ARMY
         }
         self.type = transformation_map[self.type]
 
     def can_traverse(self, territory, coast=None, for_support=False):
-        if self.type == 'Army':
+        if self.type == ARMY:
             return isinstance(territory, LandTerritory)
         if (for_support or isinstance(self.territory, WaterTerritory)) and isinstance(territory, LandTerritory) and territory.is_coast:
             return True
 
         occupied_coast = self.territory.unit_coast
         if occupied_coast is not None:
-            if occupied_coast == 'nc' and territory not in self.territory.north_coast or occupied_coast == 'sc' and territory not in self.territory.south_coast:
+            if occupied_coast == NORTH_COAST and territory not in self.territory.north_coast or occupied_coast == SOUTH_COAST and territory not in self.territory.south_coast:
                 return False
         
         if isinstance(territory, WaterTerritory):
@@ -82,12 +83,12 @@ class Unit:
                 can_south_coast = self.territory in territory.south_coast
                 if can_north_coast and can_south_coast:
                     if coast is not None:
-                        if coast == 'nc' or coast == 'sc':
+                        if coast == NORTH_COAST or coast == SOUTH_COAST:
                             return True
                     return False
                 elif can_north_coast or can_south_coast:
                     if coast is not None:
-                        if can_north_coast and coast == 'nc' or can_south_coast and coast == 'sc':
+                        if can_north_coast and coast == NORTH_COAST or can_south_coast and coast == SOUTH_COAST:
                             return True
                         return False
                     return True

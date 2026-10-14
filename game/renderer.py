@@ -1,5 +1,5 @@
 from game.territory import LandTerritory
-from game.enums import NORTH_COAST, SOUTH_COAST
+from game.enums import SOUTH_COAST, ARMY, ADVANCE, SUPPORT
 
 class Renderer:
     def __init__(self):
@@ -105,7 +105,7 @@ class CV2Renderer(Renderer):
     def _render_orders(self, canvas, orders):
         # Render advances first
         for order in orders:
-            if order.name == 'Advance':
+            if order.type == ADVANCE:
                 # Render a red arrow in the direction of the advance
                 self.cv2.arrowedLine(
                     canvas,
@@ -118,7 +118,7 @@ class CV2Renderer(Renderer):
 
         # Then render all other orders
         for order in orders:
-            if order.name == 'Support':
+            if order.type == SUPPORT:
                 # If we find a match, continue
                 found_match = False
                 for other in orders:
@@ -128,7 +128,7 @@ class CV2Renderer(Renderer):
                 if not found_match:
                     continue
 
-                if order.supported_order.name == 'Advance':
+                if order.supported_order.type == ADVANCE:
                     adv_start = order.supported_order.get_start_pos()
                     adv_dest = order.supported_order.get_dest_pos()
 
@@ -188,7 +188,7 @@ class CV2Renderer(Renderer):
         color = self._get_color(territory)
         if territory.unit is not None:
             if isinstance(territory, LandTerritory):    
-                if territory.unit.type == 'Army':
+                if territory.unit.type == ARMY:
                     pos = territory_obj['army_pos']
                     self._render_army(canvas, pos, color)
                 else:

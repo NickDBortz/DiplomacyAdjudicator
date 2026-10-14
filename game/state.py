@@ -1,9 +1,11 @@
+from game.enums import ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE
+
 class GameState:
     def __init__(self, players, territories):
         self.players = players
         self.territories = territories
 
-        self.resolution_phases = ['Adjustment', 'Spring', 'Spring Retreat', 'Fall', 'Fall Retreat']
+        self.resolution_phases = [ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE]
         self.resolution_phase = 0
         
         self.year = 1800 # Set to what it should be
