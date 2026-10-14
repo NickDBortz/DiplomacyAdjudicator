@@ -61,3 +61,24 @@ class GameState:
 
         if skip_retreat or skip_adjustment:
             self.advance_phase()
+
+    def build_unit(self, unit, territory, coast):
+        territory.set_unit(unit, coast)
+        territory.owner.add_unit(unit)
+
+    def disband_unit(self, unit):
+        if unit.territory is not None:
+            unit.territory.set_unit(None)
+            unit.territory = None
+        unit.owner.remove_unit(unit)
+        unit.disbanded = True
+
+    def retreat_unit(self, unit):
+        unit.dislodged = False
+        unit.dislodge_from = None
+        destination = unit.order.dest_territory
+        destination_owner = destination.owner
+        unit.set_territory(destination)
+        destination.set_unit(unit, coast=unit.order.coast)
+        destination.owner = destination_owner
+        unit.reset_order()

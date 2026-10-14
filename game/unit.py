@@ -50,11 +50,6 @@ class Unit:
             self.collapse_to = None
             self.is_collapsed = False
 
-    def disband(self):
-        self.owner.remove_unit(self)
-        self.disbanded = True
-        self.territory = None
-
     def transform(self):
         transformation_map = {
             ARMY: FLEET,

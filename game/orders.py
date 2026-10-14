@@ -320,10 +320,6 @@ class BuildOrder(Order):
     def activate(self):
         pass
 
-    def resolve(self):
-        self.dest_territory.set_unit(self.unit, coast=self.coast)
-        self.dest_territory.owner.add_unit(self.unit)
-
     def __str__(self):
         return f'{self.unit} Built at {self.dest_territory}'
 
@@ -341,11 +337,6 @@ class DisbandOrder(Order):
 
     def activate(self):
         pass
-
-    def resolve(self):
-        self.unit.territory.set_unit(None)
-        self.unit.territory = None
-        self.unit.owner.remove_unit(self.unit)
 
     def __str__(self):
         return f'{self.unit} Removed from {self.unit.territory}'

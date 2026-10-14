@@ -121,12 +121,12 @@ class Adjudicator:
 
             # If the order is none, disband
             if dislodged.order is None:
-                dislodged.disband()
+                self.game_state.disband_unit(dislodged)
                 continue
 
             # If the order is retreating to an occupied territory, disband
             if dislodged.order.dest_territory.unit is not None:
-                dislodged.disband()
+                self.game_state.disband_unit(dislodged)
                 continue
 
             # If the order is retreating to a territory that was contested during the order phase, disband
@@ -134,7 +134,7 @@ class Adjudicator:
                 if len(dislodged.order.dest_territory.contesting) == 1 and dislodged.order.dest_territory.contesting[0].unit == dislodged:
                     pass
                 else:
-                    dislodged.disband()
+                    self.game_state.disband_unit(dislodged)
                     continue
 
             # If the order is retreating to the territory it was attacked from and said order was not a convoy, disband
@@ -144,7 +144,7 @@ class Adjudicator:
                     found_attacker = True
                     break
             if found_attacker:
-                dislodged.disband()
+                self.game_state.disband_unit(dislodged)
                 continue
 
             # If the order is retreating to a territory and is contested by another retreat, disband
@@ -166,18 +166,11 @@ class Adjudicator:
                     contested = True
                     break
             if contested:
-                dislodged.disband()
+                self.game_state.disband_unit(dislodged)
                 continue
 
             # Otherwise, retreat succeeds
-            dislodged.dislodged = False
-            dislodged.dislodge_to = None
-            destination = dislodged.order.dest_territory
-            destination_owner = destination.owner
-            dislodged.set_territory(destination)
-            destination.set_unit(dislodged, coast=dislodged.order.coast)
-            destination.owner = destination_owner
-            dislodged.reset_order()
+            self.game_state.retreat_unit(dislodged)
 
         # Clear the contesting of each territory
         for territory in self.game_state.territories:
@@ -193,14 +186,14 @@ class Adjudicator:
                 units_to_build = player.units_to_build(self.game_state.territories)
                 # Only build the unit if the player has enough supply centers, the territory is a supply center
                 if units_to_build > 0 and territory.is_supply_center and territory.unit is None:
-                    build_order.resolve()
+                    self.game_state.build_unit(build_order.unit, territory, build_order.coast)
             else:
                 disband_order = order
                 player = disband_order.unit.owner
                 units_to_build = player.units_to_build(self.game_state.territories)
                 # Only disband the unit if the player has not enough supply centers
                 if units_to_build < 0:
-                    disband_order.resolve()
+                    self.game_state.disband_unit(disband_order.unit)
 
         # After we're done, check and see if any players have too many troops
         for player in self.game_state.players:
@@ -208,9 +201,7 @@ class Adjudicator:
             while units_to_build < 0:
                 # Find the furthest unit from a home supply center and disband it
                 furthest_unit = player.get_furthest_unit(self.game_state.territories)
-                furthest_unit.territory.set_unit(None)
-                furthest_unit.territory = None
-                furthest_unit.owner.remove_unit(furthest_unit)
+                self.game_state.disband_unit(furthest_unit)
                 units_to_build = player.units_to_build(self.game_state.territories)
 
             # Reset orders
