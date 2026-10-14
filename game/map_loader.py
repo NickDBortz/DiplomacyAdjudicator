@@ -1,9 +1,5 @@
 from game.player import Player
 from game.territory import LandTerritory, WaterTerritory
-from game.state import GameState
-from game.adjudicator import Adjudicator
-from game.order_parser import OrderParser
-from game.renderer import BlankRenderer, CV2Renderer
 from game.enums import NORTH_COAST, SOUTH_COAST
 from pathlib import Path
 import json
@@ -12,7 +8,7 @@ class MapLoader:
     def __init__(self, json_file='data/maps/classic_map.json'):
         self.json_file = json_file
 
-    def load_map_json(self, load_rendering_data):
+    def load_map_json(self):
         json_file_path = Path(self.json_file)
         if not json_file_path.is_file():
             self.json_file = 'data/maps/classic_map.json'
@@ -62,31 +58,15 @@ class MapLoader:
                     adj = next((t for t in territories if t.name == adj_name), None)
                     territory.set_adjacent(adj)
 
-            game_state = GameState(players, territories)
-
             # ------ Create Adjudicator ------
 
             supply_centers_to_win = map_obj['win_count']
-
-            adjudicator = Adjudicator(game_state, supply_centers_to_win)
-
-            # ------ Create Order Parser ------
-
-            order_parser = OrderParser(adjudicator, game_state)
 
             # ------ Create Renderer ------
 
             width = map_obj['width']
             height = map_obj['height']
-            vertices = []
-            if load_rendering_data:
-                vertices = map_obj['vertices']
+            vertices = map_obj['vertices']
+            water_color = map_obj['water_color']
 
-            renderer = None
-            if load_rendering_data:
-                water_color = map_obj['water_color']
-                renderer = CV2Renderer(width, height, vertices, water_color, territories_obj, game_state)
-            else:
-                renderer = BlankRenderer()
-
-            return game_state, adjudicator, order_parser, renderer
+            return players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj

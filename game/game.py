@@ -1,4 +1,8 @@
 from game.map_loader import MapLoader
+from game.state import GameState
+from game.adjudicator import Adjudicator
+from game.order_parser import OrderParser
+from game.renderer import BlankRenderer, CV2Renderer
 from game.enums import ADJUSTMENT_PHASE, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class Game:
@@ -6,15 +10,19 @@ class Game:
         # Create a map loader to load the json file and populate the rest of the objects
         loader = MapLoader(json_file)
 
-        game_state, adjudicator, order_parser, renderer = loader.load_map_json(render)
-        game_state.set_phase(start_phase)
-        if allow_transformations:
-            order_parser.activate_transformations()
+        players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj = loader.load_map_json(render)
 
-        self.game_state = game_state
-        self.adjudicator = adjudicator
-        self.order_parser = order_parser
-        self.renderer = renderer
+        self.game_state = GameState(players, territories)
+        self.adjudicator = Adjudicator(self.game_state, supply_centers_to_win)
+        self.order_parser = OrderParser(self.adjudicator, self.game_state)
+        if render:
+            self.renderer = CV2Renderer(width, height, vertices, water_color, territories_obj, self.game_state)
+        else:
+            self.renderer = BlankRenderer()
+
+        self.game_state.set_phase(start_phase)
+        if allow_transformations:
+            self.order_parser.activate_transformations()
 
     def submit_order(self, order, owner=None):
         self.order_parser.parse_order_string(order, owner)
