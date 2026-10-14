@@ -25,7 +25,7 @@ class Game:
             self.order_parser.activate_transformations()
 
     def submit_order(self, order, owner=None):
-        self.order_parser.parse_order_string(order, owner)
+        return self.order_parser.parse_order_string(order, owner)
 
     def do_gameplay_loop(self):
         while True:

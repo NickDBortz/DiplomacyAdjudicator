@@ -2,8 +2,13 @@ from game.enums import ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FAL
 
 class GameState:
     def __init__(self, players, territories):
-        self.players = players
-        self.territories = territories
+        self.players = {}
+        for player in players:
+            self.players[player.name] = player 
+        self.territories = {}
+        for territory in territories:
+            self.territories[territory.name] = territory
+            self.territories[territory.abbr] = territory
 
         self.resolution_phases = [ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE]
         self.resolution_phase = 0
@@ -15,15 +20,13 @@ class GameState:
         self.queued_orders = []
 
     def get_player(self, name):
-        for player in self.players:
-            if player.name.lower() == name.lower():
-                return player
+        if name in self.players:
+            return self.players[name]
         return None
 
     def get_territory(self, name):
-        for territory in self.territories:
-            if territory.name.lower() == name.lower() or territory.abbr.lower() == name.lower():
-                return territory
+        if name in self.territories:
+            return self.territories[name]
         return None
 
     def queue_order(self, order):
