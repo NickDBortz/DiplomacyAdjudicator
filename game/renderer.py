@@ -1,5 +1,5 @@
 from game.territory import LandTerritory
-from game.enums import SOUTH_COAST, ARMY, ADVANCE, SUPPORT
+from game.enums import NORTH_COAST, SOUTH_COAST, ARMY, ADVANCE, SUPPORT
 
 class Renderer:
     def __init__(self):
@@ -82,7 +82,7 @@ class CV2Renderer(Renderer):
         
         # Render the units on the territories
         for territory in territories:
-            if isinstance(territory, LandTerritory):
+            if territory['land']:
                 self._render_supply_center(canvas, territory)
             self._render_unit(canvas, territory)
 
@@ -109,8 +109,8 @@ class CV2Renderer(Renderer):
                 # Render a red arrow in the direction of the advance
                 self.cv2.arrowedLine(
                     canvas,
-                    order.get_start_pos(),
-                    order.get_dest_pos(),
+                    self._get_unit_pos(order.unit_territory, order.unit.type),
+                    self._get_unit_pos(order.dest_territory, order.unit.type),
                     (0, 0, 255),
                     3,
                     self.cv2.LINE_AA
@@ -129,16 +129,16 @@ class CV2Renderer(Renderer):
                     continue
 
                 if order.supported_order.type == ADVANCE:
-                    adv_start = order.supported_order.get_start_pos()
-                    adv_dest = order.supported_order.get_dest_pos()
+                    adv_start = self._get_unit_pos(order.supported_order.unit_territory, order.supported_order.unit.type)
+                    adv_dest = self._get_unit_pos(order.supported_order.dest_territory, order.supported_order.unit.type)
 
                     dest_pos = [(adv_start[0] - adv_dest[0]) // 2 + adv_dest[0], (adv_start[1] - adv_dest[1]) // 2 + adv_dest[1]]
                 else:
-                    dest_pos = order.supported_order.get_start_pos()
+                    dest_pos = self._get_unit_pos(order.supported_order.unit_territory, order.supported_order.unit.type)
                 # Render a red arrow in the direction of the advance
                 self.cv2.arrowedLine(
                     canvas,
-                    order.get_start_pos(),
+                    self._get_unit_pos(order.unit_territory, order.unit.type),
                     dest_pos,
                     (0, 255, 0),
                     3,
@@ -192,9 +192,9 @@ class CV2Renderer(Renderer):
                     pos = territory_obj['army_pos']
                     self._render_army(canvas, pos, color)
                 else:
-                    pos = territory['coast_pos']
+                    pos = territory_obj['coast_pos']
                     if territory.unit_coast == SOUTH_COAST:
-                        pos = territory['south_coast_pos']
+                        pos = territory_obj['south_coast_pos']
                     self._render_fleet(canvas, pos, color)
             else:
                 pos = territory_obj['fleet_pos']
@@ -309,3 +309,25 @@ class CV2Renderer(Renderer):
         
         # Return BGR scalar tuple (OpenCV format)
         return (b, g, r)
+
+    def _get_unit_pos(self, t, unit_type):
+        t_obj = self._get_territory_obj(t.name)
+        if t_obj['land']:
+            if unit_type == ARMY:
+                return t_obj['army_pos']
+            else:
+                if len(t.north_coast) > 0:
+                    if t.unit_coast == NORTH_COAST:
+                        return t_obj['coast_pos']
+                    else:
+                        return t_obj['south_coast_pos']
+                else:
+                    return t_obj['coast_pos']
+        else:
+            return t_obj['fleet_pos']
+
+    def _get_territory_obj(self, name):
+        for territory_obj in self.territory_objs:
+            if territory_obj['name'] == name:
+                return territory_obj
+        return None
