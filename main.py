@@ -1,4 +1,4 @@
-from game.map import Map
+from game.game import Game
 from game.unit import Unit
 
 def add_army(territory, owner):
@@ -14,6 +14,6 @@ def add_fleet(territory, owner, coast=None):
     return unit
 
 if __name__ == "__main__":
-    map = Map()
+    game = Game()
 
-    map.do_gameplay_loop()
+    game.do_gameplay_loop()

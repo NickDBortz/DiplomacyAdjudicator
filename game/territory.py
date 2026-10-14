@@ -1,5 +1,5 @@
 class Territory:
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos, np, cv2):
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos):
         self.name = name
         self.abbr = abbr
         self.is_supply_center = is_supply_center
@@ -9,9 +9,6 @@ class Territory:
 
         self.polygons = polygons
         self.label_pos = label_pos
-
-        self.np = np
-        self.cv2 = cv2
 
         self.unit_coast = None
         self.north_coast = []
@@ -23,170 +20,8 @@ class Territory:
         self.adjacents = []
         self.contesting = []
 
-        if len(vertices) > 0:
-            self.smooth_polygons(vertices, width, height)
-
-    def smooth_polygons(self, vertices, width, height):
-        EDGE_EPSILON = 10
-        def is_edge_point(p):
-            x, y = p
-
-            return (
-                x <= EDGE_EPSILON or
-                y <= EDGE_EPSILON or
-                x >= width - EDGE_EPSILON or
-                y >= height - EDGE_EPSILON
-            )
-
-        for i in range(len(self.polygons)):
-            pts = self.np.asarray([vertices[vertex_index] for vertex_index in self.polygons[i]], dtype=float)
-
-            for _ in range(2):
-                new_pts = []
-                n = len(pts)
-                for j in range(n):
-                    p0 = pts[j]
-                    p1 = pts[(j+1) % n]
-
-                    if is_edge_point(p0) or is_edge_point(p1):
-                        new_pts.append(p0)
-                        continue
-
-                    q = 0.75 * p0 + 0.25 * p1
-                    r = 0.25 * p0 + 0.75 * p1
-
-                    new_pts.extend(([q, r]))
-
-                pts = self.np.array(new_pts)
-
-            pts = pts.astype(self.np.int32)
-
-            self.polygons[i] = pts
-
-    def render(self, canvas):
-        for polygon in self.polygons:
-            self.cv2.fillPoly(
-                canvas,
-                [polygon],
-                self.get_color()
-            )
-
-    def render_borders(self, canvas):
-        for polygon in self.polygons:
-            self.cv2.polylines(
-                canvas,
-                [polygon],
-                isClosed=True,
-                color=(0, 0, 0),
-                thickness=1
-            )
-
-    def render_text(self, canvas):
-        # Render Abbreviation
-        font = self.cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.5
-        thickness = 2
-        color = (255, 255, 255)
-
-        outline_color = (0, 0, 0)
-
-        line_type = self.cv2.LINE_AA
-
-        text_size, _ = self.cv2.getTextSize(self.abbr, font, font_scale, thickness)
-        text_w, text_h = text_size[0], text_size[1]
-
-        text_x = self.label_pos[0] - (text_w // 2)
-        text_y = self.label_pos[1] + (text_h // 2)
-
-        for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
-            self.cv2.putText(
-                canvas, 
-                self.abbr, 
-                (text_x+dx, text_y+dy), 
-                font, 
-                font_scale, 
-                outline_color, 
-                thickness,
-                line_type
-            )
-
-        self.cv2.putText(
-            canvas, 
-            self.abbr, 
-            (text_x, text_y), 
-            font, 
-            font_scale, 
-            color, 
-            thickness,
-            line_type
-        )
-
-    def render_unit(self, canvas):
-        pass
-
-    def render_army(self, canvas, pos):
-        sq_size = 15
-        pt1 = (pos[0] - (sq_size//2), pos[1] - (sq_size//2))
-        pt2 = (pos[0] + (sq_size//2), pos[1] + (sq_size//2))
-
-        b,r,g = self.get_color()
-        b -= 30
-        r -= 30
-        g -= 30
-
-        border_thickness = 2
-        self.cv2.rectangle(
-            canvas,
-            (pt1[0]-border_thickness, pt1[1]-border_thickness),
-            (pt2[0]+border_thickness, pt2[1]+border_thickness),
-            (0,0,0),
-            -1
-        )
-
-        self.cv2.rectangle(
-            canvas,
-            pt1,
-            pt2,
-            (b,r,g),
-            -1
-        )
-
-    def render_fleet(self, canvas, pos):
-        sq_size = 15
-        pt1 = (pos[0] - (sq_size), pos[1] - (sq_size//2))
-        pt2 = (pos[0] + (sq_size), pos[1] + (sq_size//2))
-
-        b,r,g = self.get_color()
-        b -= 30
-        r -= 30
-        g -= 30
-
-        border_thickness = 2
-        self.cv2.rectangle(
-            canvas,
-            (pt1[0]-border_thickness, pt1[1]-border_thickness),
-            (pt2[0]+border_thickness, pt2[1]+border_thickness),
-            (0,0,0),
-            -1
-        )
-
-        self.cv2.rectangle(
-            canvas,
-            pt1,
-            pt2,
-            (b,r,g),
-            -1
-        )
-
     def get_color(self):
-        color = self.owner.color if self.owner is not None else '#E2C69E'
-        h = color.lstrip("#")
-        
-        # Parse R, G, B integers
-        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-        
-        # Return BGR scalar tuple (OpenCV format)
-        return (b, g, r)
+        return self.owner.color if self.owner is not None else '#E2C69E'
 
     def set_unit(self, unit, coast=None):
         self.unit_coast = coast
@@ -531,43 +366,14 @@ class Territory:
         return f'{self.name}{f'*' if self.is_supply_center else ''}'
 
 class LandTerritory(Territory):
-    def __init__(self, name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos, np, cv2):
-        super().__init__(name, abbr, is_supply_center, owner, polygons, vertices, width, height, label_pos, np, cv2)
+    def __init__(self, name, abbr, is_supply_center, owner, polygons, label_pos, supply_center_pos, army_pos, coast_pos, south_coast_pos):
+        super().__init__(name, abbr, is_supply_center, owner, polygons, label_pos)
         self.is_coast = False
 
         self.supply_center_pos = supply_center_pos
         self.army_pos = army_pos
         self.coast_pos = coast_pos
         self.south_coast_pos = south_coast_pos
-
-    def render_supply_center(self, canvas):
-        if self.is_supply_center:
-            self.cv2.circle(
-                canvas,
-                (self.supply_center_pos[0], self.supply_center_pos[1]),
-                5,
-                (0, 173, 218),
-                -1
-            )
-            self.cv2.circle(
-                canvas,
-                (self.supply_center_pos[0], self.supply_center_pos[1]),
-                5,
-                (0,0,0), # (0, 173, 218),
-                3
-            )
-
-    def render_unit(self, canvas):
-        if self.unit is not None:
-            if self.unit.type == 'Army':
-                self.render_army(canvas, self.army_pos)
-            else:
-                pos_x = self.coast_pos[0]
-                pos_y = self.coast_pos[1]
-                if self.unit_coast in ('sc', 1):
-                    pos_x = self.south_coast_pos[0]
-                    pos_y = self.south_coast_pos[1]
-                self.render_fleet(canvas, (pos_x, pos_y))
 
     def set_adjacent(self, territory, coast=None):
         if isinstance(territory, WaterTerritory):
@@ -586,23 +392,12 @@ class LandTerritory(Territory):
         territory.set_adjacent(self)
 
 class WaterTerritory(Territory):
-    def __init__(self, name, abbr, owner, color, polygons, vertices, width, height, label_pos, fleet_pos, np, cv2):
-        super().__init__(name, abbr, False, owner, polygons, vertices, width, height, label_pos, np, cv2)
+    def __init__(self, name, abbr, owner, color, polygons, label_pos, fleet_pos):
+        super().__init__(name, abbr, False, owner, polygons, label_pos)
 
         self.color = color
 
         self.fleet_pos = fleet_pos
 
-    def render_unit(self, canvas):
-        if self.unit is not None:
-            self.render_fleet(canvas, self.fleet_pos)
-
     def get_color(self):
-        color = self.color
-        h = color.lstrip("#")
-        
-        # Parse R, G, B integers
-        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-        
-        # Return BGR scalar tuple (OpenCV format)
-        return (b, g, r)
+        return self.color
