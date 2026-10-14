@@ -109,7 +109,7 @@ class CV2Renderer(Renderer):
                 # Render a red arrow in the direction of the advance
                 self.cv2.arrowedLine(
                     canvas,
-                    self._get_unit_pos(order.unit_territory, order.unit.type),
+                    self._get_unit_pos(order.unit_territory or order.unit.dislodged_from, order.unit.type),
                     self._get_unit_pos(order.dest_territory, order.unit.type),
                     (0, 0, 255),
                     3,
