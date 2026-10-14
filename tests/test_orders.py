@@ -3845,7 +3845,7 @@ def test_too_many_build_orders():
     add_army(map.game_state.get_territory('PRU'), map.game_state.get_player('Germany'))
     
     assert_equal('German Units', len(map.game_state.get_player('Germany').units), 2)
-    assert_equal('German Available Units', map.game_state.get_player('Germany').units_to_build(map.game_state.territories), 1)
+    assert_equal('German Available Units', map.game_state.get_player('Germany').units_to_build(map.game_state.territory_list), 1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -3871,7 +3871,7 @@ def test_fleets_cannot_be_built_in_land_areas():
     add_army(map.game_state.get_territory('LIV'), map.game_state.get_player('Russia'))
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 3)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), 1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), 1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -3894,7 +3894,7 @@ def test_supply_center_must_be_empty_for_building():
     add_army(map.game_state.get_territory('FIN'), map.game_state.get_player('Germany'))
     
     assert_equal('German Units', len(map.game_state.get_player('Germany').units), 2)
-    assert_equal('German Available Units', map.game_state.get_player('Germany').units_to_build(map.game_state.territories), 1)
+    assert_equal('German Available Units', map.game_state.get_player('Germany').units_to_build(map.game_state.territory_list), 1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -3918,7 +3918,7 @@ def test_both_coasts_must_be_empty_for_building():
     add_army(map.game_state.get_territory('LIV'), map.game_state.get_player('Russia'))
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 3)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), 1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), 1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -3962,7 +3962,7 @@ def test_building_in_home_supply_center_that_is_not_owned():
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
     
     assert_equal('German Units', len(map.game_state.get_player('Germany').units), 0)
-    assert_equal('German Available Units', map.game_state.get_player('Germany').units_to_build(map.game_state.territories), 1)
+    assert_equal('German Available Units', map.game_state.get_player('Germany').units_to_build(map.game_state.territory_list), 1)
 
     map.submit_order('Build A BER', owner=map.game_state.get_player('Germany'))
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
@@ -3985,7 +3985,7 @@ def test_building_in_owned_supply_center_that_is_not_a_home_supply_center():
     map.game_state.get_territory('WAR').owner = map.game_state.get_player('Germany')
     
     assert_equal('German Units', len(map.game_state.get_player('Germany').units), 3)
-    assert_equal('German Available Units', map.game_state.get_player('Germany').units_to_build(map.game_state.territories), 1)
+    assert_equal('German Available Units', map.game_state.get_player('Germany').units_to_build(map.game_state.territory_list), 1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4008,7 +4008,7 @@ def test_only_one_build_in_a_home_supply_center():
     add_army(map.game_state.get_territory('PRU'), map.game_state.get_player('Russia'))
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 2)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), 2)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), 2)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4035,7 +4035,7 @@ def test_too_many_disband_orders():
     map.game_state.get_territory('MAR').owner = map.game_state.get_player('Russia')
     
     assert_equal('French Units', len(map.game_state.get_player('France').units), 2)
-    assert_equal('French Available Units', map.game_state.get_player('France').units_to_build(map.game_state.territories), -1)
+    assert_equal('French Available Units', map.game_state.get_player('France').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4065,7 +4065,7 @@ def test_removing_the_same_unit_twice():
     map.game_state.get_territory('MAR').owner = map.game_state.get_player('Russia')
     
     assert_equal('French Units', len(map.game_state.get_player('France').units), 2)
-    assert_equal('French Available Units', map.game_state.get_player('France').units_to_build(map.game_state.territories), -1)
+    assert_equal('French Available Units', map.game_state.get_player('France').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4098,7 +4098,7 @@ def test_civil_disorder_two_armies_with_different_distance():
     map.game_state.get_territory('SEV').owner = map.game_state.get_player('France')
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 3)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), -1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4129,7 +4129,7 @@ def test_civil_disorder_two_armies_with_equal_distance():
     map.game_state.get_territory('SEV').owner = map.game_state.get_player('France')
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 3)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), -1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4160,7 +4160,7 @@ def test_civil_disorder_two_fleets_with_different_distance():
     map.game_state.get_territory('SEV').owner = map.game_state.get_player('France')
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 3)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), -1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4191,7 +4191,7 @@ def test_civil_disorder_two_fleets_with_equal_distance():
     map.game_state.get_territory('SEV').owner = map.game_state.get_player('France')
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 2)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), -1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4222,7 +4222,7 @@ def test_civil_disorder_two_fleets_and_army_with_equal_distance():
     map.game_state.get_territory('SEV').owner = map.game_state.get_player('France')
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 3)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), -1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4253,7 +4253,7 @@ def test_civil_disorder_a_fleet_with_shorter_distance_than_the_army():
     map.game_state.get_territory('SEV').owner = map.game_state.get_player('France')
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 2)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), -1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4285,7 +4285,7 @@ def test_civil_disorder_must_be_counted_from_both_coasts():
     map.game_state.get_territory('MOS').owner = map.game_state.get_player('France')
     
     assert_equal('Russian Units', len(map.game_state.get_player('Russia').units), 4)
-    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territories), -1)
+    assert_equal('Russian Available Units', map.game_state.get_player('Russia').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4316,7 +4316,7 @@ def test_civil_disorder_counting_convoying_distance():
     map.game_state.get_territory('ROM').owner = map.game_state.get_player('France')
     
     assert_equal('Italian Units', len(map.game_state.get_player('Italy').units), 3)
-    assert_equal('Italian Available Units', map.game_state.get_player('Italy').units_to_build(map.game_state.territories), -1)
+    assert_equal('Italian Available Units', map.game_state.get_player('Italy').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')
@@ -4346,7 +4346,7 @@ def test_distance_to_owned_supply_center():
     map.game_state.get_territory('ROM').owner = map.game_state.get_player('France')
     
     assert_equal('Italian Units', len(map.game_state.get_player('Italy').units), 2)
-    assert_equal('Italian Available Units', map.game_state.get_player('Italy').units_to_build(map.game_state.territories), -1)
+    assert_equal('Italian Available Units', map.game_state.get_player('Italy').units_to_build(map.game_state.territory_list), -1)
 
     map.game_state.set_phase('Adjustment')
     assert_equal('Map Phase', map.game_state.get_phase(), 'Adjustment')

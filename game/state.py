@@ -5,10 +5,12 @@ class GameState:
         self.players = {}
         for player in players:
             self.players[player.name] = player 
+        self.player_list = players
         self.territories = {}
         for territory in territories:
             self.territories[territory.name] = territory
             self.territories[territory.abbr] = territory
+        self.territory_list = territories
 
         self.resolution_phases = [ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE]
         self.resolution_phase = 0

@@ -50,7 +50,7 @@ class Adjudicator:
             dislodged = self.gather_dislodged()
             if len(dislodged) == 0:
                 # Need to remove contesting, as they're only used for retreat phases
-                for territory in self.game_state.territories:
+                for territory in self.game_state.territory_list:
                     territory.clear_contesting()
                 skip_retreat = True
 
@@ -60,8 +60,8 @@ class Adjudicator:
             self._resolve_retreat_orders()
             if phase == FALL_RETREAT_PHASE:
                 needs_adjustment = False
-                for player in self.game_state.players:
-                    units_to_build = player.units_to_build(self.game_state.territories)
+                for player in self.game_state.player_list:
+                    units_to_build = player.units_to_build(self.game_state.territory_list)
                     if units_to_build != 0:
                         needs_adjustment = True
                 skip_adjustment = not needs_adjustment
@@ -75,7 +75,7 @@ class Adjudicator:
 
     def gather_dislodged(self):
         dislodged = []
-        for player in self.game_state.players:
+        for player in self.game_state.player_list:
             for unit in player.units:
                 if unit.dislodged:
                     dislodged.append(unit)
@@ -92,7 +92,7 @@ class Adjudicator:
         # Filter to only the territories that need to be resolved
         # These either have a unit or have contestants
         # All other territories don't need to be touched
-        territories_to_resolve = [territory for territory in self.game_state.territories if territory.needs_resolved()]
+        territories_to_resolve = [territory for territory in self.game_state.territory_list if territory.needs_resolved()]
 
         # Order so we handle territories that have unmoving units first
         order_mapping = {
@@ -109,7 +109,7 @@ class Adjudicator:
             territory.resolve()
 
         # Collapse units
-        for player in self.game_state.players:
+        for player in self.game_state.player_list:
             for unit in player.units:
                 unit.handle_collapse()
                 unit.reset_order()
@@ -174,7 +174,7 @@ class Adjudicator:
             self.game_state.retreat_unit(dislodged)
 
         # Clear the contesting of each territory
-        for territory in self.game_state.territories:
+        for territory in self.game_state.territory_list:
             territory.clear_contesting()
 
     def _resolve_adjustment_orders(self):
@@ -184,26 +184,26 @@ class Adjudicator:
                 build_order = order
                 territory = build_order.dest_territory
                 player = territory.owner
-                units_to_build = player.units_to_build(self.game_state.territories)
+                units_to_build = player.units_to_build(self.game_state.territory_list)
                 # Only build the unit if the player has enough supply centers, the territory is a supply center
                 if units_to_build > 0 and territory.is_supply_center and territory.unit is None:
                     self.game_state.build_unit(build_order.unit, territory, build_order.coast)
             else:
                 disband_order = order
                 player = disband_order.unit.owner
-                units_to_build = player.units_to_build(self.game_state.territories)
+                units_to_build = player.units_to_build(self.game_state.territory_list)
                 # Only disband the unit if the player has not enough supply centers
                 if units_to_build < 0:
                     self.game_state.disband_unit(disband_order.unit)
 
         # After we're done, check and see if any players have too many troops
-        for player in self.game_state.players:
-            units_to_build = player.units_to_build(self.game_state.territories)
+        for player in self.game_state.player_list:
+            units_to_build = player.units_to_build(self.game_state.territory_list)
             while units_to_build < 0:
                 # Find the furthest unit from a home supply center and disband it
-                furthest_unit = player.get_furthest_unit(self.game_state.territories)
+                furthest_unit = player.get_furthest_unit(self.game_state.territory_list)
                 self.game_state.disband_unit(furthest_unit)
-                units_to_build = player.units_to_build(self.game_state.territories)
+                units_to_build = player.units_to_build(self.game_state.territory_list)
 
             # Reset orders
             for unit in player.units:
@@ -211,7 +211,7 @@ class Adjudicator:
 
     def _build_order_graph(self):
         # Ensure all units with no order are ordered to hold
-        empty_territories = [territory for territory in self.game_state.territories if territory.unit is not None and territory.unit.order is None]
+        empty_territories = [territory for territory in self.game_state.territory_list if territory.unit is not None and territory.unit.order is None]
         for territory in empty_territories:
             order = HoldOrder(territory.unit)
             territory.unit.set_order(order)
@@ -266,7 +266,7 @@ class Adjudicator:
                 order.supported_order.cut_support(order)
 
     def _check_for_winner(self):
-        for player in self.game_state.players:
-            if player.get_supply_centers(self.game_state.territories) >= self.supply_centers_to_win:
+        for player in self.game_state.player_list:
+            if player.get_supply_centers(self.game_state.territory_list) >= self.supply_centers_to_win:
                 # This player wins
                 self.game_state.set_winner(player)

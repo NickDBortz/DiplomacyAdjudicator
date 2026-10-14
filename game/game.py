@@ -73,15 +73,15 @@ class Game:
 
         # If the phase is an adjustment phase, list the players that need to build/disband troops
         if phase == ADJUSTMENT_PHASE:
-            for player in self.game_state.players:
-                units_to_build = player.units_to_build(self.game_state.territories)
+            for player in self.game_state.player_list:
+                units_to_build = player.units_to_build(self.game_state.territory_list)
                 if units_to_build > 0:
                     print(f'{player.name} has {units_to_build} units to build.')
                 elif units_to_build < 0:
                     print(f'{player.name} has {-units_to_build} units to disband.')
 
         # List of players who can choose to draw (must be an active player)
-        no_draw_list = [player.name for player in self.game_state.players if player.get_supply_centers(self.game_state.territories) > 0]
+        no_draw_list = [player.name for player in self.game_state.player_list if player.get_supply_centers(self.game_state.territory_list) > 0]
         draw_proposed = False
 
         # Until told to stop, ask for orders
@@ -112,7 +112,7 @@ class Game:
 
                 # If the phase is an adjustment phase, list the units this player still needs to build/disband
                 if phase == ADJUSTMENT_PHASE:
-                    units_to_build = player.units_to_build(self.game_state.territories)
+                    units_to_build = player.units_to_build(self.game_state.territory_list)
                     if units_to_build > 0:
                         print(f'{player.name} has {units_to_build} units to build.')
                     elif units_to_build < 0:
