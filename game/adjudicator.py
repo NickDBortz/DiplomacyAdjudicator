@@ -53,11 +53,12 @@ class Adjudicator:
                 for territory in self.game_state.territories:
                     territory.clear_contesting()
                 skip_retreat = True
+
+            if phase == FALL_PHASE:
+                self._check_for_winner()
         elif phase == SPRING_RETREAT_PHASE or phase == FALL_RETREAT_PHASE:
             self._resolve_retreat_orders()
             if phase == FALL_RETREAT_PHASE:
-                self._check_for_winner()
-
                 needs_adjustment = False
                 for player in self.game_state.players:
                     units_to_build = player.units_to_build(self.game_state.territories)
