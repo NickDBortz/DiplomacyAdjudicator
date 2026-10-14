@@ -10,7 +10,7 @@ class Game:
         # Create a map loader to load the json file and populate the rest of the objects
         loader = MapLoader(json_file)
 
-        players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj = loader.load_map_json(render)
+        players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj = loader.load_map_json()
 
         self.game_state = GameState(players, territories)
         self.adjudicator = Adjudicator(self.game_state, supply_centers_to_win)
