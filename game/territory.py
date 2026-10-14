@@ -46,11 +46,12 @@ class Territory:
             # Skip over convoy contestants, as they need to be resolved separately
             if contestant.unit.owner != friendly_country and not contestant.unit.order.is_utilizing_convoy:
                 # Nullify any power from friendly supports on unfriendly advance
+                contestant_power = contestant.unit.order.power
                 for supporter in contestant.unit.order.supporters:
                     if supporter.unit.owner == friendly_country:
-                        contestant.unit.order.cut_support(supporter)
+                        contestant_power -= 1
                 # If that contestant still beats the holding unit's hold, territory is successfully contested
-                if contestant.unit.order.power > self.unit.order.power:
+                if contestant_power > self.unit.order.power:
                     return True
                 # Ignore contestant if part of a head-to-head
                 return contestant.unit.territory != dest_territory
