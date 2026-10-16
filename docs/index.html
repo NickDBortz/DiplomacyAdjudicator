@@ -8,8 +8,23 @@
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 </head>
 <body>
-  <div id="status">Loading Python runtime…</div>
-  <div id="map"></div>
+  <div id="sidebar" class="sidebar">
+    <button id="toggleBtn" class="togglebtn">&#9776;</button>
+    <p class="section-header">Great Power:</p>
+    <select name="Great Power" id="greatpower">
+      <option value="">-- Select a Great Power --</option>
+    </select>
+    <p id="info" class="info"></p>
+    <p class="section-header">Enter Your Order:</p>
+    <input id="order" type="text">
+    <button id="submit-order" class="btn">Submit Order</button>
+    <p id="order-error" class="info"></p>
+    <button id="resolve" class="btn">Resolve Orders</button>
+  </div>
+  <div id="main">
+    <div id="status">Loading Python runtime…</div>
+    <div id="map"></div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

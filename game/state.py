@@ -15,7 +15,7 @@ class GameState:
         self.resolution_phases = [ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE]
         self.resolution_phase = 0
         
-        self.year = 1800 # Set to what it should be
+        self.year = 1901
         self.winner = None
         self.draw = False
 
