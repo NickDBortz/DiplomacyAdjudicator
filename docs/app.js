@@ -418,3 +418,11 @@ document.getElementById("resolve").addEventListener("click", () => {
   // Clear the order input field
   document.getElementById("order").value = '';
 });
+
+document.getElementById("new-game").addEventListener("click", () => {
+  window.diplomacy.newGame();
+  queuedOrders = {};
+  document.getElementById("greatpower").value = '';
+  clearGreatPowerInfo();
+  document.getElementById("order").value = '';
+});

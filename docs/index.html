@@ -10,16 +10,22 @@
 <body>
   <div id="sidebar" class="sidebar">
     <button id="toggleBtn" class="togglebtn">&#9776;</button>
-    <p class="section-header">Great Power:</p>
-    <select name="Great Power" id="greatpower">
-      <option value="">-- Select a Great Power --</option>
-    </select>
-    <p id="info" class="info"></p>
-    <p class="section-header">Enter Your Order:</p>
-    <input id="order" type="text">
-    <button id="submit-order" class="btn">Submit Order</button>
-    <p id="order-error" class="info"></p>
-    <button id="resolve" class="btn">Resolve Orders</button>
+    <div class="sidebar-content">
+      <div class="orders">
+        <p class="section-header">Great Power:</p>
+        <select name="Great Power" id="greatpower">
+          <option value="">-- Select a Great Power --</option>
+        </select>
+        <p id="info" class="info"></p>
+        <p class="section-header">Enter Your Order:</p>
+        <input id="order" type="text">
+        <button id="submit-order" class="btn">Submit Order</button>
+        <p id="order-error" class="info"></p>
+        <button id="resolve" class="btn">Resolve Orders</button>
+      </div>
+
+      <button id="new-game">New Game</button>
+    </div>
   </div>
   <div id="main">
     <div id="status">Loading Python runtime…</div>
