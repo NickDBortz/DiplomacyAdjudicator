@@ -1,0 +1,8 @@
+body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
+#status { padding: 8px 12px; background: #111; }
+#map svg { width: 100%; max-height: 90vh; display: block; }
+.territory { stroke: #000; stroke-width: 1; }
+.territory:hover { stroke: #fff; stroke-width: 2; }
+.label { font-size: 12px; text-anchor: middle; pointer-events: none; fill: #000; }
+.unit text { font-size: 14px; font-weight: bold; text-anchor: middle; dominant-baseline: central; pointer-events: none; fill: #fff; }
+.unit circle { stroke: #000; stroke-width: 2; }
