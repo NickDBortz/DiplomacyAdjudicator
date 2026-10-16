@@ -80,3 +80,14 @@ Run the test suite from the repository root:
 ```bash
 python -m pytest
 ```
+
+## Web frontend (GitHub Pages)
+
+`docs/` holds a static site that runs the Python game in the browser via Pyodide and draws the map as SVG. Build the generated files and serve locally:
+
+```bash
+python tools/build_web.py
+python -m http.server --directory docs
+```
+
+Open http://localhost:8000 and use the developer console: `diplomacy.order("Build A PAR", "France")`, `diplomacy.resolve()`, `diplomacy.state`, `diplomacy.help()`. The `Deploy Pages` workflow builds and publishes it (set Pages source to "GitHub Actions").
