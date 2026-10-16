@@ -15,11 +15,20 @@ class GameState:
         self.resolution_phases = [ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE]
         self.resolution_phase = 0
         
-        self.year = 1800 # Set to what it should be
+        self.year = 1901
         self.winner = None
         self.draw = False
+        self.draw_votes = []
 
         self.queued_orders = []
+
+    def vote_draw(self, player):
+        if player not in self.draw_votes:
+            self.draw_votes.append(player)
+            for p in self.player_list:
+                if p not in self.draw_votes:
+                    return
+            self.draw = True
 
     def get_player(self, name):
         name = name.lower().strip()

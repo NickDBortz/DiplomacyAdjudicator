@@ -7,7 +7,7 @@ docs = root / 'docs'
 
 py_dir = docs / 'py' / 'game'
 if py_dir.parent.exists():
-    shutil.rmtree(py_dir.parent)
+    shutil.rmtree(py_dir.parent, ignore_errors=True)
 py_dir.mkdir(parents=True)
 files = sorted(p.name for p in (root / 'game').glob('*.py'))
 for name in files:

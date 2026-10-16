@@ -11,6 +11,10 @@ Order syntax is case-sensitive: "A PAR - BUR", "F NTH C A LON - BEL",
 
 let pyodide, api, mapData, svg;
 
+let greatPower;
+let drawVotes = [];
+let queuedOrders = {};
+
 function setStatus(text) {
   document.getElementById('status').textContent = text;
 }
@@ -18,18 +22,60 @@ function setStatus(text) {
 async function loadPython() {
   pyodide = await loadPyodide();
   const manifest = await (await fetch('py/manifest.json')).json();
-  pyodide.FS.mkdirTree('game');
-  pyodide.FS.mkdirTree('data/maps');
+  pyodide.FS.mkdirTree('/game');
+  pyodide.FS.mkdirTree('/data/maps');
+
   for (const path of manifest) {
-    pyodide.FS.writeFile(path, await (await fetch('py/' + path)).text());
+    try {
+      let text = await (await fetch('py/' + path)).text();
+      pyodide.FS.writeFile("/" + path, text);
+    } catch (e) {
+      console.error(`Failed to load ${path}:`, e);
+    }
   }
-  pyodide.FS.writeFile('data/maps/classic_map.json', await (await fetch('data/classic_map.json')).text());
-  pyodide.runPython('import game.web_api as web_api');
+  try {
+    pyodide.FS.writeFile('/data/maps/classic_map.json', await (await fetch('data/classic_map.json')).text());
+  } catch (e) {
+    console.error(`Failed to load classic_map.json:`, e);
+  }
+  pyodide.runPython(`
+    import sys
+    sys.path.insert(0, '/')
+    import game.web_api as web_api
+  `);
   api = pyodide.globals.get('web_api');
 }
 
 function call(fn, ...args) {
   return JSON.parse(api[fn](...args));
+}
+
+function smoothPolygons(polygons) {
+  const edgeEpsilon = 10;
+  function isEdgePoint(p, width, height) {
+    const [x, y] = p;
+    return (
+      x <= edgeEpsilon ||
+      y <= edgeEpsilon ||
+      x >= width - edgeEpsilon ||
+      y >= height - edgeEpsilon
+    );
+  }
+
+  for (const poly of polygons) {
+    for (let i = 0; i < poly.length; i++) {
+      const p0 = poly[i];
+      const p1 = poly[(i + 1) % poly.length];
+      if (isEdgePoint(p0, mapData.width, mapData.height) || isEdgePoint(p1, mapData.width, mapData.height)) {
+        continue;
+      }
+      const q = [0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]];
+      const r = [0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]];
+      poly.splice(i + 1, 0, q, r);
+      i += 2;
+    }
+  }
+  return polygons;
 }
 
 function buildMap() {
@@ -40,12 +86,13 @@ function buildMap() {
   const bg = document.createElementNS(SVG_NS, 'rect');
   bg.setAttribute('width', mapData.width);
   bg.setAttribute('height', mapData.height);
-  bg.setAttribute('fill', mapData.water_color);
+  bg.setAttribute('fill', 'black');
   svg.appendChild(bg);
 
   for (const t of mapData.territories) {
-    const d = t.polygons
-      .map(poly => 'M' + poly.map(i => mapData.vertices[i].join(',')).join('L') + 'Z')
+    const polygons = smoothPolygons(t.polygons.map(poly => poly.map(i => mapData.vertices[i])));
+    const d = polygons
+      .map(poly => 'M' + poly.map(v => v.join(',')).join('L') + 'Z')
       .join(' ');
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', d);
@@ -84,6 +131,11 @@ function buildMap() {
 
 function unitPosition(t, unit) {
   if (!t.land) return t.fleet_pos;
+  const coast = unit.coast;
+  if (coast == 'nc')
+    return t.coast_pos;
+  else if (coast == 'sc')
+    return t.south_coast_pos;
   return unit.type === 'A' ? t.army_pos : t.coast_pos;
 }
 
@@ -114,8 +166,112 @@ function render(state) {
     g.append(c, txt);
     layer.appendChild(g);
   }
-  setStatus(`${state.phase} phase, ${state.year}` + (state.winner ? ` — ${state.winner} wins!` : ''));
+
+  // Remove old orders
+  const oldOrders = document.querySelectorAll('line, polygon');
+  oldOrders.forEach(el => el.remove());
+
+  for (const o of state.orders) {
+    // Render each order here
+    if (o.type == 'Advance') {
+      const from = byAbbr[o.territory];
+      const to = byAbbr[o.dest_territory];
+      const unit = state.units.find(u => u.territory === o.territory && !u.dislodged);
+      if (unit) {
+        const [fromX, fromY] = unitPosition(from, unit);
+        const [toX, toY] = unitPosition(to, {'type': unit.type, 'coast': o.dest_coast});
+        drawArrow(fromX, fromY, toX, toY, '#F00');
+      }
+    } else if (o.type == 'Support') {
+      const from = byAbbr[o.territory];
+      let [toX, toY] = [0, 0];
+      if (o.supported_order_id != null) {
+        let supported = state.orders[o.supported_order_id];
+        if (supported && supported.type == 'Advance') {
+          adv_from = byAbbr[supported.territory];
+          adv_to = byAbbr[supported.dest_territory];
+
+          const unit = state.units.find(u => u.territory === supported.territory && !u.dislodged);
+          if (unit) {
+            const [adv_fromX, adv_fromY] = unitPosition(adv_from, unit);
+            const [adv_toX, adv_toY] = unitPosition(adv_to, {'type': unit.type, 'coast': supported.dest_coast});
+            // to points to halfway between from and to for visual clarity
+            toX = (adv_fromX + adv_toX) / 2;
+            toY = (adv_fromY + adv_toY) / 2;
+          }
+        } else if (supported) {
+          const loc = byAbbr[supported.territory];
+          const unit = state.units.find(u => u.territory === supported.territory && !u.dislodged);
+          if (unit) {
+            [toX, toY] = unitPosition(loc, unit);
+          }
+        }
+
+        if (supported) {
+          const unit = state.units.find(u => u.territory === o.territory && !u.dislodged);
+          if (unit) {
+            const [fromX, fromY] = unitPosition(from, unit);
+            drawArrow(fromX, fromY, toX, toY, '#0F0');
+          }
+        }
+      }
+    }
+  }
+
+  setStatus(`${state.phase} phase, ${state.year}`);
+  if (state.winner) {
+    document.getElementById('outcome-popup').classList.remove('hidden');
+    document.getElementById('outcome-title').textContent = `Victory!`;
+    document.getElementById('outcome-message').textContent = `${state.winner} controls 18 supply centers and wins the game!`;
+  } else if (state.draw) {
+    document.getElementById('outcome-popup').classList.remove('hidden');
+    document.getElementById('outcome-title').textContent = `Draw!`;
+    document.getElementById('outcome-message').textContent = `All players chose to draw. The game ends in a draw.`;
+  }
   window.diplomacy.state = state;
+}
+
+function drawArrow(fromX, fromY, toX, toY, color) {
+  // Draw line
+  const line = document.createElementNS(SVG_NS, 'line');
+  line.setAttribute('x1', fromX);
+  line.setAttribute('y1', fromY);
+  line.setAttribute('x2', toX);
+  line.setAttribute('y2', toY);
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', '2');
+  svg.appendChild(line);
+  // Draw arrow point
+  const arrow = document.createElementNS(SVG_NS, 'polygon');
+  const arrowSize = 10;
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  const arrowPoints = [
+    [toX, toY],
+    [toX - arrowSize * Math.cos(angle - Math.PI / 6), toY - arrowSize * Math.sin(angle - Math.PI / 6)],
+    [toX - arrowSize * Math.cos(angle + Math.PI / 6), toY - arrowSize * Math.sin(angle + Math.PI / 6)]
+  ].map(p => p.join(',')).join(' ');
+  arrow.setAttribute('points', arrowPoints);
+  arrow.setAttribute('fill', color);
+  svg.appendChild(arrow);
+}
+
+function populateGreatPowerSelect() {
+  const select = document.getElementById('greatpower');
+  select.innerHTML = '';
+  const option = document.createElement('option');
+  option.value = '';
+  option.textContent = '-- Select a Great Power --';
+  select.appendChild(option);
+  select.addEventListener('change', () => {
+    greatPower = select.value;
+    setGreatPowerInfo();
+  });
+  for (const p of window.diplomacy.state.players) {
+    const option = document.createElement('option');
+    option.value = p.name;
+    option.textContent = p.name;
+    select.appendChild(option);
+  }
 }
 
 async function init() {
@@ -127,16 +283,216 @@ async function init() {
     newGame() { render(call('new_game')); },
     order(order, power) {
       const r = call('submit_order', order, power);
-      console.log(r.ok ? `Accepted: ${order}` : `Rejected: ${order}`);
       render(call('get_state'));
-      return r.ok;
+      return r;
     },
     orders(list, power) { return list.map(o => this.order(o, power)); },
     resolve() { render(call('resolve')); },
     help() { console.log(CONSOLE_HELP); },
+    draw(power) { render(call('draw', power)); }
   };
   window.diplomacy.newGame();
+  populateGreatPowerSelect();
   console.log(CONSOLE_HELP);
 }
 
 init().catch(e => { setStatus('Error: ' + e); console.error(e); });
+
+const sidebar = document.getElementById('sidebar');
+const mainContent = document.getElementById('main');
+const toggleBtn = document.getElementById('toggleBtn');
+
+function toggleSidebar() {
+  if (sidebar.classList.contains('collapsed'))
+    expandSidebar();
+  else
+    collapseSidebar();
+}
+
+function collapseSidebar() {
+  sidebar.classList.add('collapsed');
+  mainContent.classList.add('shifted');
+}
+
+function expandSidebar() {
+  sidebar.classList.remove('collapsed');
+  mainContent.classList.remove('shifted');
+}
+
+toggleBtn.addEventListener('click', toggleSidebar);
+
+const infoElement = document.getElementById('info');
+const orderErrorElement = document.getElementById("order-error");
+
+function setGreatPowerInfo() {
+  orderErrorElement.textContent = '';
+  infoElement.textContent = '';
+  if (greatPower) {
+    // If the current state is Spring or Fall, display the current units and their territories for the selected great power
+    // Also list out the current orders for the selected great power
+    const state = window.diplomacy.state;
+    const player = state.players.find(p => p.name === greatPower);
+    if (player) {
+      // List out the players who have voted to draw, if any
+      if (drawVotes.length > 0) {
+        infoElement.textContent += `A draw vote has been started.\n`;
+        infoElement.textContent += `Players who have voted to draw:\n`;
+        for (const voter of drawVotes) {
+          infoElement.textContent += `- ${voter}\n`;
+        }
+        infoElement.textContent += `\n`;
+      }
+
+      if (state && (state.phase === 'Spring' || state.phase === 'Fall')) {
+        infoElement.textContent += `Units for ${greatPower}:\n`;
+        units = state.units;
+        for (const unit of units) {
+          if (unit.owner !== greatPower) continue;
+          infoElement.textContent += `- ${unit.type} in ${unit.territory}\n`;
+        }
+      }
+
+      // If the current state is Spring Retreat or Fall Retreat, display the dislodged units for the selected great power
+      if (state && (state.phase === 'Spring Retreat' || state.phase === 'Fall Retreat')) {
+        infoElement.textContent += `Dislodged units for ${greatPower}:\n`;
+        units = state.units;
+        for (const unit of units) {
+          if (unit.owner !== greatPower) continue;
+          if (!unit.dislodged) continue;
+          infoElement.textContent += `- ${unit.type} in ${unit.dislodged_from}\n`;
+        }
+      }
+
+      // If the current state is Adjustment, display how many units the selected great power can build or must disband
+      // Also list out the supply centers that are available for the selected great power
+      if (state && state.phase === 'Adjustment') {
+        infoElement.textContent += `Adjustment for ${greatPower}:\n`;
+        const unitsToBuild = player.units_to_build;
+        if (unitsToBuild > 0) {
+          infoElement.textContent += `- Units to build: ${unitsToBuild}\n`;
+
+          // List out the supply centers if units need to be built
+          const availableSupplyCenters = player.supply_centers;
+          if (availableSupplyCenters && availableSupplyCenters.length > 0) {
+            infoElement.textContent += `\nAvailable supply centers for ${greatPower}:\n`;
+            for (const center of availableSupplyCenters) {
+              infoElement.textContent += `- ${center}\n`;
+            }
+          }
+        } else if (unitsToBuild < 0) {
+          infoElement.textContent += `- Units to disband: ${unitsToBuild}\n`;
+          
+          // List out the current units for the selected great power that can be disbanded
+          const currentUnits = state.units.filter(unit => unit.owner === greatPower);
+          if (currentUnits && currentUnits.length > 0) {
+            infoElement.textContent += `\nCurrent units for ${greatPower} that can be disbanded:\n`;
+            for (const unit of currentUnits) {
+              infoElement.textContent += `- ${unit.type} in ${unit.territory}\n`;
+            }
+          }
+        }
+      }
+
+      // list out the current orders for the selected great power from queuedOrders
+      if (queuedOrders[greatPower] && queuedOrders[greatPower].length > 0) {
+        infoElement.textContent += `\nCurrent orders for ${greatPower}:\n`;
+        for (const order of queuedOrders[greatPower]) {
+          infoElement.textContent += `- ${order}\n`;
+        }
+      }
+    }
+  } else {
+    infoElement.textContent = '';
+  }
+}
+
+function clearGreatPowerInfo() {
+  if (infoElement) {
+    infoElement.textContent = '';
+  }
+}
+
+document.getElementById("submit-order").addEventListener("click", () => {
+  const order = document.getElementById("order").value;
+  const power = document.getElementById("greatpower").value;
+
+  const ok = window.diplomacy.order(order, power);
+  if (ok.ok) {
+    if (!queuedOrders[power]) {
+      queuedOrders[power] = [];
+    }
+    queuedOrders[power].push(order);
+    orderErrorElement.textContent = 'Order submitted successfully!';
+    setGreatPowerInfo();
+  } else {
+    orderErrorElement.textContent = `Error submitting order for ${power}: ${ok['error']}`;
+  }
+});
+
+document.getElementById("resolve").addEventListener("click", () => {
+  confirmAction("Resolve Orders", "Are you sure you want to resolve all orders?", () => {
+    window.diplomacy.resolve();
+    // After resolving, clear the queued orders
+    queuedOrders = {};
+    // Reset great power
+    document.getElementById("greatpower").value = '';
+    clearGreatPowerInfo();
+
+    // Clear the order input field
+    document.getElementById("order").value = '';
+  });
+});
+
+document.getElementById("new-game").addEventListener("click", () => {
+  confirmAction("Start New Game", "This will reset the current game. Continue?", () => {
+    window.diplomacy.newGame();
+    queuedOrders = {};
+    document.getElementById("greatpower").value = '';
+    clearGreatPowerInfo();
+    document.getElementById("order").value = '';
+  });
+});
+
+document.getElementById('outome-new-game').addEventListener('click', () => {
+  document.getElementById('outcome-popup').classList.add('hidden');
+  window.diplomacy.newGame();
+  queuedOrders = {};
+  document.getElementById("greatpower").value = '';
+  clearGreatPowerInfo();
+  document.getElementById("order").value = '';
+});
+
+function confirmAction(title, message, callback) {
+    const modal = document.getElementById("confirm-modal");
+
+    document.getElementById("modal-title").textContent = title;
+    document.getElementById("modal-message").textContent = message;
+
+    modal.classList.remove("hidden");
+
+    const confirmBtn = document.getElementById("modal-confirm");
+    const cancelBtn = document.getElementById("modal-cancel");
+
+    const close = () => {
+        modal.classList.add("hidden");
+        confirmBtn.onclick = null;
+        cancelBtn.onclick = null;
+    };
+
+    cancelBtn.onclick = close;
+
+    confirmBtn.onclick = () => {
+        close();
+        callback();
+    };
+}
+
+document.getElementById('draw').addEventListener('click', () => {
+  if (greatPower) {
+    confirmAction("Draw Game", "Are you sure you want to vote to draw?", () => {
+      window.diplomacy.draw(greatPower);
+      drawVotes.push(greatPower);
+      setGreatPowerInfo();
+    });
+  }
+});
