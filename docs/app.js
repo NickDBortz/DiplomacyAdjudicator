@@ -199,11 +199,11 @@ function render(state) {
             toX = (adv_fromX + adv_toX) / 2;
             toY = (adv_fromY + adv_toY) / 2;
           }
-        } else if (supported && supported.type == 'Hold') {
-          loc = byAbbr[supported.territory];
+        } else if (supported) {
+          const loc = byAbbr[supported.territory];
           const unit = state.units.find(u => u.territory === supported.territory && !u.dislodged);
           if (unit) {
-            [toX, toY] = unitPosition(loc, supported.unit);
+            [toX, toY] = unitPosition(loc, unit);
           }
         }
 
