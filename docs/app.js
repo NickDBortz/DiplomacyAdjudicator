@@ -22,8 +22,8 @@ function setStatus(text) {
 async function loadPython() {
   pyodide = await loadPyodide();
   const manifest = await (await fetch('py/manifest.json')).json();
-  pyodide.FS.mkdirTree('game');
-  pyodide.FS.mkdirTree('data/maps');
+  pyodide.FS.mkdirTree('/game');
+  pyodide.FS.mkdirTree('/data/maps');
 
   for (const path of manifest) {
     try {
