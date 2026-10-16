@@ -117,3 +117,9 @@ def resolve():
     game = _require_game()
     game.adjudicator.resolve_orders()
     return get_state()
+
+def draw(power):
+    game = _require_game()
+    player = game.game_state.get_player(power)
+    game.game_state.vote_draw(player)
+    return get_state()

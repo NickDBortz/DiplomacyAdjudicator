@@ -40,6 +40,7 @@ class Adjudicator:
         return True
 
     def resolve_orders(self):
+        self.game_state.draw_votes = []
         skip_retreat = False
         skip_adjustment = False
         # If this is the retreat phase, resolve retreat orders

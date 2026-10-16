@@ -18,8 +18,17 @@ class GameState:
         self.year = 1901
         self.winner = None
         self.draw = False
+        self.draw_votes = []
 
         self.queued_orders = []
+
+    def vote_draw(self, player):
+        if player not in self.draw_votes:
+            self.draw_votes.append(player)
+            for p in self.player_list:
+                if p not in self.draw_votes:
+                    return
+            self.draw = True
 
     def get_player(self, name):
         name = name.lower().strip()

@@ -12,6 +12,7 @@ Order syntax is case-sensitive: "A PAR - BUR", "F NTH C A LON - BEL",
 let pyodide, api, mapData, svg;
 
 let greatPower;
+let drawVotes = [];
 let queuedOrders = {};
 
 function setStatus(text) {
@@ -217,7 +218,16 @@ function render(state) {
     }
   }
 
-  setStatus(`${state.phase} phase, ${state.year}` + (state.winner ? ` — ${state.winner} wins!` : ''));
+  setStatus(`${state.phase} phase, ${state.year}`);
+  if (state.winner) {
+    document.getElementById('outcome-popup').classList.remove('hidden');
+    document.getElementById('outcome-title').textContent = `Victory!`;
+    document.getElementById('outcome-message').textContent = `${state.winner} controls 18 supply centers and wins the game!`;
+  } else if (state.draw) {
+    document.getElementById('outcome-popup').classList.remove('hidden');
+    document.getElementById('outcome-title').textContent = `Draw!`;
+    document.getElementById('outcome-message').textContent = `All players chose to draw. The game ends in a draw.`;
+  }
   window.diplomacy.state = state;
 }
 
@@ -279,6 +289,7 @@ async function init() {
     orders(list, power) { return list.map(o => this.order(o, power)); },
     resolve() { render(call('resolve')); },
     help() { console.log(CONSOLE_HELP); },
+    draw(power) { render(call('draw', power)); }
   };
   window.diplomacy.newGame();
   populateGreatPowerSelect();
@@ -315,14 +326,25 @@ const orderErrorElement = document.getElementById("order-error");
 
 function setGreatPowerInfo() {
   orderErrorElement.textContent = '';
+  infoElement.textContent = '';
   if (greatPower) {
     // If the current state is Spring or Fall, display the current units and their territories for the selected great power
     // Also list out the current orders for the selected great power
     const state = window.diplomacy.state;
     const player = state.players.find(p => p.name === greatPower);
     if (player) {
+      // List out the players who have voted to draw, if any
+      if (drawVotes.length > 0) {
+        infoElement.textContent += `A draw vote has been started.\n`;
+        infoElement.textContent += `Players who have voted to draw:\n`;
+        for (const voter of drawVotes) {
+          infoElement.textContent += `- ${voter}\n`;
+        }
+        infoElement.textContent += `\n`;
+      }
+
       if (state && (state.phase === 'Spring' || state.phase === 'Fall')) {
-        infoElement.textContent = `Units for ${greatPower}:\n`;
+        infoElement.textContent += `Units for ${greatPower}:\n`;
         units = state.units;
         for (const unit of units) {
           if (unit.owner !== greatPower) continue;
@@ -332,7 +354,7 @@ function setGreatPowerInfo() {
 
       // If the current state is Spring Retreat or Fall Retreat, display the dislodged units for the selected great power
       if (state && (state.phase === 'Spring Retreat' || state.phase === 'Fall Retreat')) {
-        infoElement.textContent = `Dislodged units for ${greatPower}:\n`;
+        infoElement.textContent += `Dislodged units for ${greatPower}:\n`;
         units = state.units;
         for (const unit of units) {
           if (unit.owner !== greatPower) continue;
@@ -344,7 +366,7 @@ function setGreatPowerInfo() {
       // If the current state is Adjustment, display how many units the selected great power can build or must disband
       // Also list out the supply centers that are available for the selected great power
       if (state && state.phase === 'Adjustment') {
-        infoElement.textContent = `Adjustment for ${greatPower}:\n`;
+        infoElement.textContent += `Adjustment for ${greatPower}:\n`;
         const unitsToBuild = player.units_to_build;
         if (unitsToBuild > 0) {
           infoElement.textContent += `- Units to build: ${unitsToBuild}\n`;
@@ -431,6 +453,15 @@ document.getElementById("new-game").addEventListener("click", () => {
   });
 });
 
+document.getElementById('outome-new-game').addEventListener('click', () => {
+  document.getElementById('outcome-popup').classList.add('hidden');
+  window.diplomacy.newGame();
+  queuedOrders = {};
+  document.getElementById("greatpower").value = '';
+  clearGreatPowerInfo();
+  document.getElementById("order").value = '';
+});
+
 function confirmAction(title, message, callback) {
     const modal = document.getElementById("confirm-modal");
 
@@ -455,3 +486,13 @@ function confirmAction(title, message, callback) {
         callback();
     };
 }
+
+document.getElementById('draw').addEventListener('click', () => {
+  if (greatPower) {
+    confirmAction("Draw Game", "Are you sure you want to vote to draw?", () => {
+      window.diplomacy.draw(greatPower);
+      drawVotes.push(greatPower);
+      setGreatPowerInfo();
+    });
+  }
+});

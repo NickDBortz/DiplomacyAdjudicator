@@ -17,10 +17,14 @@
           <option value="">-- Select a Great Power --</option>
         </select>
         <p id="info" class="info"></p>
+
         <p class="section-header">Enter Your Order:</p>
         <input id="order" type="text">
         <button id="submit-order" class="btn">Submit Order</button>
         <p id="order-error" class="info"></p>
+
+        <button id="draw" class="btn btn-danger">Vote to Draw</button>
+
         <button id="resolve" class="btn">Resolve Orders</button>
       </div>
 
@@ -40,6 +44,17 @@
       <div class="modal-buttons">
         <button id="modal-cancel" class="btn btn-danger">Cancel</button>
         <button id="modal-confirm" class="btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="outcome-popup" class="hidden">
+    <div class="outcome-content">
+      <h3 id="outcome-title">Outcome</h3>
+      <p id="outcome-message"></p>
+
+      <div class="outcome-buttons">
+        <button id="outome-new-game" class="btn">New Game</button>
       </div>
     </div>
   </div>
