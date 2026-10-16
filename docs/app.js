@@ -408,21 +408,50 @@ document.getElementById("submit-order").addEventListener("click", () => {
 });
 
 document.getElementById("resolve").addEventListener("click", () => {
-  window.diplomacy.resolve();
-  // After resolving, clear the queued orders
-  queuedOrders = {};
-  // Reset great power
-  document.getElementById("greatpower").value = '';
-  clearGreatPowerInfo();
+  confirmAction("Resolve Orders", "Are you sure you want to resolve all orders?", () => {
+    window.diplomacy.resolve();
+    // After resolving, clear the queued orders
+    queuedOrders = {};
+    // Reset great power
+    document.getElementById("greatpower").value = '';
+    clearGreatPowerInfo();
 
-  // Clear the order input field
-  document.getElementById("order").value = '';
+    // Clear the order input field
+    document.getElementById("order").value = '';
+  });
 });
 
 document.getElementById("new-game").addEventListener("click", () => {
-  window.diplomacy.newGame();
-  queuedOrders = {};
-  document.getElementById("greatpower").value = '';
-  clearGreatPowerInfo();
-  document.getElementById("order").value = '';
+  confirmAction("Start New Game", "This will reset the current game. Continue?", () => {
+    window.diplomacy.newGame();
+    queuedOrders = {};
+    document.getElementById("greatpower").value = '';
+    clearGreatPowerInfo();
+    document.getElementById("order").value = '';
+  });
 });
+
+function confirmAction(title, message, callback) {
+    const modal = document.getElementById("confirm-modal");
+
+    document.getElementById("modal-title").textContent = title;
+    document.getElementById("modal-message").textContent = message;
+
+    modal.classList.remove("hidden");
+
+    const confirmBtn = document.getElementById("modal-confirm");
+    const cancelBtn = document.getElementById("modal-cancel");
+
+    const close = () => {
+        modal.classList.add("hidden");
+        confirmBtn.onclick = null;
+        cancelBtn.onclick = null;
+    };
+
+    cancelBtn.onclick = close;
+
+    confirmBtn.onclick = () => {
+        close();
+        callback();
+    };
+}

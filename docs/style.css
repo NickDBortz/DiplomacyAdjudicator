@@ -276,3 +276,53 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     color: #888;
     cursor: not-allowed;
 }
+
+.modal {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+}
+
+.hidden {
+    display: none;
+}
+
+.modal-content {
+    width: 400px;
+    max-width: 90vw;
+
+    background: #1b1b1b;
+    color: #fff;
+
+    border: 1px solid #444;
+    border-radius: 8px;
+
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.modal-content p {
+    text-align: center;
+    margin: 20px 0;
+    color: #ccc;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-buttons button {
+    flex: 1;
+}
