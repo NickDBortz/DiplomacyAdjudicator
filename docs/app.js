@@ -489,10 +489,11 @@ function confirmAction(title, message, callback) {
 }
 
 document.getElementById('draw').addEventListener('click', () => {
-  if (greatPower) {
+  const power = document.getElementById('greatpower').value;
+  if (power) {
     confirmAction("Draw Game", "Are you sure you want to vote to draw?", () => {
-      window.diplomacy.draw(greatPower);
-      drawVotes.push(greatPower);
+      window.diplomacy.draw(power);
+      drawVotes.push(power);
       setGreatPowerInfo();
     });
   }
