@@ -66,11 +66,11 @@ def get_state():
             found = False
             for i in range(len(orders)):
                 o = orders[i]
-                if order.supported_order.type == ADVANCE and o['territory'] == order.supported_order.unit_territory.abbr and o['dest_territory'] == order.supported_order.dest_territory.abbr:
+                if order.supported_order.type == ADVANCE and o['type'] == ADVANCE and o['territory'] == order.supported_order.unit_territory.abbr and o['dest_territory'] == order.supported_order.dest_territory.abbr:
                     orders.append({'id': len(orders), 'type': SUPPORT, 'territory': order.unit_territory.abbr, 'supported_order_id': i})
                     found = True
                     break
-                elif order.supported_order.type == HOLD and o['territory'] == order.supported_order.unit_territory.abbr:
+                elif order.supported_order.type == HOLD and o['type'] != ADVANCE and o['territory'] == order.supported_order.unit_territory.abbr:
                     orders.append({'id': len(orders), 'type': SUPPORT, 'territory': order.unit_territory.abbr, 'supported_order_id': i})
                     found = True
                     break
