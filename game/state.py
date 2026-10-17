@@ -26,7 +26,7 @@ class GameState:
         if player not in self.draw_votes:
             self.draw_votes.append(player)
             for p in self.player_list:
-                if p not in self.draw_votes:
+                if p.get_supply_centers(self.territory_list) and p not in self.draw_votes:
                     return
             self.draw = True
 
