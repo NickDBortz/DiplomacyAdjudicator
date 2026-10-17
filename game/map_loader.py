@@ -11,7 +11,7 @@ class MapLoader:
     def load_map_json(self):
         json_file_path = Path(self.json_file)
         if not json_file_path.is_file():
-            self.json_file = '/data/maps/classic_map.json'
+            self.json_file = str(Path(__file__).resolve().parent.parent / 'data' / 'maps' / 'classic_map.json')
 
         with open(self.json_file, 'r') as file:
             map_obj = json.load(file)
