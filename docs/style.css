@@ -76,6 +76,16 @@
     margin-right: 46px;
 }
 
+@media (max-width: 500px) {
+    .sidebar {
+        width: 100vw;
+    }
+
+    #main {
+        margin-right: 100vw;
+    }
+}
+
 body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 #status { padding: 8px 12px; background: #111; }
 #map svg { width: 100%; max-height: 90vh; display: block; }
