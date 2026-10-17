@@ -131,6 +131,7 @@ function buildMap() {
 
 function unitPosition(t, unit) {
   if (!t.land) return t.fleet_pos;
+  if (unit.type === 'A') return t.army_pos;
   const coast = unit.coast;
   if (coast == 'nc')
     return t.coast_pos;
