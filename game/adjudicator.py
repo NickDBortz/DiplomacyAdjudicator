@@ -40,6 +40,7 @@ class Adjudicator:
         return True
 
     def resolve_orders(self):
+        self.game_state.draw_votes = []
         skip_retreat = False
         skip_adjustment = False
         # If this is the retreat phase, resolve retreat orders
@@ -275,6 +276,6 @@ class Adjudicator:
 
     def _check_for_winner(self):
         for player in self.game_state.player_list:
-            if player.get_supply_centers(self.game_state.territory_list) >= self.supply_centers_to_win:
+            if len(player.get_supply_centers(self.game_state.territory_list)) >= self.supply_centers_to_win:
                 # This player wins
                 self.game_state.set_winner(player)
