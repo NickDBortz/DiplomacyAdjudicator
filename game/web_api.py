@@ -51,7 +51,7 @@ def get_state():
         if order.type == HOLD:
             orders.append({'id': len(orders), 'type': HOLD, 'territory': order.unit_territory.abbr})
         elif order.type == ADVANCE:
-            orders.append({'id': len(orders), 'type': ADVANCE, 'territory': order.unit_territory.abbr, 'dest_territory': order.dest_territory.abbr, 'dest_coast': order.coast})
+            orders.append({'id': len(orders), 'type': ADVANCE, 'territory': (order.unit_territory or order.unit.dislodged_from).abbr, 'dest_territory': order.dest_territory.abbr, 'dest_coast': order.coast})
         elif order.type == CONVOY:
             orders.append({'id': len(orders), 'type': CONVOY, 'territory': order.unit_territory.abbr, 'start_territory': order.convoying_unit.territory.abbr, 'dest_territory': order.dest_territory.abbr})
         if order.type == TRANSFORM:
