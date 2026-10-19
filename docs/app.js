@@ -61,7 +61,7 @@ function smoothPolygons(polygons) {
       x >= width - edgeEpsilon ||
       y >= height - edgeEpsilon
     );
-  }
+  } 
 
   for (const poly of polygons) {
     for (let x = 0; x < 2; x++) {
