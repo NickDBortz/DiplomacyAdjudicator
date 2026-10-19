@@ -5,59 +5,25 @@
   <title>Diplomacy</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 </head>
 <body>
-  <div id="sidebar" class="sidebar">
-    <button id="toggleBtn" class="togglebtn">&#9776;</button>
-    <div class="sidebar-content">
-      <div class="orders">
-        <p class="section-header">Great Power:</p>
-        <select name="Great Power" id="greatpower">
-          <option value="">-- Select a Great Power --</option>
-        </select>
-        <p id="info" class="info"></p>
+  <div id="menu">
+    <div class="menu-content">
+      <h1>Diplomacy</h1>
 
-        <p class="section-header">Enter Your Order:</p>
-        <input id="order" type="text">
-        <button id="submit-order" class="btn">Submit Order</button>
-        <p id="order-error" class="info"></p>
-
-        <button id="draw" class="btn btn-danger">Vote to Draw</button>
-
-        <button id="resolve" class="btn">Resolve Orders</button>
+      <div id="menu-main" class="menu-view">
+        <button id="menu-singleplayer" class="btn">Singleplayer</button>
+        <button id="menu-multiplayer" class="btn">Multiplayer</button>
       </div>
 
-      <button id="new-game">New Game</button>
-    </div>
-  </div>
-  <div id="main">
-    <div id="status">Loading…</div>
-    <div id="map"></div>
-  </div>
-
-  <div id="confirm-modal" class="modal hidden">
-    <div class="modal-content">
-      <h3 id="modal-title">Confirm Action</h3>
-      <p id="modal-message"></p>
-
-      <div class="modal-buttons">
-        <button id="modal-cancel" class="btn btn-danger">Cancel</button>
-        <button id="modal-confirm" class="btn">Confirm</button>
+      <div id="menu-multi" class="menu-view hidden">
+        <p class="section-header">Multiplayer</p>
+        <button id="menu-host" class="btn">Host a Game</button>
+        <button id="menu-join" class="btn">Join a Game</button>
+        <button id="menu-back" class="btn btn-secondary">Back</button>
       </div>
     </div>
   </div>
-
-  <div id="outcome-popup" class="hidden">
-    <div class="outcome-content">
-      <h3 id="outcome-title">Outcome</h3>
-      <p id="outcome-message"></p>
-
-      <div class="outcome-buttons">
-        <button id="outome-new-game" class="btn">New Game</button>
-      </div>
-    </div>
-  </div>
-  <script src="app.js"></script>
+  <script src="menu.js"></script>
 </body>
 </html>

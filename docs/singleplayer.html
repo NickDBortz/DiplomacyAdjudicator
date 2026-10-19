@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Diplomacy - Singleplayer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="sidebar" class="sidebar">
+    <div id="local-sidebar">
+      <button id="toggleBtn" class="togglebtn">&#9776;</button>
+      <div class="sidebar-content">
+        <div class="orders">
+          <p class="section-header">Great Power:</p>
+          <select name="Great Power" id="greatpower">
+            <option value="">-- Select a Great Power --</option>
+          </select>
+          <p id="info" class="info"></p>
+
+          <p class="section-header">Enter Your Order:</p>
+          <input id="order" type="text">
+          <button id="submit-order" class="btn">Submit Order</button>
+          <p id="order-error" class="info"></p>
+
+          <button id="draw" class="btn btn-danger">Vote to Draw</button>
+
+          <button id="resolve" class="btn">Resolve Orders</button>
+        </div>
+
+        <button id="new-game">New Game</button>
+        <button id="back-to-menu" class="btn btn-secondary">Main Menu</button>
+      </div>
+    </div>
+  </div>
+  <div id="main">
+    <div id="status">Loading…</div>
+    <div id="map"></div>
+  </div>
+
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="modal-title">Confirm Action</h3>
+      <p id="modal-message"></p>
+
+      <div class="modal-buttons">
+        <button id="modal-cancel" class="btn btn-danger">Cancel</button>
+        <button id="modal-confirm" class="btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="outcome-popup" class="hidden">
+    <div class="outcome-content">
+      <h3 id="outcome-title">Outcome</h3>
+      <p id="outcome-message"></p>
+
+      <div class="outcome-buttons">
+        <button id="outome-new-game" class="btn">New Game</button>
+      </div>
+    </div>
+  </div>
+  <script src="shared.js"></script>
+  <script src="singleplayer.js"></script>
+</body>
+</html>

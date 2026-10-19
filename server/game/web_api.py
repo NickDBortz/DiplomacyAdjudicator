@@ -1,28 +1,13 @@
-"""JSON-friendly wrapper around Game for the browser (Pyodide) frontend.
-
-All functions return JSON strings so they are easy to consume from JavaScript.
-"""
-import json
-
+"""JSON-friendly helpers around Game for the HTTP API. Each takes an explicit Game."""
 from game.game import Game
 from game.enums import ARMY, FLEET, HOLD, ADVANCE, SUPPORT, CONVOY, TRANSFORM, BUILD, DISBAND
 
-_game = None
-
 
 def new_game(map_path='data/maps/classic_map.json', start_phase=None):
-    global _game
     kwargs = {'json_file': map_path, 'render': False}
     if start_phase is not None:
         kwargs['start_phase'] = start_phase
-    _game = Game(**kwargs)
-    return get_state()
-
-
-def _require_game():
-    if _game is None:
-        raise RuntimeError('No game in progress; call new_game() first')
-    return _game
+    return Game(**kwargs)
 
 
 def _unit_json(unit):
@@ -37,8 +22,7 @@ def _unit_json(unit):
     }
 
 
-def get_state():
-    game = _require_game()
+def get_state(game):
     state = game.game_state
     units = []
     for player in state.player_list:
@@ -77,7 +61,7 @@ def get_state():
             if not found:
                 orders.append({'id': len(orders), 'type': SUPPORT, 'territory': order.unit_territory.abbr, 'supported_order_id': None})
     
-    return json.dumps({
+    return {
         'phase': state.get_phase(),
         'year': state.year,
         'winner': state.winner.name if state.winner else None,
@@ -102,24 +86,21 @@ def get_state():
         ],
         'units': units,
         'orders': orders
-    })
+    }
 
-def submit_order(order, power):
-    """Submit one order string for a power. Returns a JSON object {ok: bool}."""
-    game = _require_game()
+def submit_order(game, order, power):
+    """Submit one order string for a power. Returns {ok, error}."""
     player = game.game_state.get_player(power)
     if player is None:
-        return json.dumps({'ok': False, 'error': f'Unknown power: {power}'})
+        return {'ok': False, 'error': f'Unknown power: {power}'}
     ok = game.submit_order(order, player)
-    return json.dumps({'ok': bool(ok), 'error': None if ok else 'Invalid order'})
+    return {'ok': bool(ok), 'error': None if ok else 'Invalid order'}
 
-def resolve():
-    game = _require_game()
+def resolve(game):
     game.adjudicator.resolve_orders()
-    return get_state()
+    return get_state(game)
 
-def draw(power):
-    game = _require_game()
+def draw(game, power):
     player = game.game_state.get_player(power)
     game.game_state.vote_draw(player)
-    return get_state()
+    return get_state(game)
