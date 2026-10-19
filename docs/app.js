@@ -51,6 +51,7 @@ function call(fn, ...args) {
 }
 
 function smoothPolygons(polygons) {
+  debugger;
   const edgeEpsilon = 10;
   function isEdgePoint(p, width, height) {
     const [x, y] = p;
@@ -63,16 +64,20 @@ function smoothPolygons(polygons) {
   }
 
   for (const poly of polygons) {
-    for (let i = 0; i < poly.length; i++) {
-      const p0 = poly[i];
-      const p1 = poly[(i + 1) % poly.length];
-      if (isEdgePoint(p0, mapData.width, mapData.height) || isEdgePoint(p1, mapData.width, mapData.height)) {
-        continue;
+    for (let x = 0; x < 2; x++) {
+      const next = [];
+      for (let i = 0; i < poly.length; i++) {
+        const p0 = poly[i];
+        const p1 = poly[(i + 1) % poly.length];
+        if (isEdgePoint(p0, mapData.width, mapData.height) || isEdgePoint(p1, mapData.width, mapData.height)) {
+          next.push(p0);
+          continue;
+        }
+        const q = [0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]];
+        const r = [0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]];
+        next.push(q, r);
       }
-      const q = [0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]];
-      const r = [0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]];
-      poly.splice(i + 1, 0, q, r);
-      i += 2;
+      poly.splice(0, poly.length, ...next);
     }
   }
   return polygons;
