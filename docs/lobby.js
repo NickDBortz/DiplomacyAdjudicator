@@ -2,12 +2,36 @@ const playerName = sessionStorage.getItem('diplomacyPlayerName');
 const lobbyId = sessionStorage.getItem('diplomacyGameID');
 const lobbyName = sessionStorage.getItem('diplomacyGameName') || sessionStorage.getItem('diplomacyGameCode');
 
+const powerSelect = document.getElementById('power-select');
 const mapSelect = document.getElementById('map-select');
 const startBtn = document.getElementById('start-game');
 const waitEl = document.getElementById('lobby-wait');
 
 let ws;
 let currentMap = null;
+let lastSnapshot = null;
+let powerRefreshSeq = 0;
+
+// Options are your own pick plus every power nobody has taken.
+async function refreshPowers(snapshot) {
+    const seq = ++powerRefreshSeq;
+    const own = snapshot.selected_powers[playerName] || '';
+    const available = await request('GET', `/lobbies/${encodeURIComponent(lobbyId)}/powers`);
+    if (seq !== powerRefreshSeq) return;
+
+    powerSelect.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Select a power';
+    powerSelect.appendChild(placeholder);
+    for (const power of [...new Set([own, ...available])].filter(Boolean).sort()) {
+        const option = document.createElement('option');
+        option.value = power;
+        option.textContent = power;
+        powerSelect.appendChild(option);
+    }
+    powerSelect.value = own;
+}
 
 async function showPreview(mapId) {
     if (mapId === currentMap) return;
@@ -16,9 +40,12 @@ async function showPreview(mapId) {
     for (const t of mapData.territories) {
         document.getElementById('terr-' + t.abbr).setAttribute('fill', t.land ? '#DDD' : mapData.water_color);
     }
+    // Power colors come from the map, so redraw the list once it has loaded.
+    if (lastSnapshot) renderPlayerList(lastSnapshot.players, playerName, lastSnapshot.selected_powers);
 }
 
 function applySnapshot(snapshot) {
+    lastSnapshot = snapshot;
     const isHost = snapshot.host === playerName;
     mapSelect.disabled = !isHost;
     startBtn.classList.toggle('hidden', !isHost);
@@ -32,11 +59,16 @@ function enterGame(snapshot) {
     sessionStorage.setItem('diplomacyMap', snapshot.settings.map);
     sessionStorage.setItem('diplomacyGameName', lobbyName);
     sessionStorage.setItem('diplomacyGameCode', lobbyName);
+    sessionStorage.setItem('power', powerSelect.value);
     goTo(snapshot.host === playerName ? 'multiplayer-host.html' : 'multiplayer-client.html');
 }
 
+powerSelect.addEventListener('change', () => {
+    ws.send(JSON.stringify({ type: 'set_power', settings: { power: powerSelect.value } }));
+});
+
 mapSelect.addEventListener('change', () => {
-    ws.send(JSON.stringify({ type: 'set_settings', settings: { map: mapSelect.value } }));
+    ws.send(JSON.stringify({ type: 'set_map', settings: { map: mapSelect.value } }));
 });
 
 startBtn.addEventListener('click', () => {
@@ -44,7 +76,7 @@ startBtn.addEventListener('click', () => {
 });
 
 document.getElementById('leave-game').addEventListener('click', () => {
-    confirmAction('Leave Lobby', 'Leave this lobby and return to the main menu?', () => goTo('index.html'));
+    confirmAction('Leave Lobby', 'Leave this lobby and return to the main menu?', () => leaveLobby(ws));
 });
 
 async function init() {
@@ -65,10 +97,15 @@ async function init() {
     ws = watchLobby(lobbyId, playerName, msg => {
         if (msg.type === 'game_started') {
             enterGame(msg);
+        } else if (msg.type === 'error') {
+            setStatus(msg.message);
         } else if (msg.type === 'lobby_update') {
             applySnapshot(msg);
-            if (msg.event === 'settings' && msg.user_name !== playerName) {
+            refreshPowers(msg).catch(e => console.error(e));
+            if (msg.event === 'map_change' && msg.user_name !== playerName) {
                 setStatus(`${msg.user_name} changed the map`);
+            } else if (msg.event === 'power_change' && msg.user_name !== playerName) {
+                setStatus(`${msg.user_name} picked ${msg.power || 'no power'}`);
             }
         }
     });

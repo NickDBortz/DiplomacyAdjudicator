@@ -3,7 +3,7 @@ const gameName = sessionStorage.getItem('diplomacyGameName');
 const gameID = sessionStorage.getItem('diplomacyGameID');
 
 document.getElementById('leave-game').addEventListener('click', () => {
-    confirmAction('Leave Game', 'Stop hosting and return to the main menu?', () => goTo('index.html'));
+    confirmAction('Leave Game', 'Stop hosting and return to the main menu?', () => leaveLobby(gameSocket));
 });
 
 async function init() {
@@ -12,10 +12,14 @@ async function init() {
         return;
     }
     initSidebar();
-    await loadMap(sessionStorage.getItem('diplomacyMap') || undefined);
-    document.getElementById('info').textContent = `Host: ${playerName}\nGame code: ${gameName}`;
-    setStatus('Connecting to lobby...');
-    watchLobby(gameID, playerName);
+    initOrderControls(
+        submitOrder,
+        submitDraw
+    );
+    initResolveControl();
+    await refreshMap(sessionStorage.getItem('diplomacyMap') || undefined);
+    setStatus('Connecting to game...');
+    joinGame(gameID, playerName, `Player: ${playerName}\nGame code: ${gameName}`);
 }
 
 init().catch(e => { setStatus('Error: ' + e); console.error(e); });

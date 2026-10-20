@@ -44,13 +44,22 @@ const LOBBY_CLOSE_MESSAGES = {
     4409: 'You are already connected to this lobby.',
 };
 
-function renderPlayerList(players, selfName) {
+function renderPlayerList(players, selfName, powers = {}) {
+    const colors = Object.fromEntries((mapData?.players ?? []).map(p => [p.name, p.color]));
     const list = document.getElementById('player-list');
     list.innerHTML = '';
     for (const name of players) {
         const item = document.createElement('li');
         item.className = 'player-item';
-        item.textContent = name === selfName ? `${name} (you)` : name;
+        const color = colors[powers[name]];
+        if (color) item.style.borderLeftColor = color;
+        const label = document.createElement('span');
+        label.textContent = name === selfName ? `${name} (you)` : name;
+        if (color) label.style.color = color;
+        const power = document.createElement('span');
+        power.className = 'player-power';
+        power.textContent = powers[name] || 'No power selected';
+        item.append(label, power);
         list.appendChild(item);
     }
 }
@@ -60,13 +69,194 @@ function watchLobby(lobbyId, userName, onMessage = () => {}) {
     return connectLobby(lobbyId, userName, msg => {
         onMessage(msg);
         if (msg.type !== 'lobby_update') return;
-        renderPlayerList(msg.players, userName);
+        renderPlayerList(msg.players, userName, msg.selected_powers);
         if (msg.user_name !== userName && (msg.event === 'joined' || msg.event === 'left')) {
             setStatus(`${msg.user_name} ${msg.event === 'joined' ? 'joined' : 'left'} the lobby`);
         }
     }, code => {
         renderPlayerList([], userName);
         setStatus(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.');
+    });
+}
+
+// In-game state: the lobby socket doubles as the game socket once the game has started.
+let gameSocket = null;
+const pendingReplies = {};
+const gameInfo = { base: '', host: '', userName: '', power: sessionStorage.getItem('power') || '', state: null };
+
+// What this power can act on in the current phase.
+function phaseInfoLines(state, power) {
+    const player = state.players.find(p => p.name === power);
+    if (!player) return [];
+    const mine = state.units.filter(u => u.owner === power);
+    const lines = [];
+
+    if (state.phase === 'Spring' || state.phase === 'Fall') {
+        lines.push(`Units for ${power}:`, ...mine.map(u => `- ${u.type} in ${u.territory}`));
+    } else if (state.phase === 'Spring Retreat' || state.phase === 'Fall Retreat') {
+        lines.push(`Dislodged units for ${power}:`,
+            ...mine.filter(u => u.dislodged).map(u => `- ${u.type} in ${u.dislodged_from}`));
+    } else if (state.phase === 'Adjustment') {
+        const toBuild = player.units_to_build;
+        lines.push(`Adjustment for ${power}:`);
+        if (toBuild > 0) {
+            lines.push(`- Units to build: ${toBuild}`, '', `Available supply centers for ${power}:`,
+                ...player.supply_centers.map(c => `- ${c}`));
+        } else if (toBuild < 0) {
+            lines.push(`- Units to disband: ${-toBuild}`, '', `Current units for ${power} that can be disbanded:`,
+                ...mine.map(u => `- ${u.type} in ${u.territory}`));
+        } else {
+            lines.push('- Nothing to build or disband');
+        }
+    }
+    return lines;
+}
+
+function renderGameInfo() {
+    const state = gameInfo.state;
+    const lines = [gameInfo.base];
+    if (gameInfo.host) lines.push(`Host: ${gameInfo.host}`);
+    lines.push(`Power: ${gameInfo.power || 'none (spectating)'}`);
+    if (state) {
+        const phase = phaseInfoLines(state, gameInfo.power);
+        if (phase.length > 0) lines.push('', ...phase);
+        if (state.orders.length > 0) {
+            lines.push('', state.orders_revealed ? 'All orders:' : 'Your orders:', ...state.orders.map(o => `- ${o.text}`));
+        }
+        if (state.draw_votes && state.draw_votes.length > 0) {
+            lines.push('', 'Draw votes:', ...state.draw_votes.map(v => `- ${v}`));
+        }
+    }
+    document.getElementById('info').textContent = lines.join('\n');
+}
+
+// The server sends every unit and territory, plus this player's orders (everyone's once revealed).
+function applyGameState(state) {
+    render(state);
+    gameInfo.state = state;
+    const resolveBtn = document.getElementById('resolve');
+    if (resolveBtn) resolveBtn.textContent = state.orders_revealed ? 'Resolve Orders' : 'Render Orders';
+    renderGameInfo();
+}
+
+function handleGameMessage(msg) {
+    if (msg.type === 'lobby_update') {
+        // The host can change when the host leaves, and only the current host may render and resolve.
+        gameInfo.host = msg.host;
+        const resolveBtn = document.getElementById('resolve');
+        if (resolveBtn) resolveBtn.classList.toggle('hidden', msg.host !== gameInfo.userName);
+        renderGameInfo();
+    } else if (msg.type === 'game_state') {
+        applyGameState(msg.state);
+    } else if (['order_result', 'draw_result', 'reveal_result', 'resolve_result'].includes(msg.type)) {
+        if (msg.state) applyGameState(msg.state);
+        const done = pendingReplies[msg.type];
+        if (done) {
+            delete pendingReplies[msg.type];
+            done(msg);
+        }
+    } else if (msg.type === 'error') {
+        setStatus(msg.message);
+    }
+}
+
+// Tells the server this is a deliberate exit so it can hand over the host and close the lobby right away.
+function leaveLobby(socket) {
+    return new Promise(resolve => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            resolve();
+            return;
+        }
+        socket.addEventListener('close', resolve);
+        setTimeout(resolve, 1500);
+        socket.send(JSON.stringify({ type: 'leave' }));
+    }).then(() => goTo('index.html'));
+}
+
+function joinGame(lobbyId, userName, baseInfo) {
+    gameInfo.base = baseInfo;
+    gameInfo.userName = userName;
+    renderGameInfo();
+    gameSocket = watchLobby(lobbyId, userName, handleGameMessage);
+}
+
+function sendForReply(payload, replyType) {
+    return new Promise((resolve, reject) => {
+        if (!gameSocket || gameSocket.readyState !== WebSocket.OPEN) {
+            reject(new Error('Not connected to the game.'));
+            return;
+        }
+        const timer = setTimeout(() => {
+            delete pendingReplies[replyType];
+            reject(new Error('The server did not respond.'));
+        }, 10000);
+        pendingReplies[replyType] = msg => {
+            clearTimeout(timer);
+            resolve(msg);
+        };
+        gameSocket.send(JSON.stringify(payload));
+    });
+}
+
+async function submitOrder(order) {
+    const r = await sendForReply({ type: 'submit_order', order, power: gameInfo.power }, 'order_result');
+    return r.ok ? 'Order submitted.' : `Order rejected: ${r.error}`;
+}
+
+async function submitDraw() {
+    const r = await sendForReply({ type: 'draw', power: gameInfo.power }, 'draw_result');
+    return r.ok ? 'You voted to draw.' : `Draw rejected: ${r.error}`;
+}
+
+// Host only: the first press shows everyone's orders to all players, the second resolves them.
+function initResolveControl() {
+    const button = document.getElementById('resolve');
+    const messageEl = document.getElementById('order-error');
+
+    const send = async (type, replyType) => {
+        try {
+            const r = await sendForReply({ type }, replyType);
+            messageEl.textContent = r.ok ? '' : r.error;
+        } catch (e) {
+            messageEl.textContent = e.message;
+        }
+    };
+
+    button.addEventListener('click', () => {
+        if (gameInfo.state && gameInfo.state.orders_revealed) {
+            confirmAction('Resolve Orders', 'Are you sure you want to resolve all orders?', () => send('resolve', 'resolve_result'));
+        } else {
+            send('reveal_orders', 'reveal_result');
+        }
+    });
+}
+
+// Wires the order box and draw button; each callback returns the message to show (or a promise of it).
+function initOrderControls(onSubmit, onDraw) {
+    const orderEl = document.getElementById('order');
+    const messageEl = document.getElementById('order-error');
+
+    document.getElementById('submit-order').addEventListener('click', async () => {
+        const order = orderEl.value.trim();
+        if (!order) {
+            messageEl.textContent = 'Enter an order.';
+            return;
+        }
+        try {
+            messageEl.textContent = await onSubmit(order);
+        } catch (e) {
+            messageEl.textContent = e.message;
+        }
+    });
+
+    document.getElementById('draw').addEventListener('click', () => {
+        confirmAction('Draw Game', 'Are you sure you want to vote to draw?', async () => {
+            try {
+                messageEl.textContent = await onDraw();
+            } catch (e) {
+                messageEl.textContent = e.message;
+            }
+        });
     });
 }
 
@@ -192,6 +382,13 @@ async function loadMap(mapId = 'classic_map') {
     buildMap();
 }
 
+async function refreshMap(mapId) {
+    await loadMap(mapId);
+    for (const t of mapData.territories) {
+        document.getElementById('terr-' + t.abbr).setAttribute('fill', t.land ? '#DDD' : mapData.water_color);
+    }
+}
+
 function unitPosition(t, unit) {
     if (!t.land) return t.fleet_pos;
     if (unit.type === 'A') return t.army_pos;
@@ -248,8 +445,12 @@ function render(state) {
         } else if (o.type == 'Support') {
         const from = byAbbr[o.territory];
         let [toX, toY] = [0, 0];
-        if (o.supported_order_id != null) {
-            let supported = state.orders[o.supported_order_id];
+        // The supported order may belong to another power, so the server inlines what is needed.
+        let supported = o.supported_order_id != null ? state.orders[o.supported_order_id] : null;
+        if (!supported && o.supported_territory) {
+            supported = {type: o.supported_type, territory: o.supported_territory, dest_territory: o.supported_dest, dest_coast: o.supported_coast};
+        }
+        if (supported) {
             if (supported && supported.type == 'Advance') {
             const adv_from = byAbbr[supported.territory];
             const adv_to = byAbbr[supported.dest_territory];

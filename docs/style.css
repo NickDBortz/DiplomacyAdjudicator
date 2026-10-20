@@ -494,9 +494,18 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 }
 
 .player-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     padding: 8px 12px;
+    border-left: 4px solid transparent;
     font-size: 14px;
     color: #eee;
+}
+
+.player-power {
+    font-size: 12px;
+    color: #888;
 }
 
 .menu-message {

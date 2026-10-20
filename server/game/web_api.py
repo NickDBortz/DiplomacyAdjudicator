@@ -3,11 +3,22 @@ from game.game import Game
 from game.enums import ARMY, FLEET, HOLD, ADVANCE, SUPPORT, CONVOY, TRANSFORM, BUILD, DISBAND
 
 
+ALL_ORDERS = object()  # pass as get_state(power=...) to include every power's orders
+
+
 def new_game(map_path='data/maps/classic_map.json', start_phase=None):
     kwargs = {'json_file': map_path, 'render': False}
     if start_phase is not None:
         kwargs['start_phase'] = start_phase
     return Game(**kwargs)
+
+
+def _visible_orders(state, power):
+    if power is ALL_ORDERS:
+        return list(state.queued_orders)
+    if power is None:
+        return []
+    return [o for o in state.queued_orders if o.unit.owner.name == power]
 
 
 def _unit_json(unit):
@@ -22,7 +33,8 @@ def _unit_json(unit):
     }
 
 
-def get_state(game):
+def get_state(game, power=ALL_ORDERS):
+    """Game state as JSON-friendly dict; orders are limited to `power` (None means no orders)."""
     state = game.game_state
     units = []
     for player in state.player_list:
@@ -30,8 +42,9 @@ def get_state(game):
             if not unit.disbanded:
                 units.append(_unit_json(unit))
 
+    queued = _visible_orders(state, power)
     orders = []
-    for order in state.queued_orders:
+    for order in queued:
         if order.type == HOLD:
             orders.append({'id': len(orders), 'type': HOLD, 'territory': order.unit_territory.abbr})
         elif order.type == ADVANCE:
@@ -45,7 +58,7 @@ def get_state(game):
         if order.type == DISBAND:
             orders.append({'id': len(orders), 'type': DISBAND, 'territory': order.unit_territory.abbr})
 
-    for order in state.queued_orders:
+    for order in queued:
         if order.type == SUPPORT:
             found = False
             for i in range(len(orders)):
@@ -60,12 +73,29 @@ def get_state(game):
                     break
             if not found:
                 orders.append({'id': len(orders), 'type': SUPPORT, 'territory': order.unit_territory.abbr, 'supported_order_id': None})
+
+    # Entries were appended non-support first, then supports, each in queue order.
+    ordered = [o for o in queued if o.type != SUPPORT] + [o for o in queued if o.type == SUPPORT]
+    for entry, order in zip(orders, ordered):
+        entry['text'] = str(order)
+        if order.type == SUPPORT:
+            # Inlined so a support of another power's order can still be drawn without exposing that order.
+            supported = order.supported_order
+            supported_territory = supported.unit_territory or supported.unit.dislodged_from
+            is_advance = supported.type == ADVANCE
+            entry.update({
+                'supported_type': supported.type,
+                'supported_territory': supported_territory.abbr if supported_territory else None,
+                'supported_dest': supported.dest_territory.abbr if is_advance else None,
+                'supported_coast': supported.coast if is_advance else None,
+            })
     
     return {
         'phase': state.get_phase(),
         'year': state.year,
         'winner': state.winner.name if state.winner else None,
         'draw': state.draw,
+        'draw_votes': [p.name for p in state.draw_votes],
         'players': [
             {
                 'name': p.name,
