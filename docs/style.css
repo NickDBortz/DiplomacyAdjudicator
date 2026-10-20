@@ -438,6 +438,67 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     box-shadow: 0 0 8px rgba(74, 144, 226, 0.3);
 }
 
+.lobby-list {
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+
+    margin: 0 16px 16px;
+    padding: 0;
+
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.lobby-item,
+.lobby-empty {
+    display: flex;
+    justify-content: space-between;
+
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #eee;
+}
+
+.lobby-item {
+    flex-direction: column;
+    gap: 2px;
+    cursor: pointer;
+    border-left: 4px solid transparent;
+    transition: background-color 0.2s;
+}
+
+.lobby-item:hover {
+    background-color: #2a2a2a;
+}
+
+.lobby-item.selected {
+    background-color: #2a2a2a;
+    border-left-color: #4a90e2;
+}
+
+.lobby-name {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.lobby-players {
+    font-size: 12px;
+    color: #888;
+}
+
+.lobby-empty {
+    justify-content: center;
+    color: #777;
+}
+
+.player-item {
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #eee;
+}
+
 .menu-message {
     min-height: 1.2em;
     margin: 0 16px;

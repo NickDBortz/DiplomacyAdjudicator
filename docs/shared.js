@@ -27,6 +27,49 @@ function goTo(page) {
     location.href = page;
 }
 
+// Opens the lobby socket; the server pushes lobby_update on joins, leaves and settings changes, and game_started on start.
+function connectLobby(lobbyId, userName, onMessage, onClose) {
+    const url = `${API_BASE.replace(/^http/, 'ws')}/ws/lobbies/${encodeURIComponent(lobbyId)}?user_name=${encodeURIComponent(userName)}`;
+    const ws = new WebSocket(url);
+    let ping;
+    ws.onopen = () => { ping = setInterval(() => ws.send('ping'), 25000); };
+    ws.onmessage = e => onMessage(JSON.parse(e.data));
+    ws.onclose = e => { clearInterval(ping); onClose(e.code); };
+    return ws;
+}
+
+const LOBBY_CLOSE_MESSAGES = {
+    4404: 'This lobby no longer exists.',
+    4403: 'You are not a member of this lobby.',
+    4409: 'You are already connected to this lobby.',
+};
+
+function renderPlayerList(players, selfName) {
+    const list = document.getElementById('player-list');
+    list.innerHTML = '';
+    for (const name of players) {
+        const item = document.createElement('li');
+        item.className = 'player-item';
+        item.textContent = name === selfName ? `${name} (you)` : name;
+        list.appendChild(item);
+    }
+}
+
+// Shared by the lobby and game pages; onMessage sees every server message first.
+function watchLobby(lobbyId, userName, onMessage = () => {}) {
+    return connectLobby(lobbyId, userName, msg => {
+        onMessage(msg);
+        if (msg.type !== 'lobby_update') return;
+        renderPlayerList(msg.players, userName);
+        if (msg.user_name !== userName && (msg.event === 'joined' || msg.event === 'left')) {
+            setStatus(`${msg.user_name} ${msg.event === 'joined' ? 'joined' : 'left'} the lobby`);
+        }
+    }, code => {
+        renderPlayerList([], userName);
+        setStatus(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.');
+    });
+}
+
 function initSidebar() {
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('main');
@@ -144,8 +187,8 @@ function buildMap() {
     container.appendChild(svg);
 }
 
-async function loadMap() {
-    mapData = await (await fetch('data/classic_map.json')).json();
+async function loadMap(mapId = 'classic_map') {
+    mapData = await (await fetch(`data/${encodeURIComponent(mapId)}.json`)).json();
     buildMap();
 }
 

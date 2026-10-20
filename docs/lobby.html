@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Diplomacy - Lobby</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="sidebar" class="sidebar">
+    <button id="toggleBtn" class="togglebtn">&#9776;</button>
+    <div class="sidebar-content">
+      <div class="orders">
+        <p class="section-header">Lobby</p>
+        <p id="info" class="info"></p>
+
+        <p class="section-header">Players</p>
+        <ul id="player-list" class="lobby-list"></ul>
+
+        <p class="section-header">Settings</p>
+        <select id="map-select" disabled></select>
+        <p id="lobby-wait" class="menu-message hidden">Waiting for the host to start the game.</p>
+      </div>
+      <button id="start-game" class="btn hidden">Start Game</button>
+      <button id="leave-game" class="btn btn-danger">Leave Lobby</button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="status">Loading…</div>
+    <div id="map"></div>
+  </div>
+
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="modal-title">Confirm Action</h3>
+      <p id="modal-message"></p>
+
+      <div class="modal-buttons">
+        <button id="modal-cancel" class="btn btn-danger">Cancel</button>
+        <button id="modal-confirm" class="btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="shared.js"></script>
+  <script src="lobby.js"></script>
+</body>
+</html>
