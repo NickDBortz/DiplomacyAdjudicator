@@ -1,7 +1,7 @@
 function showMenuView(id) {
-  for (const view of document.querySelectorAll('.menu-view')) {
-    view.classList.toggle('hidden', view.id !== id);
-  }
+    for (const view of document.querySelectorAll('.menu-view')) {
+        view.classList.toggle('hidden', view.id !== id);
+    }
 }
 
 document.getElementById('menu-singleplayer').addEventListener('click', () => { location.href = 'singleplayer.html'; });
