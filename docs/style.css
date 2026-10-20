@@ -27,6 +27,37 @@
 
 .orders {
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Singleplayer wraps the content in this div, which must fill the sidebar for the bottom buttons to pin. */
+#local-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.host-controls {
+    margin: 0 16px 16px;
+    padding-top: 4px;
+
+    background: #1b1b1b;
+    border: 1px solid #4a90e2;
+    border-radius: 6px;
+}
+
+.host-controls .section-header {
+    margin-top: 12px;
+    color: #4a90e2;
+}
+
+.host-controls .host-note {
+    margin: 0 16px 12px;
+    font-size: 12px;
+    color: #888;
+    text-align: center;
 }
 
 /* Sidebar links */

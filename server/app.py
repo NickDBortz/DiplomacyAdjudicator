@@ -319,9 +319,12 @@ async def _handle_message(lobby_id, user_name, raw):
                 player['selected_power'] = None
             payload = {'type': 'lobby_update', 'event': 'map_change', 'user_name': user_name, **_snapshot(lobby)}
         else:
-            _lobby_games[lobby['id']] = web_api.new_game(str(MAPS_DIR / f"{lobby['settings']['map']}.json"))
-            lobby['started'] = True
-            payload = {'type': 'game_started', **_snapshot(lobby)}
+            if any(p['selected_power'] is None for p in lobby['players']):
+                reply = {'type': 'error', 'message': 'Every player must select a Great Power before starting.'}
+            else:
+                _lobby_games[lobby['id']] = web_api.new_game(str(MAPS_DIR / f"{lobby['settings']['map']}.json"))
+                lobby['started'] = True
+                payload = {'type': 'game_started', **_snapshot(lobby)}
 
     if reply is not None:
         ws = _lobby_sockets.get(lobby_id, {}).get(user_name)

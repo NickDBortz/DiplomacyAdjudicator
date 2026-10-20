@@ -49,6 +49,9 @@ function applySnapshot(snapshot) {
     const isHost = snapshot.host === playerName;
     mapSelect.disabled = !isHost;
     startBtn.classList.toggle('hidden', !isHost);
+    const allReady = snapshot.players.every(p => snapshot.selected_powers[p]);
+    startBtn.disabled = !allReady;
+    startBtn.title = allReady ? '' : 'Every player must select a Great Power first';
     waitEl.classList.toggle('hidden', isHost);
     document.getElementById('info').textContent = `Lobby: ${lobbyName}\nHost: ${snapshot.host}`;
     mapSelect.value = snapshot.settings.map;

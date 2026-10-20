@@ -143,8 +143,8 @@ function handleGameMessage(msg) {
     if (msg.type === 'lobby_update') {
         // The host can change when the host leaves, and only the current host may render and resolve.
         gameInfo.host = msg.host;
-        const resolveBtn = document.getElementById('resolve');
-        if (resolveBtn) resolveBtn.classList.toggle('hidden', msg.host !== gameInfo.userName);
+        const hostControls = document.getElementById('host-controls');
+        if (hostControls) hostControls.classList.toggle('hidden', msg.host !== gameInfo.userName);
         renderGameInfo();
     } else if (msg.type === 'game_state') {
         applyGameState(msg.state);
