@@ -78,6 +78,8 @@ def get_state(game, power=ALL_ORDERS):
     ordered = [o for o in queued if o.type != SUPPORT] + [o for o in queued if o.type == SUPPORT]
     for entry, order in zip(orders, ordered):
         entry['text'] = str(order)
+        entry['queue_id'] = next(i for i, queued_order in enumerate(state.queued_orders) if queued_order is order)
+        entry['owner'] = order.unit.owner.name
         if order.type == SUPPORT:
             # Inlined so a support of another power's order can still be drawn without exposing that order.
             supported = order.supported_order

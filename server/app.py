@@ -248,6 +248,7 @@ def _game_views(lobby):
 
 GAME_REPLY_TYPES = {
     'submit_order': 'order_result',
+    'delete_order': 'order_delete_result',
     'draw': 'draw_result',
     'reveal_orders': 'reveal_result',
     'resolve': 'resolve_result',
@@ -287,6 +288,22 @@ def _handle_game_message(lobby, user_name, kind, msg):
         return fail(f'You cannot act for {msg.get("power")}.')
 
     player = game.game_state.get_player(power)
+    if kind == 'delete_order':
+        if lobby.get('orders_revealed'):
+            return fail('Orders are revealed; waiting for the host to resolve.')
+        queue_id = msg.get('queue_id')
+        orders = game.game_state.queued_orders
+        if isinstance(queue_id, bool) or not isinstance(queue_id, int) or queue_id < 0 or queue_id >= len(orders):
+            return fail('That order no longer exists.')
+        order = orders[queue_id]
+        if order.unit.owner != player:
+            return fail('You can only delete your own orders.')
+        game.game_state.remove_queued_order(order)
+        if order.unit.order is order:
+            order.unit.reset_order()
+        view = _view(lobby, power, user_name)
+        return {'type': 'order_delete_result', 'ok': True, 'error': None, 'state': view}, _game_views(lobby)
+
     if kind == 'submit_order':
         if lobby.get('orders_revealed'):
             return fail('Orders are revealed; waiting for the host to resolve.')
@@ -300,7 +317,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
         if not ok:
             return fail('Invalid order.')
         view = _view(lobby, power, user_name)
-        return {'type': 'order_result', 'ok': True, 'error': None, 'orders': view['orders'], 'state': view}, None
+        return {'type': 'order_result', 'ok': True, 'error': None, 'orders': view['orders'], 'state': view}, _game_views(lobby)
 
     game.game_state.vote_draw(player)
     reply = {'type': 'draw_result', 'ok': True, 'error': None, 'draw_votes': [p.name for p in game.game_state.draw_votes]}
@@ -313,7 +330,7 @@ async def _handle_message(lobby_id, user_name, raw):
     except ValueError:
         return
     kind = msg.get('type') if isinstance(msg, dict) else None
-    if kind not in ('set_map', 'set_power', 'start_game', 'submit_order', 'draw', 'reveal_orders', 'resolve'):
+    if kind not in ('set_map', 'set_power', 'start_game', 'submit_order', 'delete_order', 'draw', 'reveal_orders', 'resolve'):
         return
 
     reply = None

@@ -539,6 +539,54 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     color: #888;
 }
 
+.submitted-orders {
+    list-style: none;
+    margin: 0 16px 16px;
+    padding: 0;
+}
+
+.submitted-order,
+.orders-empty {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #333;
+    color: #ddd;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.order-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.order-delete {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    color: #f2a29a;
+    background: transparent;
+    border: 1px solid #673b36;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.order-delete:hover {
+    background: #3a2422;
+}
+
+.order-delete:disabled {
+    display: none;
+}
+
+.orders-empty {
+    justify-content: center;
+    color: #888;
+}
+
 .menu-message {
     min-height: 1.2em;
     margin: 0 16px;

@@ -120,9 +120,6 @@ function renderGameInfo() {
     if (state) {
         const phase = phaseInfoLines(state, gameInfo.power);
         if (phase.length > 0) lines.push('', ...phase);
-        if (state.orders.length > 0) {
-            lines.push('', state.orders_revealed ? 'All orders:' : 'Your orders:', ...state.orders.map(o => `- ${o.text}`));
-        }
         if (state.draw_votes && state.draw_votes.length > 0) {
             lines.push('', 'Draw votes:', ...state.draw_votes.map(v => `- ${v}`));
         }
@@ -155,8 +152,59 @@ function applyGameState(state) {
     if (state.lobby_players) renderPlayerList(state.lobby_players, gameInfo.userName, state.selected_powers);
     const resolveBtn = document.getElementById('resolve');
     if (resolveBtn) resolveBtn.textContent = state.orders_revealed ? 'Resolve Orders' : 'Render Orders';
+    renderSubmittedOrders(state);
     updateGameRole();
     renderGameInfo();
+}
+
+function renderSubmittedOrders(state) {
+    const list = document.getElementById('order-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (state.orders.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'orders-empty';
+        empty.textContent = state.orders_revealed ? 'No orders submitted.' : 'You have no orders yet.';
+        list.appendChild(empty);
+        return;
+    }
+
+    for (const order of state.orders) {
+        const item = document.createElement('li');
+        item.className = 'submitted-order';
+        const text = document.createElement('span');
+        text.className = 'order-text';
+        text.textContent = state.orders_revealed && order.owner !== gameInfo.power
+            ? `${order.owner}: ${order.text}` : order.text;
+        item.appendChild(text);
+
+        const remove = document.createElement('button');
+        remove.className = 'order-delete';
+        remove.type = 'button';
+        remove.textContent = 'Delete';
+        remove.title = 'Delete this order';
+        remove.setAttribute('aria-label', `Delete order: ${order.text}`);
+        remove.disabled = state.orders_revealed || gameInfo.power === 'Spectator';
+        remove.addEventListener('click', async () => {
+            remove.disabled = true;
+            try {
+                const reply = await sendForReply({
+                    type: 'delete_order',
+                    queue_id: order.queue_id,
+                    power: gameInfo.power,
+                }, 'order_delete_result');
+                if (!reply.ok) {
+                    document.getElementById('order-error').textContent = reply.error;
+                    remove.disabled = false;
+                }
+            } catch (e) {
+                document.getElementById('order-error').textContent = e.message;
+                remove.disabled = false;
+            }
+        });
+        item.appendChild(remove);
+        list.appendChild(item);
+    }
 }
 
 function handleGameMessage(msg) {
@@ -171,12 +219,12 @@ function handleGameMessage(msg) {
         renderGameInfo();
     } else if (msg.type === 'game_state') {
         applyGameState(msg.state);
-    } else if (['order_result', 'draw_result', 'reveal_result', 'resolve_result'].includes(msg.type)) {
+    } else if (['order_result', 'order_delete_result', 'draw_result', 'reveal_result', 'resolve_result'].includes(msg.type)) {
         if (msg.state) applyGameState(msg.state);
-        const done = pendingReplies[msg.type];
-        if (done) {
-            delete pendingReplies[msg.type];
-            done(msg);
+        const pending = pendingReplies[msg.type];
+        if (pending && pending.length > 0) {
+            pending.shift()(msg);
+            if (pending.length === 0) delete pendingReplies[msg.type];
         }
     } else if (msg.type === 'error') {
         setStatus(msg.message);
@@ -210,14 +258,18 @@ function sendForReply(payload, replyType) {
             reject(new Error('Not connected to the game.'));
             return;
         }
-        const timer = setTimeout(() => {
-            delete pendingReplies[replyType];
-            reject(new Error('The server did not respond.'));
-        }, 10000);
-        pendingReplies[replyType] = msg => {
+        const pending = pendingReplies[replyType] || (pendingReplies[replyType] = []);
+        const resolveReply = msg => {
             clearTimeout(timer);
             resolve(msg);
         };
+        const timer = setTimeout(() => {
+            const index = pending.indexOf(resolveReply);
+            if (index !== -1) pending.splice(index, 1);
+            if (pending.length === 0) delete pendingReplies[replyType];
+            reject(new Error('The server did not respond.'));
+        }, 10000);
+        pending.push(resolveReply);
         gameSocket.send(JSON.stringify(payload));
     });
 }
@@ -268,6 +320,7 @@ function initOrderControls(onSubmit, onDraw) {
         }
         try {
             messageEl.textContent = await onSubmit(order);
+            if (messageEl.textContent === 'Order submitted.') orderEl.value = '';
         } catch (e) {
             messageEl.textContent = e.message;
         }
