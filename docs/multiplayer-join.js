@@ -47,7 +47,7 @@ function renderLobbies(lobbies) {
 async function loadLobbies() {
     messageEl.textContent = '';
     try {
-        renderLobbies(await request('GET', '/lobbies'));
+        renderLobbies(await request('GET', '/lobbies', null, true));
     } catch (e) {
         console.error(e);
         messageEl.textContent = 'Could not load lobbies.';
@@ -66,8 +66,7 @@ document.getElementById('join-submit').addEventListener('click', async () => {
         messageEl.textContent = 'Select a lobby.';
         return;
     }
-    debugger;
-    const r = await request('POST', `/join_lobby/${selectedLobbyID}`, {'user_name': name});
+    const r = await request('POST', `/join_lobby/${selectedLobbyID}`, {'user_name': name}, true);
     if (!r.ok) {
         messageEl.textContent = r.message;
         return;

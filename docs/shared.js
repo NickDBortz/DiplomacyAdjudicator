@@ -13,12 +13,26 @@ function setStatus(text) {
     document.getElementById('status').textContent = text;
 }
 
-async function request(method, path, body) {
+const loadingPopup = document.getElementById('loading-popup');
+
+function showLoading() {
+    loadingPopup.classList.remove('popup-hidden');
+}
+
+function hideLoading() {
+    loadingPopup.classList.add('popup-hidden');
+}
+
+window.addEventListener('load', hideLoading);
+
+async function request(method, path, body, loading_screen = false) {
+    if (loading_screen) showLoading();
     const res = await fetch(API_BASE + path, {
         method,
         headers: body ? { 'Content-Type': 'application/json' } : undefined,
         body: body ? JSON.stringify(body) : undefined,
     });
+    if (loading_screen) hideLoading();
     if (!res.ok) throw new Error(`${method} ${path} failed: ${res.status} ${await res.text()}`);
     return res.json();
 }
@@ -66,6 +80,7 @@ function renderPlayerList(players, selfName, powers = {}) {
 
 // Shared by the lobby and game pages; onMessage sees every server message first.
 function watchLobby(lobbyId, userName, onMessage = () => {}) {
+    const mainDiv = document.getElementById('main');
     return connectLobby(lobbyId, userName, msg => {
         onMessage(msg);
         if (msg.type !== 'lobby_update') return;
@@ -76,6 +91,7 @@ function watchLobby(lobbyId, userName, onMessage = () => {}) {
     }, code => {
         renderPlayerList([], userName);
         setStatus(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.');
+        mainDiv.classList.add('disabled-div');
     });
 }
 
