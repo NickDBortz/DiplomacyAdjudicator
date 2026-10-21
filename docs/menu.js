@@ -9,3 +9,6 @@ document.getElementById('menu-multiplayer').addEventListener('click', () => show
 document.getElementById('menu-host').addEventListener('click', () => { location.href = 'multiplayer-create.html'; });
 document.getElementById('menu-join').addEventListener('click', () => { location.href = 'multiplayer-join.html'; });
 document.getElementById('menu-back').addEventListener('click', () => showMenuView('menu-main'));
+
+// Send a ping to the server to get it spinning up in the background 
+request('GET', '/health');

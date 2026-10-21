@@ -10,7 +10,7 @@ document.getElementById('host-create').addEventListener('click', async () => {
         document.getElementById('menu-message').textContent = 'Enter a game name.';
         return;
     }
-    const r = await request('POST', `/open_lobby`, {'user_name': name, 'lobby_name': gameName});
+    const r = await request('POST', `/open_lobby`, {'user_name': name, 'lobby_name': gameName}, true);
     if (!r.ok) {
         document.getElementById('menu-message').textContent = r.message;
         return;

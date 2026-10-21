@@ -658,3 +658,48 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 .outcome-buttons button {
     min-width: 160px;
 }
+
+/* Full-screen overlay background */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Ensures it stays on top of everything */
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+/* Container for text and spinner */
+.loading-content {
+    text-align: center;
+    font-family: sans-serif;
+    color: #333;
+}
+
+/* The animated circle spinner */
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 6px solid #e0e0e0; /* Light gray track */
+    border-top: 6px solid #3498db; /* Blue moving section */
+    border-radius: 50%;
+    margin: 0 auto 15px auto;
+    animation: spin 1s linear infinite;
+}
+
+/* Keyframes to make the spinner rotate */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Class used by JS to smoothly hide the popup */
+.popup-hidden {
+    opacity: 0;
+    visibility: hidden;
+}
