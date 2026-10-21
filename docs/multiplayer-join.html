@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Diplomacy - Join a Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="menu">
+    <div class="menu-content">
+      <h1>Diplomacy</h1>
+      <p class="section-header">Join a Game</p>
+      <input id="join-name" class="menu-input" type="text" placeholder="Your name" maxlength="24">
+      <p class="section-header">Lobbies</p>
+      <ul id="lobby-list" class="lobby-list"></ul>
+      <button id="lobby-refresh" class="btn btn-secondary">Refresh</button>
+      <button id="join-submit" class="btn">Join Game</button>
+      <button id="join-back" class="btn btn-secondary">Back</button>
+      <p id="menu-message" class="menu-message"></p>
+    </div>
+  </div>
+  <script src="shared.js"></script>
+  <script src="multiplayer-join.js"></script>
+</body>
+</html>

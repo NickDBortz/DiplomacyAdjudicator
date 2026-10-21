@@ -27,6 +27,37 @@
 
 .orders {
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Singleplayer wraps the content in this div, which must fill the sidebar for the bottom buttons to pin. */
+#local-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.host-controls {
+    margin: 0 16px 16px;
+    padding-top: 4px;
+
+    background: #1b1b1b;
+    border: 1px solid #4a90e2;
+    border-radius: 6px;
+}
+
+.host-controls .section-header {
+    margin-top: 12px;
+    color: #4a90e2;
+}
+
+.host-controls .host-note {
+    margin: 0 16px 12px;
+    font-size: 12px;
+    color: #888;
+    text-align: center;
 }
 
 /* Sidebar links */
@@ -347,6 +378,222 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 
 .btn-danger:active {
     background-color: #a93226;
+}
+
+.btn-secondary {
+    background-color: #333;
+}
+
+.btn-secondary:hover {
+    background-color: #444;
+}
+
+.btn-secondary:active {
+    background-color: #2a2a2a;
+}
+
+#new-game + .btn-secondary {
+    margin-top: 0;
+}
+
+#menu {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #222;
+    z-index: 2000;
+}
+
+#menu.hidden,
+#game-view.hidden {
+    display: none;
+}
+
+.menu-content {
+    width: 400px;
+    max-width: 90vw;
+
+    padding: 24px 0;
+
+    background: #1b1b1b;
+    color: #fff;
+
+    border: 1px solid #444;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.menu-content h1 {
+    margin: 0 0 16px 0;
+
+    text-align: center;
+    font-size: 32px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #4a90e2;
+}
+
+.menu-content .section-header {
+    margin: 0 16px 16px;
+}
+
+.menu-input {
+    width: calc(100% - 32px);
+    margin: 0 16px 16px;
+    padding: 10px 12px;
+
+    background-color: #222;
+    color: #eee;
+
+    border: 1px solid #444;
+    border-radius: 4px;
+
+    font-size: 14px;
+    box-sizing: border-box;
+
+    outline: none;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.menu-input:hover {
+    border-color: #666;
+}
+
+.menu-input:focus {
+    border-color: #4a90e2;
+    background-color: #2a2a2a;
+    box-shadow: 0 0 8px rgba(74, 144, 226, 0.3);
+}
+
+.lobby-list {
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+
+    margin: 0 16px 16px;
+    padding: 0;
+
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.lobby-item,
+.lobby-empty {
+    display: flex;
+    justify-content: space-between;
+
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #eee;
+}
+
+.lobby-item {
+    flex-direction: column;
+    gap: 2px;
+    cursor: pointer;
+    border-left: 4px solid transparent;
+    transition: background-color 0.2s;
+}
+
+.lobby-item:hover {
+    background-color: #2a2a2a;
+}
+
+.lobby-item.selected {
+    background-color: #2a2a2a;
+    border-left-color: #4a90e2;
+}
+
+.lobby-name {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.lobby-players {
+    font-size: 12px;
+    color: #888;
+}
+
+.lobby-empty {
+    justify-content: center;
+    color: #777;
+}
+
+.player-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    border-left: 4px solid transparent;
+    font-size: 14px;
+    color: #eee;
+}
+
+.player-power {
+    font-size: 12px;
+    color: #888;
+}
+
+.submitted-orders {
+    list-style: none;
+    margin: 0 16px 16px;
+    padding: 0;
+}
+
+.submitted-order,
+.orders-empty {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #333;
+    color: #ddd;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.order-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.order-delete {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    color: #f2a29a;
+    background: transparent;
+    border: 1px solid #673b36;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.order-delete:hover {
+    background: #3a2422;
+}
+
+.order-delete:disabled {
+    display: none;
+}
+
+.orders-empty {
+    justify-content: center;
+    color: #888;
+}
+
+.menu-message {
+    min-height: 1.2em;
+    margin: 0 16px;
+
+    text-align: center;
+    font-size: 14px;
+    color: #ccc;
 }
 
 #outcome-popup {

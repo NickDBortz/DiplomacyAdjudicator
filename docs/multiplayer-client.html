@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Diplomacy - Multiplayer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="sidebar" class="sidebar">
+    <button id="toggleBtn" class="togglebtn">&#9776;</button>
+    <div class="sidebar-content">
+      <div class="orders">
+        <p class="section-header">Multiplayer</p>
+        <p id="info" class="info"></p>
+        <p class="section-header">Players</p>
+        <ul id="player-list" class="lobby-list"></ul>
+
+        <div id="player-actions">
+          <p class="section-header">Enter Your Order:</p>
+          <input id="order" type="text">
+          <button id="submit-order" class="btn">Submit Order</button>
+          <p id="order-error" class="info"></p>
+
+          <button id="draw" class="btn btn-danger">Vote to Draw</button>
+        </div>
+        <p class="section-header">Orders</p>
+        <ul id="order-list" class="submitted-orders"></ul>
+        <p id="spectator-message" class="menu-message hidden">You are spectating. Orders appear after the host renders them.</p>
+      </div>
+
+      <div id="host-controls" class="host-controls hidden">
+        <p class="section-header">Host Controls</p>
+        <button id="download-save" class="btn btn-secondary">Download Save</button>
+        <button id="resolve" class="btn">Render Orders</button>
+        <p class="host-note">Only the host can render and resolve orders.</p>
+      </div>
+      <button id="leave-game" class="btn btn-danger">Leave Game</button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="status">Loading…</div>
+    <div id="map"></div>
+  </div>
+
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="modal-title">Confirm Action</h3>
+      <p id="modal-message"></p>
+
+      <div class="modal-buttons">
+        <button id="modal-cancel" class="btn btn-danger">Cancel</button>
+        <button id="modal-confirm" class="btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="shared.js"></script>
+  <script src="multiplayer-client.js"></script>
+</body>
+</html>
