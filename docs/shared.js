@@ -80,6 +80,7 @@ function renderPlayerList(players, selfName, powers = {}) {
 
 // Shared by the lobby and game pages; onMessage sees every server message first.
 function watchLobby(lobbyId, userName, onMessage = () => {}) {
+    const mainDiv = document.getElementById('main');
     return connectLobby(lobbyId, userName, msg => {
         onMessage(msg);
         if (msg.type !== 'lobby_update') return;
@@ -90,6 +91,7 @@ function watchLobby(lobbyId, userName, onMessage = () => {}) {
     }, code => {
         renderPlayerList([], userName);
         setStatus(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.');
+        mainDiv.classList.add('disabled-div');
     });
 }
 
