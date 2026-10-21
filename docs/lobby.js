@@ -14,6 +14,7 @@ let ws;
 let currentMap = null;
 let lastSnapshot = null;
 let powerRefreshSeq = 0;
+playerListKickEnabled = true;
 
 // Options are your own pick plus every power nobody has taken.
 async function refreshPowers(snapshot) {
@@ -55,6 +56,7 @@ async function showPreview(mapId) {
 
 function applySnapshot(snapshot) {
     lastSnapshot = snapshot;
+    gameInfo.host = snapshot.host;
     const isHost = snapshot.host === playerName;
     mapSelect.disabled = !isHost;
     powerSelect.disabled = Boolean(snapshot.prepared_save);
@@ -158,6 +160,7 @@ async function init() {
             }
         }
     });
+    gameSocket = ws;  // lets the shared Kick button send through this socket
 }
 
 init().catch(e => { setStatus('Error: ' + e); console.error(e); });

@@ -524,14 +524,36 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     color: #777;
 }
 
+.lobby-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lobby-lock {
+    font-size: 14px;
+    color: #d4af37;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
 .player-item {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     padding: 8px 12px;
     border-left: 4px solid transparent;
     font-size: 14px;
     color: #eee;
+}
+
+.player-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
 }
 
 .player-power {

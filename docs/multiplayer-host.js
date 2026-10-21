@@ -2,6 +2,7 @@ const playerName = sessionStorage.getItem('diplomacyPlayerName');
 const gameName = sessionStorage.getItem('diplomacyGameName');
 const gameID = sessionStorage.getItem('diplomacyGameID');
 const power = sessionStorage.getItem('power');
+playerListKickEnabled = true;
 
 document.getElementById('leave-game').addEventListener('click', () => {
     confirmAction('Leave Game', 'Stop hosting and return to the main menu?', () => leaveLobby(gameSocket));

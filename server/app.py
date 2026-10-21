@@ -19,6 +19,7 @@ REJOIN_GRACE_SECONDS = 10  # players moving from the lobby page to the game page
 MAPS_DIR = Path(__file__).resolve().parent / 'data' / 'maps'
 DEFAULT_MAP = 'classic_map'
 SPECTATOR_POWER = 'Spectator'
+KICKED_CLOSE_CODE = 4410
 
 app = FastAPI(title='Diplomacy Adjudicator')
 app.add_middleware(
@@ -48,9 +49,11 @@ class DrawRequest(BaseModel):
 class LobbyRequest(BaseModel):
     user_name: str
     lobby_name: str
+    lobby_password: str
 
 class JoinRequest(BaseModel):
     user_name: str
+    lobby_password: str
 
 
 def _get(game_id):
@@ -74,6 +77,7 @@ def open_lobby(lobby_request: LobbyRequest):
     with _lock:
         lobby_name = lobby_request.lobby_name
         user_name = lobby_request.user_name
+        password = lobby_request.lobby_password
         if len(_lobbies) >= MAX_LOBBIES:
             evicted = _lobbies.pop(next(iter(_lobbies)))
             _lobby_games.pop(evicted['id'], None)
@@ -84,6 +88,7 @@ def open_lobby(lobby_request: LobbyRequest):
         _lobbies[lobby_name] = {
             'id': lobby_id,
             'name': lobby_name,
+            'password': password,
             'host': user_name,
             'started': False,
             'settings': {'map': DEFAULT_MAP},
@@ -100,7 +105,7 @@ def get_lobbies():
     lobbies = {}
     for key, value in _lobbies.items():
         if not value['started']:
-            lobbies[key] = {'id': value['id'], 'Players': len(value['players'])}
+            lobbies[key] = {'id': value['id'], 'needs_password': value['password'] != '', 'Players': len(value['players'])}
     return lobbies
 
 @app.get('/lobbies/{lobby_id}/powers')
@@ -124,6 +129,8 @@ def join_lobby(lobby_id: str, req: JoinRequest):
                     return {'ok': False, 'message': 'A save is prepared; the host must start or cancel it first.'}
                 if any(p['user_name'] == req.user_name for p in value['players']):
                     return {'ok': False, 'message': 'Name already taken in this lobby.'}
+                if value['password'] != req.lobby_password:
+                    return {'ok': False, 'message': 'Incorrect password.'}
                 _lobbies[key]['players'].append({'user_name': req.user_name, 'selected_power': None})
                 return {'ok': True, 'lobby': _lobbies[key]}
     return {'ok': False, 'message': 'Lobby does not exist.'}
@@ -436,23 +443,46 @@ def _handle_game_message(lobby, user_name, kind, msg):
     return reply, _game_views(lobby)
 
 
+def _kick_player(lobby, user_name, target):
+    """Host only: removes another player. Returns (reply, broadcast payload, socket to close). Call with _lock held."""
+    def fail(error):
+        return {'type': 'kick_result', 'ok': False, 'error': error}, None, None
+
+    if lobby['host'] != user_name:
+        return fail('Only the host can kick players.')
+    if not isinstance(target, str) or not any(p['user_name'] == target for p in lobby['players']):
+        return fail('That player is not in the lobby.')
+    if target == user_name:
+        return fail('You cannot kick yourself.')
+    # Unregister the socket first so its disconnect handler does not treat the kick as a normal leave.
+    kicked_socket = _lobby_sockets.get(lobby['id'], {}).pop(target, None)
+    snapshot = _remove_player(lobby['id'], target)
+    payload = None
+    if snapshot is not None:
+        payload = {'type': 'lobby_update', 'event': 'kicked', 'user_name': target, **snapshot}
+    return {'type': 'kick_result', 'ok': True, 'error': None}, payload, kicked_socket
+
+
 async def _handle_message(lobby_id, user_name, raw):
     try:
         msg = json.loads(raw)
     except ValueError:
         return
     kind = msg.get('type') if isinstance(msg, dict) else None
-    if kind not in ('set_map', 'set_power', 'start_game', 'load_saved_game', 'submit_order', 'delete_order', 'draw', 'reveal_orders', 'resolve'):
+    if kind not in ('set_map', 'set_power', 'start_game', 'load_saved_game', 'submit_order', 'delete_order', 'draw', 'reveal_orders', 'resolve', 'kick_player'):
         return
 
     reply = None
     payload = None
     views = None
+    kicked_socket = None
     with _lock:
         _, lobby = _find_lobby(lobby_id)
         if lobby is None:
             return
-        if kind in GAME_REPLY_TYPES:
+        if kind == 'kick_player':
+            reply, payload, kicked_socket = _kick_player(lobby, user_name, msg.get('user_name'))
+        elif kind in GAME_REPLY_TYPES:
             reply, views = _handle_game_message(lobby, user_name, kind, msg)
         elif lobby['started']:
             return
@@ -515,6 +545,11 @@ async def _handle_message(lobby_id, user_name, raw):
                 lobby.pop('prepared_save', None)
                 payload = {'type': 'game_started', **_snapshot(lobby)}
 
+    if kicked_socket is not None:
+        try:
+            await kicked_socket.close(code=KICKED_CLOSE_CODE)
+        except Exception:
+            pass
     if reply is not None:
         ws = _lobby_sockets.get(lobby_id, {}).get(user_name)
         if ws is not None:
