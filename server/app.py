@@ -48,9 +48,11 @@ class DrawRequest(BaseModel):
 class LobbyRequest(BaseModel):
     user_name: str
     lobby_name: str
+    lobby_password: str
 
 class JoinRequest(BaseModel):
     user_name: str
+    lobby_password: str
 
 
 def _get(game_id):
@@ -74,6 +76,7 @@ def open_lobby(lobby_request: LobbyRequest):
     with _lock:
         lobby_name = lobby_request.lobby_name
         user_name = lobby_request.user_name
+        password = lobby_request.lobby_password
         if len(_lobbies) >= MAX_LOBBIES:
             evicted = _lobbies.pop(next(iter(_lobbies)))
             _lobby_games.pop(evicted['id'], None)
@@ -84,6 +87,7 @@ def open_lobby(lobby_request: LobbyRequest):
         _lobbies[lobby_name] = {
             'id': lobby_id,
             'name': lobby_name,
+            'password': password,
             'host': user_name,
             'started': False,
             'settings': {'map': DEFAULT_MAP},
@@ -100,7 +104,7 @@ def get_lobbies():
     lobbies = {}
     for key, value in _lobbies.items():
         if not value['started']:
-            lobbies[key] = {'id': value['id'], 'Players': len(value['players'])}
+            lobbies[key] = {'id': value['id'], 'needs_password': value['password'] != '', 'Players': len(value['players'])}
     return lobbies
 
 @app.get('/lobbies/{lobby_id}/powers')
@@ -124,6 +128,8 @@ def join_lobby(lobby_id: str, req: JoinRequest):
                     return {'ok': False, 'message': 'A save is prepared; the host must start or cancel it first.'}
                 if any(p['user_name'] == req.user_name for p in value['players']):
                     return {'ok': False, 'message': 'Name already taken in this lobby.'}
+                if value['password'] != req.lobby_password:
+                    return {'ok': False, 'message': 'Incorrect password.'}
                 _lobbies[key]['players'].append({'user_name': req.user_name, 'selected_power': None})
                 return {'ok': True, 'lobby': _lobbies[key]}
     return {'ok': False, 'message': 'Lobby does not exist.'}

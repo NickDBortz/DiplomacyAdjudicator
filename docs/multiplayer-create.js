@@ -2,6 +2,7 @@
 document.getElementById('host-create').addEventListener('click', async () => {
     const name = document.getElementById('host-name').value.trim();
     const gameName = document.getElementById('host-game-name').value.trim();
+    let password = document.getElementById('host-game-password').value.trim();
     if (!name) {
         document.getElementById('menu-message').textContent = 'Enter your name.';
         return;
@@ -10,7 +11,9 @@ document.getElementById('host-create').addEventListener('click', async () => {
         document.getElementById('menu-message').textContent = 'Enter a game name.';
         return;
     }
-    const r = await request('POST', `/open_lobby`, {'user_name': name, 'lobby_name': gameName}, true);
+    if (password)
+        password = await sha256(password);
+    const r = await request('POST', `/open_lobby`, {'user_name': name, 'lobby_name': gameName, 'lobby_password': password}, true);
     if (!r.ok) {
         document.getElementById('menu-message').textContent = r.message;
         return;
