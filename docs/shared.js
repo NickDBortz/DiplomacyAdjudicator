@@ -3,7 +3,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 // Backend base URL; override with ?api=<url> or localStorage 'diplomacyApi'.
 const API_BASE = (new URLSearchParams(location.search).get('api')
     || localStorage.getItem('diplomacyApi')
-    || (['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://localhost:8001' : 'https://YOUR-SERVICE.onrender.com')
+    || (['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://localhost:8001' : 'https://diplomacyadjudicator.onrender.com')
 ).replace(/\/$/, '');
 
 let mapData, svg;
