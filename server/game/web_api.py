@@ -1,5 +1,6 @@
 """JSON-friendly helpers around Game for the HTTP API. Each takes an explicit Game."""
 from game.game import Game
+from game.unit import Unit
 from game.enums import ARMY, FLEET, HOLD, ADVANCE, SUPPORT, CONVOY, TRANSFORM, BUILD, DISBAND
 
 
@@ -11,6 +12,72 @@ def new_game(map_path='data/maps/classic_map.json', start_phase=None):
     if start_phase is not None:
         kwargs['start_phase'] = start_phase
     return Game(**kwargs)
+
+
+def serialize_game(game, map_id):
+    state = game.game_state
+    return {
+        'map': map_id,
+        'phase': state.get_phase(),
+        'year': state.year,
+        'winner': state.winner.name if state.winner else None,
+        'draw': state.draw,
+        'draw_votes': [player.name for player in state.draw_votes],
+        'territory_owners': {territory.abbr: territory.owner.name if territory.owner else None
+                             for territory in state.territory_list},
+        'units': [
+            {
+                'owner': player.name,
+                'type': 'A' if unit.type == ARMY else 'F',
+                'territory': unit.territory.abbr if unit.territory and not unit.dislodged else None,
+                'coast': unit.territory.unit_coast if unit.territory and not unit.dislodged else None,
+                'dislodged': bool(unit.dislodged),
+                'dislodged_from': unit.dislodged_from.abbr if unit.dislodged_from else None,
+            }
+            for player in state.player_list
+            for unit in player.units
+            if not unit.disbanded
+        ],
+    }
+
+
+def restore_game(data, map_path):
+    game = new_game(map_path, start_phase=data['phase'])
+    state = game.game_state
+    territories = {territory.abbr: territory for territory in state.territory_list}
+
+    for territory in state.territory_list:
+        territory.unit = None
+        territory.unit_coast = None
+        territory.temp_unit = None
+        territory.temp_coast = None
+        owner_name = data['territory_owners'].get(territory.abbr)
+        territory.owner = state.get_player(owner_name) if owner_name else None
+
+    for player in state.player_list:
+        player.units.clear()
+
+    for saved_unit in data['units']:
+        owner = state.get_player(saved_unit['owner'])
+        unit_type = ARMY if saved_unit['type'] == 'A' else FLEET
+        position = territories.get(saved_unit['territory']) if saved_unit['territory'] else None
+        unit = Unit(owner, unit_type, position)
+        unit.dislodged = bool(saved_unit['dislodged'])
+        unit.dislodged_from = territories.get(saved_unit['dislodged_from']) if saved_unit['dislodged_from'] else None
+        owner.add_unit(unit)
+        if position is not None:
+            position.set_unit(unit, saved_unit['coast'])
+
+    for abbr, territory in territories.items():
+        owner_name = data['territory_owners'].get(abbr)
+        territory.owner = state.get_player(owner_name) if owner_name else None
+
+    state.year = int(data['year'])
+    state.winner = state.get_player(data['winner']) if data.get('winner') else None
+    state.draw = bool(data.get('draw', False))
+    state.draw_votes = [state.get_player(name) for name in data.get('draw_votes', [])]
+    state.queued_orders.clear()
+    return game
 
 
 def _visible_orders(state, power):

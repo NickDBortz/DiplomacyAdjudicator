@@ -21,6 +21,13 @@
         <p class="section-header">Settings</p>
         <select id="map-select" disabled></select>
         <p id="lobby-wait" class="menu-message hidden">Waiting for the host to start the game.</p>
+
+        <div id="host-load-controls" class="host-controls hidden">
+          <p class="section-header">Load Existing Game</p>
+          <input id="saved-game-file" class="menu-input" type="file" accept=".json,application/json" aria-label="Choose a saved game file">
+          <button id="load-saved-game" class="btn">Load Save File</button>
+          <p id="saved-game-status" class="host-note"></p>
+        </div>
       </div>
       <button id="start-game" class="btn hidden">Start Game</button>
       <button id="leave-game" class="btn btn-danger">Leave Lobby</button>

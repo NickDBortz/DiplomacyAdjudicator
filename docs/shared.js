@@ -82,7 +82,7 @@ function watchLobby(lobbyId, userName, onMessage = () => {}) {
 // In-game state: the lobby socket doubles as the game socket once the game has started.
 let gameSocket = null;
 const pendingReplies = {};
-const gameInfo = { base: '', host: '', userName: '', power: sessionStorage.getItem('power') || '', state: null };
+const gameInfo = { base: '', host: '', userName: '', power: sessionStorage.getItem('power') || '', state: null, latestSave: null };
 
 // What this power can act on in the current phase.
 function phaseInfoLines(state, power) {
@@ -157,6 +157,22 @@ function applyGameState(state) {
     renderGameInfo();
 }
 
+function downloadGameSave(saveData) {
+    const safeName = (saveData.name || 'diplomacy-game').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') || 'diplomacy-game';
+    const game = saveData.game;
+    const filename = `${safeName}-${game.year}-${game.phase.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`;
+    const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return filename;
+}
+
 function renderSubmittedOrders(state) {
     const list = document.getElementById('order-list');
     if (!list) return;
@@ -221,6 +237,14 @@ function handleGameMessage(msg) {
         applyGameState(msg.state);
     } else if (['order_result', 'order_delete_result', 'draw_result', 'reveal_result', 'resolve_result'].includes(msg.type)) {
         if (msg.state) applyGameState(msg.state);
+        if (msg.ok && msg.save_data && gameInfo.userName === gameInfo.host) {
+            gameInfo.latestSave = msg.save_data;
+            const downloadButton = document.getElementById('download-save');
+            if (downloadButton) downloadButton.disabled = false;
+            const filename = downloadGameSave(msg.save_data);
+            const message = document.getElementById('order-error');
+            if (message) message.textContent = `Save download started: ${filename}`;
+        }
         const pending = pendingReplies[msg.type];
         if (pending && pending.length > 0) {
             pending.shift()(msg);
@@ -287,12 +311,22 @@ async function submitDraw() {
 // Host only: the first press shows everyone's orders to all players, the second resolves them.
 function initResolveControl() {
     const button = document.getElementById('resolve');
+    const downloadButton = document.getElementById('download-save');
     const messageEl = document.getElementById('order-error');
+
+    if (downloadButton) {
+        downloadButton.disabled = !gameInfo.latestSave;
+        downloadButton.addEventListener('click', () => {
+            if (!gameInfo.latestSave) return;
+            const filename = downloadGameSave(gameInfo.latestSave);
+            messageEl.textContent = `Save download started: ${filename}`;
+        });
+    }
 
     const send = async (type, replyType) => {
         try {
             const r = await sendForReply({ type }, replyType);
-            messageEl.textContent = r.ok ? '' : r.error;
+            messageEl.textContent = !r.ok ? r.error : r.save_data ? 'Game save downloaded.' : '';
         } catch (e) {
             messageEl.textContent = e.message;
         }
@@ -305,6 +339,7 @@ function initResolveControl() {
             send('reveal_orders', 'reveal_result');
         }
     });
+
 }
 
 // Wires the order box and draw button; each callback returns the message to show (or a promise of it).
