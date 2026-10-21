@@ -64,9 +64,14 @@ const LOBBY_CLOSE_MESSAGES = {
     4404: 'This lobby no longer exists.',
     4403: 'You are not a member of this lobby.',
     4409: 'You are already connected to this lobby.',
+    4410: 'You were kicked from the lobby by the host.',
 };
 
+// Set by the host and lobby pages so the current host gets a Kick button next to every other player.
+let playerListKickEnabled = false;
+
 function renderPlayerList(players, selfName, powers = {}) {
+    const canKick = playerListKickEnabled && gameInfo.host === selfName;
     const colors = Object.fromEntries((mapData?.players ?? []).map(p => [p.name, p.color]));
     const list = document.getElementById('player-list');
     list.innerHTML = '';
@@ -81,7 +86,35 @@ function renderPlayerList(players, selfName, powers = {}) {
         const power = document.createElement('span');
         power.className = 'player-power';
         power.textContent = powers[name] || 'No power selected';
-        item.append(label, power);
+        const details = document.createElement('div');
+        details.className = 'player-details';
+        details.append(label, power);
+        item.appendChild(details);
+
+        if (canKick && name !== selfName) {
+            const kick = document.createElement('button');
+            kick.className = 'order-delete';
+            kick.type = 'button';
+            kick.textContent = 'Kick';
+            kick.title = 'Kick this player';
+            kick.setAttribute('aria-label', `Kick player: ${name}`);
+            kick.addEventListener('click', () => {
+                confirmAction('Kick Player', `Remove ${name} from the game?`, async () => {
+                    kick.disabled = true;
+                    try {
+                        const reply = await sendForReply({ type: 'kick_player', user_name: name }, 'kick_result');
+                        if (!reply.ok) {
+                            setStatus(reply.error);
+                            kick.disabled = false;
+                        }
+                    } catch (e) {
+                        setStatus(e.message);
+                        kick.disabled = false;
+                    }
+                });
+            });
+            item.appendChild(kick);
+        }
         list.appendChild(item);
     }
 }
@@ -91,10 +124,17 @@ function watchLobby(lobbyId, userName, onMessage = () => {}) {
     const mainDiv = document.getElementById('main');
     return connectLobby(lobbyId, userName, msg => {
         onMessage(msg);
+        const pending = pendingReplies[msg.type];
+        if (pending && pending.length > 0) {
+            pending.shift()(msg);
+            if (pending.length === 0) delete pendingReplies[msg.type];
+        }
         if (msg.type !== 'lobby_update') return;
         renderPlayerList(msg.players, userName, msg.selected_powers);
         if (msg.user_name !== userName && (msg.event === 'joined' || msg.event === 'left')) {
             setStatus(`${msg.user_name} ${msg.event === 'joined' ? 'joined' : 'left'} the lobby`);
+        } else if (msg.event === 'kicked') {
+            setStatus(`${msg.user_name} was kicked by the host`);
         }
     }, code => {
         renderPlayerList([], userName);
@@ -259,7 +299,7 @@ function handleGameMessage(msg) {
         renderGameInfo();
     } else if (msg.type === 'game_state') {
         applyGameState(msg.state);
-    } else if (['order_result', 'order_delete_result', 'draw_result', 'reveal_result', 'resolve_result'].includes(msg.type)) {
+    } else if (['order_result', 'order_delete_result', 'draw_result', 'reveal_result', 'resolve_result', 'kick_result'].includes(msg.type)) {
         if (msg.state) applyGameState(msg.state);
         if (msg.ok && msg.save_data && gameInfo.userName === gameInfo.host) {
             gameInfo.latestSave = msg.save_data;
@@ -268,11 +308,6 @@ function handleGameMessage(msg) {
             const filename = downloadGameSave(msg.save_data);
             const message = document.getElementById('order-error');
             if (message) message.textContent = `Save download started: ${filename}`;
-        }
-        const pending = pendingReplies[msg.type];
-        if (pending && pending.length > 0) {
-            pending.shift()(msg);
-            if (pending.length === 0) delete pendingReplies[msg.type];
         }
     } else if (msg.type === 'error') {
         setStatus(msg.message);
