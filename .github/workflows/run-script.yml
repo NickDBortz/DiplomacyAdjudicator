@@ -21,11 +21,8 @@ jobs:
     # Step 3: Install Pytest
     - name: Install Pytest
       run: pip install pytest
-
-    # Step 4: Enter server folder
-    - name: CD Server
-      run: cd server
         
-    # Step 5: Run test script
+    # Step 4: Run test script
     - name: Run Tests
+      working-directory: ./server
       run: python -m pytest
