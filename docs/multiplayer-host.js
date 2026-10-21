@@ -1,6 +1,7 @@
 const playerName = sessionStorage.getItem('diplomacyPlayerName');
 const gameName = sessionStorage.getItem('diplomacyGameName');
 const gameID = sessionStorage.getItem('diplomacyGameID');
+const power = sessionStorage.getItem('power');
 
 document.getElementById('leave-game').addEventListener('click', () => {
     confirmAction('Leave Game', 'Stop hosting and return to the main menu?', () => leaveLobby(gameSocket));
@@ -12,11 +13,13 @@ async function init() {
         return;
     }
     initSidebar();
-    initOrderControls(
-        submitOrder,
-        submitDraw
-    );
-    initResolveControl();
+    const isSpectator = power === 'Spectator';
+    document.getElementById('player-actions').classList.toggle('hidden', isSpectator);
+    document.getElementById('spectator-message').classList.toggle('hidden', !isSpectator);
+    if (!isSpectator) {
+        initOrderControls(submitOrder, submitDraw);
+        initResolveControl();
+    }
     await refreshMap(sessionStorage.getItem('diplomacyMap') || undefined);
     setStatus('Connecting to game...');
     joinGame(gameID, playerName, `Player: ${playerName}\nGame code: ${gameName}`);

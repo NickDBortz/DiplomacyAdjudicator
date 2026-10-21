@@ -16,12 +16,15 @@
         <p class="section-header">Players</p>
         <ul id="player-list" class="lobby-list"></ul>
 
-        <p class="section-header">Enter Your Order:</p>
-        <input id="order" type="text">
-        <button id="submit-order" class="btn">Submit Order</button>
-        <p id="order-error" class="info"></p>
+        <div id="player-actions">
+          <p class="section-header">Enter Your Order:</p>
+          <input id="order" type="text">
+          <button id="submit-order" class="btn">Submit Order</button>
+          <p id="order-error" class="info"></p>
 
-        <button id="draw" class="btn btn-danger">Vote to Draw</button>
+          <button id="draw" class="btn btn-danger">Vote to Draw</button>
+        </div>
+        <p id="spectator-message" class="menu-message hidden">You are spectating. Orders appear after the host renders them.</p>
       </div>
 
       <div id="host-controls" class="host-controls hidden">

@@ -27,8 +27,14 @@ async function refreshPowers(snapshot) {
     for (const power of [...new Set([own, ...available])].filter(Boolean).sort()) {
         const option = document.createElement('option');
         option.value = power;
-        option.textContent = power;
+        option.textContent = power === 'Spectator' ? 'Spectator (no Great Power)' : power;
         powerSelect.appendChild(option);
+    }
+    if (!own) {
+        const spectator = document.createElement('option');
+        spectator.value = 'Spectator';
+        spectator.textContent = 'Spectator (no Great Power)';
+        powerSelect.appendChild(spectator);
     }
     powerSelect.value = own;
 }
@@ -50,8 +56,11 @@ function applySnapshot(snapshot) {
     mapSelect.disabled = !isHost;
     startBtn.classList.toggle('hidden', !isHost);
     const allReady = snapshot.players.every(p => snapshot.selected_powers[p]);
-    startBtn.disabled = !allReady;
-    startBtn.title = allReady ? '' : 'Every player must select a Great Power first';
+    const hasGreatPower = snapshot.players.some(p => snapshot.selected_powers[p] !== 'Spectator');
+    startBtn.disabled = !allReady || !hasGreatPower;
+    startBtn.title = !allReady
+        ? 'Every player must select a Great Power or Spectator first'
+        : !hasGreatPower ? 'At least one player must select a Great Power' : '';
     waitEl.classList.toggle('hidden', isHost);
     document.getElementById('info').textContent = `Lobby: ${lobbyName}\nHost: ${snapshot.host}`;
     mapSelect.value = snapshot.settings.map;

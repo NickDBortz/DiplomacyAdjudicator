@@ -130,12 +130,32 @@ function renderGameInfo() {
     document.getElementById('info').textContent = lines.join('\n');
 }
 
+function updateGameRole() {
+    const spectator = gameInfo.power === 'Spectator';
+    const actions = document.getElementById('player-actions');
+    const spectatorMessage = document.getElementById('spectator-message');
+    const hostControls = document.getElementById('host-controls');
+    if (actions) actions.classList.toggle('hidden', spectator);
+    if (spectatorMessage) {
+        spectatorMessage.classList.toggle('hidden', !spectator);
+        spectatorMessage.textContent = gameInfo.state?.player_eliminated
+            ? 'Your power has been eliminated. You are now spectating.'
+            : 'You are spectating. Orders appear after the host renders them.';
+    }
+    if (hostControls) hostControls.classList.toggle('hidden', spectator || gameInfo.host !== gameInfo.userName);
+}
+
 // The server sends every unit and territory, plus this player's orders (everyone's once revealed).
 function applyGameState(state) {
     render(state);
     gameInfo.state = state;
+    gameInfo.power = state.player_power ?? gameInfo.power;
+    gameInfo.host = state.host ?? gameInfo.host;
+    sessionStorage.setItem('power', gameInfo.power);
+    if (state.lobby_players) renderPlayerList(state.lobby_players, gameInfo.userName, state.selected_powers);
     const resolveBtn = document.getElementById('resolve');
     if (resolveBtn) resolveBtn.textContent = state.orders_revealed ? 'Resolve Orders' : 'Render Orders';
+    updateGameRole();
     renderGameInfo();
 }
 
@@ -143,8 +163,11 @@ function handleGameMessage(msg) {
     if (msg.type === 'lobby_update') {
         // The host can change when the host leaves, and only the current host may render and resolve.
         gameInfo.host = msg.host;
-        const hostControls = document.getElementById('host-controls');
-        if (hostControls) hostControls.classList.toggle('hidden', msg.host !== gameInfo.userName);
+        if (msg.selected_powers && gameInfo.userName in msg.selected_powers) {
+            gameInfo.power = msg.selected_powers[gameInfo.userName] || '';
+            sessionStorage.setItem('power', gameInfo.power);
+        }
+        updateGameRole();
         renderGameInfo();
     } else if (msg.type === 'game_state') {
         applyGameState(msg.state);
@@ -176,6 +199,7 @@ function leaveLobby(socket) {
 function joinGame(lobbyId, userName, baseInfo) {
     gameInfo.base = baseInfo;
     gameInfo.userName = userName;
+    updateGameRole();
     renderGameInfo();
     gameSocket = watchLobby(lobbyId, userName, handleGameMessage);
 }

@@ -18,6 +18,7 @@ MAX_ORDER_LENGTH = 200
 REJOIN_GRACE_SECONDS = 10  # players moving from the lobby page to the game page reconnect within this
 MAPS_DIR = Path(__file__).resolve().parent / 'data' / 'maps'
 DEFAULT_MAP = 'classic_map'
+SPECTATOR_POWER = 'Spectator'
 
 app = FastAPI(title='Diplomacy Adjudicator')
 app.add_middleware(
@@ -164,7 +165,10 @@ def _remove_player(lobby_id, user_name):
         _lobby_games.pop(lobby_id, None)
         return None
     if lobby['host'] == user_name:
-        lobby['host'] = lobby['players'][0]['user_name']
+        lobby['host'] = next(
+            (p['user_name'] for p in lobby['players'] if _power_of(lobby, p['user_name']) is not None),
+            lobby['players'][0]['user_name'],
+        )
     return _snapshot(lobby)
 
 
@@ -196,20 +200,50 @@ async def _send_game_views(lobby_id, views):
 
 
 def _power_of(lobby, user_name):
-    return next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
+    power = next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
+    return None if power == SPECTATOR_POWER else power
 
 
-def _view(lobby, power):
+def _update_eliminations(lobby):
+    game = _lobby_games[lobby['id']]
+    state = game.game_state
+    eliminated = lobby.setdefault('eliminated', [])
+
+    for member in lobby['players']:
+        power_name = member['selected_power']
+        if not power_name or power_name == SPECTATOR_POWER:
+            continue
+        power = state.get_player(power_name)
+        has_centers = bool(power.get_supply_centers(state.territory_list))
+        has_units = any(not unit.disbanded for unit in power.units)
+        lost = (not has_centers and not has_units) or (
+            state.winner is not None and power.name != state.winner.name)
+        if lost:
+            member['selected_power'] = SPECTATOR_POWER
+            eliminated.append(member['user_name'])
+
+    if _power_of(lobby, lobby['host']) is None:
+        successor = next((p['user_name'] for p in lobby['players'] if _power_of(lobby, p['user_name']) is not None), None)
+        if successor is not None:
+            lobby['host'] = successor
+
+
+def _view(lobby, power, user_name):
     """Own orders only, or everyone's once the host has revealed them."""
     revealed = lobby.get('orders_revealed', False)
     state = web_api.get_state(_lobby_games[lobby['id']], power=web_api.ALL_ORDERS if revealed else power)
     state['orders_revealed'] = revealed
+    state['player_power'] = next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
+    state['player_eliminated'] = user_name in lobby.get('eliminated', [])
+    state['host'] = lobby['host']
+    state['lobby_players'] = [p['user_name'] for p in lobby['players']]
+    state['selected_powers'] = {p['user_name']: p['selected_power'] for p in lobby['players']}
     return state
 
 
 def _game_views(lobby):
     """Each player sees every unit and territory, plus their own orders until the host reveals all."""
-    return {p['user_name']: _view(lobby, p['selected_power']) for p in lobby['players']}
+    return {p['user_name']: _view(lobby, _power_of(lobby, p['user_name']), p['user_name']) for p in lobby['players']}
 
 
 GAME_REPLY_TYPES = {
@@ -244,6 +278,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
                 return fail('Render the orders first.')
             game.adjudicator.resolve_orders()
             lobby['orders_revealed'] = False
+            _update_eliminations(lobby)
         return {'type': reply_type, 'ok': True, 'error': None}, _game_views(lobby)
 
     if power is None:
@@ -264,7 +299,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
             ok = False  # the parser can raise on malformed text
         if not ok:
             return fail('Invalid order.')
-        view = _view(lobby, power)
+        view = _view(lobby, power, user_name)
         return {'type': 'order_result', 'ok': True, 'error': None, 'orders': view['orders'], 'state': view}, None
 
     game.game_state.vote_draw(player)
@@ -295,9 +330,9 @@ async def _handle_message(lobby_id, user_name, raw):
         elif kind == 'set_power':  # any player may pick their own power
             settings = msg.get('settings')
             power = (settings.get('power') or None) if isinstance(settings, dict) else None
-            taken = power is not None and any(
+            taken = power not in (None, SPECTATOR_POWER) and any(
                 p['selected_power'] == power and p['user_name'] != user_name for p in lobby['players'])
-            if power is not None and power not in _available_powers(lobby['settings']['map']):
+            if power is not None and power != SPECTATOR_POWER and power not in _available_powers(lobby['settings']['map']):
                 reply = {'type': 'error', 'message': 'Unknown power.'}
             elif taken:
                 reply = {'type': 'error', 'message': 'That power is already taken.'}
@@ -321,7 +356,11 @@ async def _handle_message(lobby_id, user_name, raw):
         else:
             if any(p['selected_power'] is None for p in lobby['players']):
                 reply = {'type': 'error', 'message': 'Every player must select a Great Power before starting.'}
+            elif not any(p['selected_power'] != SPECTATOR_POWER for p in lobby['players']):
+                reply = {'type': 'error', 'message': 'At least one player must select a Great Power.'}
             else:
+                if _power_of(lobby, lobby['host']) is None:
+                    lobby['host'] = next(p['user_name'] for p in lobby['players'] if p['selected_power'] != SPECTATOR_POWER)
                 _lobby_games[lobby['id']] = web_api.new_game(str(MAPS_DIR / f"{lobby['settings']['map']}.json"))
                 lobby['started'] = True
                 payload = {'type': 'game_started', **_snapshot(lobby)}
@@ -355,7 +394,7 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
             _lobby_sockets.setdefault(lobby_id, {})[user_name] = websocket
             snapshot = _snapshot(lobby)
             if lobby['id'] in _lobby_games:
-                game_view = _view(lobby, _power_of(lobby, user_name))
+                game_view = _view(lobby, _power_of(lobby, user_name), user_name)
     if lobby is None:
         await websocket.close(code=4404)
         return
