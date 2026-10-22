@@ -52,7 +52,7 @@ async function showPreview(mapId) {
         document.getElementById('terr-' + t.abbr).setAttribute('fill', t.land ? '#DDD' : mapData.water_color);
     }
     // Power colors come from the map, so redraw the list once it has loaded.
-    if (lastSnapshot) renderPlayerList(lastSnapshot.players, playerName, lastSnapshot.selected_powers);
+    if (lastSnapshot) renderPlayerList(lastSnapshot.players, playerName, lastSnapshot.selected_powers, lastSnapshot.connected_players);
 }
 
 function applySnapshot(snapshot) {
@@ -144,8 +144,8 @@ async function init() {
     savedGameStatus.textContent = 'Choose a save file downloaded by the host.';
 
     ws = watchLobby(lobbyId, playerName, secretToken, msg => {
-        if (msg.type === 'game_started') {
-            enterGame(msg);
+        if (msg.type === 'game_started' || (msg.type === 'lobby_update' && msg.started)) {
+            enterGame(msg);  // the second case is a player rejoining a game that is already running
         } else if (msg.type === 'error') {
             savedGameStatus.textContent = msg.message;
             setStatus(msg.message);

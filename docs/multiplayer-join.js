@@ -49,6 +49,14 @@ function renderLobbies(lobbies) {
         const players = document.createElement('span');
         players.className = 'lobby-players';
         players.textContent = `${count} ${count === 1 ? 'player' : 'players'}`;
+        if (lobbies[name].in_progress) {
+            const vacant = lobbies[name].vacant_powers.length;
+            const tag = document.createElement('span');
+            tag.className = 'lobby-tag';
+            tag.textContent = 'In progress';
+            header.appendChild(tag);
+            players.textContent += vacant ? ` · ${vacant} vacant ${vacant === 1 ? 'power' : 'powers'}` : ' · spectators only';
+        }
 
         item.append(header, players);
 
@@ -79,6 +87,41 @@ async function loadLobbies() {
 
 document.getElementById('lobby-refresh').addEventListener('click', loadLobbies);
 
+// Joining a game that is already running needs the host's approval: wait on the request socket for the answer.
+let joinWaiter = null;
+
+function waitForApproval(lobbyId, lobbyName, request) {
+    const submit = document.getElementById('join-submit');
+    submit.disabled = true;
+    messageEl.textContent = 'Waiting for the host to let you in...';
+    const url = `${API_BASE.replace(/^http/, 'ws')}/ws/lobbies/${encodeURIComponent(lobbyId)}/requests/${encodeURIComponent(request.request_id)}`;
+    const ws = new WebSocket(url);
+    joinWaiter = ws;
+    let ping;
+    let answer = null;
+    ws.onopen = () => { ws.send(request.request_token); ping = setInterval(() => ws.send('ping'), 25000); };
+    ws.onmessage = e => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'join_accepted') {
+            answer = msg;
+            rememberSeat(msg.lobby_id, msg.lobby_name, msg.user_name, msg.secret_token);
+            sessionStorage.setItem('power', msg.power);
+            sessionStorage.setItem('diplomacyMap', msg.map);
+            location.href = 'multiplayer-client.html';
+        } else if (msg.type === 'join_rejected') {
+            answer = msg;
+        }
+    };
+    ws.onclose = e => {
+        clearInterval(ping);
+        joinWaiter = null;
+        if (answer?.type === 'join_accepted') return;
+        messageEl.textContent = answer?.message || LOBBY_CLOSE_MESSAGES[e.code] || 'Lost connection while waiting for the host.';
+        submit.disabled = false;
+        loadLobbies();
+    };
+}
+
 document.getElementById('join-submit').addEventListener('click', async () => {
     const name = document.getElementById('join-name').value.trim();
     let password = document.getElementById('lobby-password').value.trim();
@@ -95,13 +138,17 @@ document.getElementById('join-submit').addEventListener('click', async () => {
         messageEl.textContent = r.message;
         return;
     }
-    sessionStorage.setItem('diplomacyGameCode', selectedLobby);
-    sessionStorage.setItem('diplomacyGameID', selectedLobbyID);
-    sessionStorage.setItem('diplomacyPlayerName', name);
-    sessionStorage.setItem('secretToken', r.secret_token);
+    if (r.pending) {
+        waitForApproval(selectedLobbyID, selectedLobby, r);
+        return;
+    }
+    rememberSeat(selectedLobbyID, selectedLobby, name, r.secret_token);
     location.href = 'lobby.html';
 });
 
-document.getElementById('join-back').addEventListener('click', () => { location.href = 'index.html'; });
+document.getElementById('join-back').addEventListener('click', () => {
+    if (joinWaiter) joinWaiter.close();
+    location.href = 'index.html';
+});
 
 loadLobbies();

@@ -40,6 +40,20 @@
         <button id="download-save" class="btn btn-secondary">Download Save</button>
         <button id="resolve" class="btn">Render Orders</button>
         <p class="host-note">Only the host can render and resolve orders.</p>
+        <div id="host-tools" class="host-tools">
+          <p class="section-header">Players Joining</p>
+          <p id="vacant-powers" class="host-note"></p>
+          <button id="toggle-joins" class="btn btn-secondary">Open Game to New Players</button>
+          <div id="join-requests" class="hidden">
+            <ul id="join-request-list" class="lobby-list"></ul>
+          </div>
+          <div id="assign-power" class="hidden">
+            <p class="section-header">Fill a Vacant Power</p>
+            <select id="assign-player" aria-label="Spectator"></select>
+            <select id="assign-power-select" aria-label="Vacant power"></select>
+            <button id="assign-power-btn" class="btn">Assign Power</button>
+          </div>
+        </div>
       </div>
       <button id="leave-game" class="btn btn-danger">Leave Game</button>
     </div>

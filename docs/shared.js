@@ -56,90 +56,218 @@ const LOBBY_CLOSE_MESSAGES = {
     4404: 'This lobby no longer exists.',
     4401: 'Could not verify your identity. Please rejoin the lobby.',
     4403: 'You are not a member of this lobby.',
-    4409: 'You are already connected to this lobby.',
+    4409: 'This seat was opened in another tab or window.',
     4410: 'You were kicked from the lobby by the host.',
+    4408: 'The host did not answer your request in time.',
+    4412: 'The host declined your request to join.',
 };
+// Closes that mean the seat is gone (or in use elsewhere), so reconnecting would not help.
+const FINAL_CLOSE_CODES = [4401, 4403, 4404, 4409, 4410];
+const SEAT_LOST_CLOSE_CODES = [4403, 4404, 4410];
 
-// Set by the host and lobby pages so the current host gets a Kick button next to every other player.
+// The seat survives in localStorage so a player who closes the tab or loses connection can rejoin from the menu.
+const SESSION_KEY = 'diplomacySession';
+
+function rememberSeat(lobbyId, lobbyName, userName, secretToken) {
+    sessionStorage.setItem('diplomacyGameID', lobbyId);
+    sessionStorage.setItem('diplomacyGameName', lobbyName);
+    sessionStorage.setItem('diplomacyGameCode', lobbyName);
+    sessionStorage.setItem('diplomacyPlayerName', userName);
+    sessionStorage.setItem('secretToken', secretToken);
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ lobbyId, lobbyName, userName, secretToken }));
+}
+
+function loadSession() {
+    try {
+        const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+        return session && session.lobbyId && session.userName && session.secretToken ? session : null;
+    } catch {
+        return null;
+    }
+}
+
+function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+}
+
+// Set by the lobby and game pages so the current host gets Kick and Make host buttons next to other players.
 let playerListKickEnabled = false;
 
-function renderPlayerList(players, selfName, powers = {}) {
-    const canKick = playerListKickEnabled && gameInfo.host === selfName;
+function renderPlayerList(players, selfName, powers = {}, connected = null) {
+    if (connected) gameInfo.connected = connected;
+    const online = gameInfo.connected;
+    const inGame = Boolean(gameInfo.state);
+    const canManage = playerListKickEnabled && gameInfo.host === selfName;
     const colors = Object.fromEntries((mapData?.players ?? []).map(p => [p.name, p.color]));
     const list = document.getElementById('player-list');
     list.innerHTML = '';
     for (const name of players) {
+        const isOnline = !online || online.includes(name);
         const item = document.createElement('li');
-        item.className = 'player-item';
+        item.className = 'player-item' + (isOnline ? '' : ' player-offline');
         const color = colors[powers[name]];
         if (color) item.style.borderLeftColor = color;
         const label = document.createElement('span');
         label.textContent = name === selfName ? `${name} (you)` : name;
         if (color) label.style.color = color;
+        if (name === gameInfo.host) {
+            const tag = document.createElement('span');
+            tag.className = 'player-tag';
+            tag.textContent = 'host';
+            label.append(' ', tag);
+        }
         const power = document.createElement('span');
         power.className = 'player-power';
-        power.textContent = powers[name] || 'No power selected';
+        power.textContent = (powers[name] || 'No power selected') + (isOnline ? '' : ' · disconnected');
         const details = document.createElement('div');
         details.className = 'player-details';
         details.append(label, power);
         item.appendChild(details);
 
-        if (canKick && name !== selfName) {
-            const kick = document.createElement('button');
-            kick.className = 'order-delete';
-            kick.type = 'button';
-            kick.textContent = 'Kick';
-            kick.title = 'Kick this player';
-            kick.setAttribute('aria-label', `Kick player: ${name}`);
-            kick.addEventListener('click', () => {
-                confirmAction('Kick Player', `Remove ${name} from the game?`, async () => {
-                    kick.disabled = true;
-                    try {
-                        const reply = await sendForReply({ type: 'kick_player', user_name: name }, 'kick_result');
-                        if (!reply.ok) {
-                            setStatus(reply.error);
-                            kick.disabled = false;
-                        }
-                    } catch (e) {
-                        setStatus(e.message);
-                        kick.disabled = false;
-                    }
-                });
-            });
-            item.appendChild(kick);
+        if (canManage && name !== selfName) {
+            const buttons = document.createElement('div');
+            buttons.className = 'player-buttons';
+            // During a game the host has to control a power, so spectators cannot take the role.
+            if (isOnline && !(inGame && (!powers[name] || powers[name] === 'Spectator'))) {
+                buttons.appendChild(playerActionButton('Make host', 'player-action', `Make ${name} the host`, button => {
+                    confirmAction('Hand Over Host', `Make ${name} the host? They can hand it back to you later.`,
+                        () => sendHostAction(button, { type: 'transfer_host', user_name: name }, 'host_transfer_result'));
+                }));
+            }
+            buttons.appendChild(playerActionButton('Kick', 'order-delete', `Kick player: ${name}`, button => {
+                const held = inGame && powers[name] && powers[name] !== 'Spectator';
+                const message = held
+                    ? `Remove ${name} from the game? ${powers[name]} will become vacant: its units hold until you give it to someone else.`
+                    : `Remove ${name} from the game?`;
+                confirmAction('Kick Player', message,
+                    () => sendHostAction(button, { type: 'kick_player', user_name: name }, 'kick_result'));
+            }));
+            item.appendChild(buttons);
         }
         list.appendChild(item);
     }
 }
 
-// Shared by the lobby and game pages; onMessage sees every server message first.
+function playerActionButton(text, className, label, onClick) {
+    const button = document.createElement('button');
+    button.className = className;
+    button.type = 'button';
+    button.textContent = text;
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.addEventListener('click', () => onClick(button));
+    return button;
+}
+
+// Sends a host-only command; the button is re-enabled if the server refuses it.
+async function sendHostAction(button, payload, replyType) {
+    if (button) button.disabled = true;
+    try {
+        const reply = await sendForReply(payload, replyType);
+        if (!reply.ok) {
+            setStatus(reply.error);
+            if (button) button.disabled = false;
+        }
+        return reply;
+    } catch (e) {
+        setStatus(e.message);
+        if (button) button.disabled = false;
+        return { ok: false, error: e.message };
+    }
+}
+
+function lobbyEventMessage(msg, userName) {
+    const who = msg.user_name;
+    const self = who === userName;
+    const inGame = msg.started;
+    switch (msg.event) {
+        case 'joined':
+            return self ? null : `${who} ${inGame ? 'connected' : 'joined the lobby'}`;
+        case 'left':
+            return self ? null : `${who} left the ${inGame ? 'game' : 'lobby'}`;
+        case 'kicked':
+            return `${who} was kicked by the host`;
+        case 'disconnected':
+            return `${who} lost connection. Their seat is kept until they return or the host kicks them.`;
+        case 'host_changed':
+            return self ? 'You are now the host.' : `${who} is now the host`;
+        case 'power_assigned':
+            return self ? `You now control ${msg.power}.` : `${who} now controls ${msg.power}`;
+        case 'admitted':
+            return `${who} joined the game as ${msg.power === 'Spectator' ? 'a spectator' : msg.power}`;
+        case 'join_request':
+            return msg.host === userName ? `${who} is asking to join. Answer in Host Controls.` : null;
+        case 'joins_toggled':
+            return `The game is ${msg.accepting_joins ? 'now open' : 'closed'} to new players`;
+        default:
+            return null;
+    }
+}
+
+// Shared by the lobby and game pages; onMessage sees every server message first. The returned connection
+// reconnects on its own after a dropped connection, so callers keep using the same object.
 function watchLobby(lobbyId, userName, secretToken, onMessage = () => {}) {
     const mainDiv = document.getElementById('main');
-    return connectLobby(lobbyId, userName, secretToken, msg => {
-        onMessage(msg);
-        const pending = pendingReplies[msg.type];
-        if (pending && pending.length > 0) {
-            pending.shift()(msg);
-            if (pending.length === 0) delete pendingReplies[msg.type];
+    const conn = {
+        socket: null,
+        leaving: false,
+        get readyState() { return this.socket ? this.socket.readyState : WebSocket.CLOSED; },
+        send(data) { this.socket.send(data); },
+        addEventListener(type, listener) { this.socket.addEventListener(type, listener); },
+    };
+    let retryDelay = 1000;
+    let retryTimer = null;
+    let reconnecting = false;
+
+    const open = () => {
+        retryTimer = null;
+        conn.socket = connectLobby(lobbyId, userName, secretToken, msg => {
+            if (reconnecting) {
+                reconnecting = false;
+                mainDiv.classList.remove('disabled-div');
+                setStatus('Reconnected.');
+            }
+            retryDelay = 1000;
+            onMessage(msg);
+            const pending = pendingReplies[msg.type];
+            if (pending && pending.length > 0) {
+                pending.shift()(msg);
+                if (pending.length === 0) delete pendingReplies[msg.type];
+            }
+            if (msg.type !== 'lobby_update') return;
+            renderPlayerList(msg.players, userName, msg.selected_powers, msg.connected_players);
+            const status = lobbyEventMessage(msg, userName);
+            if (status) setStatus(status);
+        }, code => {
+            if (conn.leaving) return;
+            if (SEAT_LOST_CLOSE_CODES.includes(code)) clearSession();
+            mainDiv.classList.add('disabled-div');
+            if (FINAL_CLOSE_CODES.includes(code)) {
+                renderPlayerList([], userName);
+                setStatus(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.');
+                return;
+            }
+            reconnecting = true;
+            setStatus(`Connection lost. Reconnecting in ${Math.round(retryDelay / 1000)}s...`);
+            retryTimer = setTimeout(open, retryDelay);
+            retryDelay = Math.min(retryDelay * 2, 30000);
+        });
+    };
+    // Retry right away when the browser reports the network is back.
+    window.addEventListener('online', () => {
+        if (retryTimer !== null) {
+            clearTimeout(retryTimer);
+            open();
         }
-        if (msg.type !== 'lobby_update') return;
-        renderPlayerList(msg.players, userName, msg.selected_powers);
-        if (msg.user_name !== userName && (msg.event === 'joined' || msg.event === 'left')) {
-            setStatus(`${msg.user_name} ${msg.event === 'joined' ? 'joined' : 'left'} the lobby`);
-        } else if (msg.event === 'kicked') {
-            setStatus(`${msg.user_name} was kicked by the host`);
-        }
-    }, code => {
-        renderPlayerList([], userName);
-        setStatus(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.');
-        mainDiv.classList.add('disabled-div');
     });
+    open();
+    return conn;
 }
 
 // In-game state: the lobby socket doubles as the game socket once the game has started.
 let gameSocket = null;
 const pendingReplies = {};
-const gameInfo = { base: '', host: '', userName: '', power: sessionStorage.getItem('power') || '', state: null, latestSave: null };
+const gameInfo = { base: '', host: '', userName: '', power: sessionStorage.getItem('power') || '', state: null, latestSave: null, connected: null, lobby: null };
 
 // What this power can act on in the current phase.
 function phaseInfoLines(state, power) {
@@ -206,7 +334,8 @@ function applyGameState(state) {
     gameInfo.power = state.player_power ?? gameInfo.power;
     gameInfo.host = state.host ?? gameInfo.host;
     sessionStorage.setItem('power', gameInfo.power);
-    if (state.lobby_players) renderPlayerList(state.lobby_players, gameInfo.userName, state.selected_powers);
+    if (state.lobby_players) renderPlayerList(state.lobby_players, gameInfo.userName, state.selected_powers, state.connected_players);
+    renderHostTools(state);
     const resolveBtn = document.getElementById('resolve');
     if (resolveBtn) resolveBtn.textContent = state.orders_revealed ? 'Resolve Orders' : 'Render Orders';
     renderSubmittedOrders(state);
@@ -290,6 +419,7 @@ function handleGameMessage(msg) {
         }
         updateGameRole();
         renderGameInfo();
+        renderHostTools(msg);
     } else if (msg.type === 'game_state') {
         applyGameState(msg.state);
     } else if (['order_result', 'order_delete_result', 'draw_result', 'reveal_result', 'resolve_result', 'kick_result'].includes(msg.type)) {
@@ -307,8 +437,103 @@ function handleGameMessage(msg) {
     }
 }
 
+// Host tools during a game: open the game to newcomers, answer join requests, and fill vacant powers.
+// Selections survive re-renders, which happen on every lobby update and game state.
+const joinRequestChoices = {};
+
+function optionList(select, values, labels = {}) {
+    const previous = select.value;
+    select.innerHTML = '';
+    for (const value of values) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = labels[value] || value;
+        select.appendChild(option);
+    }
+    if (values.includes(previous)) select.value = previous;
+}
+
+function renderHostTools(source) {
+    const tools = document.getElementById('host-tools');
+    if (!tools || !source) return;
+    const players = source.players || source.lobby_players || [];
+    gameInfo.lobby = {
+        vacant: source.vacant_powers || [],
+        accepting: Boolean(source.accepting_joins),
+        requests: source.join_requests || [],
+        spectators: players.filter(p => source.selected_powers?.[p] === 'Spectator'),
+    };
+    const { vacant, accepting, requests, spectators } = gameInfo.lobby;
+
+    document.getElementById('toggle-joins').textContent = accepting
+        ? 'Stop Accepting New Players' : 'Open Game to New Players';
+    document.getElementById('vacant-powers').textContent = vacant.length
+        ? `Vacant powers: ${vacant.join(', ')}` : 'No vacant powers.';
+
+    const requestSection = document.getElementById('join-requests');
+    const requestList = document.getElementById('join-request-list');
+    requestSection.classList.toggle('hidden', requests.length === 0);
+    requestList.innerHTML = '';
+    for (const id of Object.keys(joinRequestChoices)) {
+        if (!requests.some(r => r.request_id === id)) delete joinRequestChoices[id];
+    }
+    for (const req of requests) {
+        const item = document.createElement('li');
+        item.className = 'join-request';
+        const label = document.createElement('span');
+        label.className = 'join-request-name';
+        label.textContent = `${req.user_name} wants to join`;
+        const choice = document.createElement('select');
+        optionList(choice, ['Spectator', ...vacant], { Spectator: 'As a spectator' });
+        if (joinRequestChoices[req.request_id] && [...choice.options].some(o => o.value === joinRequestChoices[req.request_id])) {
+            choice.value = joinRequestChoices[req.request_id];
+        }
+        choice.addEventListener('change', () => { joinRequestChoices[req.request_id] = choice.value; });
+        const buttons = document.createElement('div');
+        buttons.className = 'player-buttons';
+        const accept = playerActionButton('Accept', 'player-action', `Let ${req.user_name} in`, button => {
+            const power = choice.value;
+            const payload = power === 'Spectator'
+                ? { type: 'answer_join', request_id: req.request_id, decision: 'spectator' }
+                : { type: 'answer_join', request_id: req.request_id, decision: 'power', power };
+            sendHostAction(button, payload, 'join_answer_result');
+        });
+        const reject = playerActionButton('Reject', 'order-delete', `Turn ${req.user_name} away`, button => {
+            sendHostAction(button, { type: 'answer_join', request_id: req.request_id, decision: 'reject' }, 'join_answer_result');
+        });
+        buttons.append(accept, reject);
+        item.append(label, choice, buttons);
+        requestList.appendChild(item);
+    }
+
+    const assignSection = document.getElementById('assign-power');
+    assignSection.classList.toggle('hidden', vacant.length === 0 || spectators.length === 0);
+    optionList(document.getElementById('assign-player'), spectators);
+    optionList(document.getElementById('assign-power-select'), vacant);
+}
+
+function initHostTools() {
+    const toggle = document.getElementById('toggle-joins');
+    if (!toggle) return;
+    toggle.addEventListener('click', async () => {
+        const value = !gameInfo.lobby?.accepting;
+        const reply = await sendHostAction(toggle, { type: 'set_accepting_joins', value }, 'accepting_joins_result');
+        if (reply.ok) toggle.disabled = false;
+    });
+    const assign = document.getElementById('assign-power-btn');
+    assign.addEventListener('click', async () => {
+        const userName = document.getElementById('assign-player').value;
+        const power = document.getElementById('assign-power-select').value;
+        if (!userName || !power) return;
+        const reply = await sendHostAction(assign, { type: 'assign_power', user_name: userName, power }, 'assign_power_result');
+        if (reply.ok) assign.disabled = false;
+    });
+}
+
 // Tells the server this is a deliberate exit so it can hand over the host and close the lobby right away.
 function leaveLobby(socket) {
+    clearSession();
+    if (socket) socket.leaving = true;
     return new Promise(resolve => {
         if (!socket || socket.readyState !== WebSocket.OPEN) {
             resolve();
