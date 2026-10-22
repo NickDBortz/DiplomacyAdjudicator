@@ -561,6 +561,68 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     color: #888;
 }
 
+.player-offline .player-details {
+    opacity: 0.55;
+}
+
+.player-tag,
+.lobby-tag {
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #3b4a5c;
+    color: #cfe0f5;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+}
+
+.lobby-tag {
+    background: #4a3f1f;
+    color: #e8cf7a;
+}
+
+.player-buttons {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 4px;
+}
+
+.player-action {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    color: #9cc4ef;
+    background: transparent;
+    border: 1px solid #36506b;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.player-action:hover {
+    background: #22303f;
+}
+
+.player-action:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.join-request {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 0;
+    border-bottom: 1px solid #333;
+    color: #ddd;
+    font-size: 13px;
+}
+
+.join-request select {
+    margin: 0;
+    width: 100%;
+}
+
 .submitted-orders {
     list-style: none;
     margin: 0 16px 16px;

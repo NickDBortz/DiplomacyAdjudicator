@@ -6,6 +6,7 @@ import threading
 import uuid
 import secrets
 import hashlib
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -18,11 +19,18 @@ MAX_SAVE_BYTES = 2_000_000
 MAX_LOBBIES = 200
 MAX_GAMES = 200
 MAX_ORDER_LENGTH = 200
-REJOIN_GRACE_SECONDS = 10  # players moving from the lobby page to the game page reconnect within this
+REJOIN_GRACE_SECONDS = 10  # page changes and refreshes reconnect within this, so nobody is announced as gone
+HOST_HANDOVER_SECONDS = 60  # a disconnected host keeps the role this long before it passes to a connected player
+ABANDONED_LOBBY_SECONDS = 2 * 60 * 60  # a running game with nobody connected is deleted after this
+JOIN_REQUEST_TIMEOUT_SECONDS = 180
+MAX_JOIN_REQUESTS = 5  # pending requests per lobby
 MAPS_DIR = Path(__file__).resolve().parent / 'data' / 'maps'
 DEFAULT_MAP = 'classic_map'
 SPECTATOR_POWER = 'Spectator'
 KICKED_CLOSE_CODE = 4410
+REPLACED_CLOSE_CODE = 4409  # the same seat connected from another tab or window
+JOIN_EXPIRED_CLOSE_CODE = 4408
+JOIN_REJECTED_CLOSE_CODE = 4412
 AUTH_FAILED_CLOSE_CODE = 4401
 AUTH_TIMEOUT_SECONDS = 10  # how long a new socket has to send its secret token
 
@@ -38,6 +46,7 @@ _lobbies = {}
 _lobby_sockets = {}  # lobby id -> {user_name: WebSocket}
 _lobby_games = {}  # lobby id -> Game, created when the host starts the lobby
 _lobby_pending_games = {}  # restored Game objects waiting for the host to start the lobby
+_join_waiters = {}  # join request id -> WebSocket of the person waiting for the host's answer
 _background_tasks = set()
 _lock = threading.Lock()
 _games = {}  # single-player games; independent of lobbies
@@ -94,13 +103,52 @@ def _available_powers(map_id):
     except (OSError, ValueError, KeyError):
         return []
 
+def _connected_names(lobby):
+    return set(_lobby_sockets.get(lobby['id'], {}))
+
+def _power_is_alive(state, power):
+    return bool(power.get_supply_centers(state.territory_list)) or any(not unit.disbanded for unit in power.units)
+
+def _vacant_powers(lobby):
+    """Powers still in a running game that no player controls; their units hold until someone takes over."""
+    game = _lobby_games.get(lobby['id'])
+    if game is None or game.game_state.winner is not None or game.game_state.draw:
+        return []
+    state = game.game_state
+    assigned = {p['selected_power'] for p in lobby['players']}
+    return sorted(p.name for p in state.player_list if p.name not in assigned and _power_is_alive(state, p))
+
+def _open_join_requests(lobby):
+    """Requests whose sender is connected and waiting; those are the ones the host can answer."""
+    return [{'request_id': rid, 'user_name': r['user_name']}
+            for rid, r in lobby.get('join_requests', {}).items() if rid in _join_waiters]
+
+def _pick_successor(lobby, exclude=None, require_power=False, require_connected=False):
+    """Next host: prefers connected players who control a power. Returns None if nobody qualifies."""
+    connected = _connected_names(lobby)
+    names = [p['user_name'] for p in lobby['players'] if p['user_name'] != exclude]
+    for needs_power, needs_connection in ((True, True), (False, True), (True, False), (False, False)):
+        if (require_power and not needs_power) or (require_connected and not needs_connection):
+            continue
+        match = next((n for n in names
+                      if (not needs_power or _power_of(lobby, n) is not None)
+                      and (not needs_connection or n in connected)), None)
+        if match is not None:
+            return match
+    return None
+
 def _snapshot(lobby):
     return {
         'players': [p['user_name'] for p in lobby['players']],
         'selected_powers': {p['user_name']: p['selected_power'] for p in lobby['players']},
+        'connected_players': sorted(_connected_names(lobby)),
         'host': lobby['host'],
+        'started': lobby['started'],
         'settings': lobby['settings'],
         'prepared_save': lobby.get('prepared_save'),
+        'vacant_powers': _vacant_powers(lobby),
+        'accepting_joins': lobby.get('accepting_joins', False),
+        'join_requests': _open_join_requests(lobby),
     }
 
 @app.get('/health')
@@ -135,6 +183,8 @@ def open_lobby(lobby_request: LobbyRequest):
             'started': False,
             'settings': {'map': DEFAULT_MAP},
             'players': [{'user_name': user_name, 'selected_power': None, 'secret_token': secret_token}],
+            'accepting_joins': False,
+            'join_requests': {},
         }
     return {'ok': True, 'lobby': _get_client_safe_lobby(_lobbies[lobby_name]), 'secret_token': secret_token}
 
@@ -144,10 +194,19 @@ def get_maps():
 
 @app.get('/lobbies')
 def get_lobbies():
+    """Open lobbies, plus running games whose host is accepting join requests."""
     lobbies = {}
-    for key, value in _lobbies.items():
-        if not value['started']:
-            lobbies[key] = {'id': value['id'], 'needs_password': value['needs_password'], 'Players': len(value['players'])}
+    with _lock:
+        for key, value in _lobbies.items():
+            if value['started'] and not value.get('accepting_joins'):
+                continue
+            lobbies[key] = {
+                'id': value['id'],
+                'needs_password': value['needs_password'],
+                'Players': len(value['players']),
+                'in_progress': value['started'],
+                'vacant_powers': _vacant_powers(value) if value['started'] else [],
+            }
     return lobbies
 
 @app.get('/lobbies/{lobby_id}/powers')
@@ -160,25 +219,47 @@ def get_lobby_powers(lobby_id: str):
         taken = {p['selected_power'] for p in lobby['players'] if p['selected_power']}
         return [p for p in _available_powers(lobby['settings']['map']) if p not in taken]
 
+def _prune_join_requests(lobby):
+    """Drops expired requests whose sender never connected to wait; connected waiters time out on their own."""
+    now = time.monotonic()
+    requests = lobby.setdefault('join_requests', {})
+    for rid in [rid for rid, r in requests.items() if r['expires'] <= now and rid not in _join_waiters]:
+        del requests[rid]
+
 @app.post('/join_lobby/{lobby_id}')
 def join_lobby(lobby_id: str, req: JoinRequest):
     with _lock:
-        for key, value in _lobbies.items():
-            if value['id'] == lobby_id:
-                if value['started']:
-                    return {'ok': False, 'message': 'Game already started.'}
-                if value['id'] in _lobby_pending_games:
-                    return {'ok': False, 'message': 'A save is prepared; the host must start or cancel it first.'}
-                if any(p['user_name'] == req.user_name for p in value['players']):
-                    return {'ok': False, 'message': 'Name already taken in this lobby.'}
-                if value['needs_password']:
-                    _, hash = _get_salt_hash(req.lobby_password, _lobbies[key]['salt'])
-                    if not secrets.compare_digest(hash, _lobbies[key]['hash']):
-                        return {'ok': False, 'message': 'Incorrect password.'}
-                secret_token = _get_player_token()
-                _lobbies[key]['players'].append({'user_name': req.user_name, 'selected_power': None, 'secret_token': secret_token})
-                return {'ok': True, 'lobby': _get_client_safe_lobby(_lobbies[key]), 'secret_token': secret_token}
-    return {'ok': False, 'message': 'Lobby does not exist.'}
+        _, lobby = _find_lobby(lobby_id)
+        if lobby is None:
+            return {'ok': False, 'message': 'Lobby does not exist.'}
+        if lobby['started'] and not lobby.get('accepting_joins'):
+            return {'ok': False, 'message': 'Game already started.'}
+        if lobby['id'] in _lobby_pending_games:
+            return {'ok': False, 'message': 'A save is prepared; the host must start or cancel it first.'}
+        _prune_join_requests(lobby)
+        if any(p['user_name'] == req.user_name for p in lobby['players']) or any(
+                r['user_name'] == req.user_name for r in lobby['join_requests'].values()):
+            return {'ok': False, 'message': 'Name already taken in this lobby.'}
+        if lobby['needs_password']:
+            _, hash = _get_salt_hash(req.lobby_password, lobby['salt'])
+            if not secrets.compare_digest(hash, lobby['hash']):
+                return {'ok': False, 'message': 'Incorrect password.'}
+        if lobby['started']:
+            # Running games need the host's approval; the client waits on the request socket for the answer.
+            if len(lobby['join_requests']) >= MAX_JOIN_REQUESTS:
+                return {'ok': False, 'message': 'Too many people are waiting to join. Try again shortly.'}
+            request_id = uuid.uuid4().hex
+            request_token = _get_player_token()
+            lobby['join_requests'][request_id] = {
+                'user_name': req.user_name,
+                'token': request_token,
+                'expires': time.monotonic() + JOIN_REQUEST_TIMEOUT_SECONDS,
+            }
+            return {'ok': True, 'pending': True, 'request_id': request_id, 'request_token': request_token,
+                    'lobby': _get_client_safe_lobby(lobby)}
+        secret_token = _get_player_token()
+        lobby['players'].append({'user_name': req.user_name, 'selected_power': None, 'secret_token': secret_token})
+        return {'ok': True, 'lobby': _get_client_safe_lobby(lobby), 'secret_token': secret_token}
 
 def _game_save_data(lobby):
     return {
@@ -276,7 +357,17 @@ def _remove_player(lobby_id, user_name):
     name, lobby = _find_lobby(lobby_id)
     if lobby is None or not any(p['user_name'] == user_name for p in lobby['players']):
         return None
+    removed = next(p for p in lobby['players'] if p['user_name'] == user_name)
     lobby['players'] = [p for p in lobby['players'] if p['user_name'] != user_name]
+    game = _lobby_games.get(lobby_id)
+    if game is not None and removed['selected_power'] not in (None, SPECTATOR_POWER):
+        # The power is now vacant: its units hold, and a vote it can no longer withdraw should not count.
+        power = game.game_state.get_player(removed['selected_power'])
+        if power in game.game_state.draw_votes:
+            game.game_state.draw_votes.remove(power)
+        # Everyone still playing may already have voted, in which case the game ends now.
+        if game.game_state.winner is None and not game.game_state.draw:
+            game.game_state.check_draw(_draw_voters(lobby, game))
     if lobby_id in _lobby_pending_games:
         _lobby_pending_games.pop(lobby_id, None)
         lobby.pop('prepared_save', None)
@@ -289,20 +380,59 @@ def _remove_player(lobby_id, user_name):
         _lobby_pending_games.pop(lobby_id, None)
         return None
     if lobby['host'] == user_name:
-        lobby['host'] = next(
-            (p['user_name'] for p in lobby['players'] if _power_of(lobby, p['user_name']) is not None),
-            lobby['players'][0]['user_name'],
-        )
+        lobby['host'] = _pick_successor(lobby)
     return _snapshot(lobby)
 
-async def _drop_after_grace(lobby_id, user_name):
+def _spawn(coro):
+    task = asyncio.create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+async def _after_disconnect(lobby_id, user_name):
+    """A socket closed without a deliberate leave. Running games keep the seat until the player leaves or the
+    host kicks them; lobbies that have not started drop the player once the grace period passes."""
     await asyncio.sleep(REJOIN_GRACE_SECONDS)
     with _lock:
-        if user_name in _lobby_sockets.get(lobby_id, {}):
-            return  # reconnected
-        snapshot = _remove_player(lobby_id, user_name)
+        _, lobby = _find_lobby(lobby_id)
+        if lobby is None or user_name in _lobby_sockets.get(lobby_id, {}):
+            return  # gone, or reconnected
+        if not lobby['started']:
+            snapshot, event = _remove_player(lobby_id, user_name), 'left'
+        elif any(p['user_name'] == user_name for p in lobby['players']):
+            snapshot, event = _snapshot(lobby), 'disconnected'
+        else:
+            return
+        watch_host = lobby['started'] and lobby['host'] == user_name
+        abandoned = lobby['started'] and not _lobby_sockets.get(lobby_id)
     if snapshot is not None:
-        await _broadcast(lobby_id, {'type': 'lobby_update', 'event': 'left', 'user_name': user_name, **snapshot})
+        await _broadcast(lobby_id, {'type': 'lobby_update', 'event': event, 'user_name': user_name, **snapshot})
+    if abandoned:
+        _spawn(_close_if_abandoned(lobby_id))
+    if not watch_host:
+        return
+
+    await asyncio.sleep(max(0, HOST_HANDOVER_SECONDS - REJOIN_GRACE_SECONDS))
+    with _lock:
+        _, lobby = _find_lobby(lobby_id)
+        if lobby is None or lobby['host'] != user_name or user_name in _lobby_sockets.get(lobby_id, {}):
+            return
+        successor = _pick_successor(lobby, exclude=user_name, require_power=True, require_connected=True)
+        if successor is None:
+            return  # nobody connected can take over, so the role waits for the host to return
+        lobby['host'] = successor
+        snapshot = _snapshot(lobby)
+    await _broadcast(lobby_id, {'type': 'lobby_update', 'event': 'host_changed', 'user_name': successor,
+                                'previous_host': user_name, **snapshot})
+
+async def _close_if_abandoned(lobby_id):
+    await asyncio.sleep(ABANDONED_LOBBY_SECONDS)
+    with _lock:
+        name, lobby = _find_lobby(lobby_id)
+        if lobby is None or _lobby_sockets.get(lobby_id):
+            return
+        del _lobbies[name]
+        _lobby_games.pop(lobby_id, None)
+        _lobby_pending_games.pop(lobby_id, None)
 
 async def _broadcast(lobby_id, payload):
     for ws in list(_lobby_sockets.get(lobby_id, {}).values()):
@@ -323,6 +453,11 @@ def _power_of(lobby, user_name):
     power = next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
     return None if power == SPECTATOR_POWER else power
 
+def _draw_voters(lobby, game):
+    """Only powers a player controls vote on a draw; vacant powers cannot vote, so they do not block one."""
+    held = {p['selected_power'] for p in lobby['players']}
+    return [p for p in game.game_state.player_list if p.name in held]
+
 def _update_eliminations(lobby):
     game = _lobby_games[lobby['id']]
     state = game.game_state
@@ -342,7 +477,7 @@ def _update_eliminations(lobby):
             eliminated.append(member['user_name'])
 
     if _power_of(lobby, lobby['host']) is None:
-        successor = next((p['user_name'] for p in lobby['players'] if _power_of(lobby, p['user_name']) is not None), None)
+        successor = _pick_successor(lobby, require_power=True)
         if successor is not None:
             lobby['host'] = successor
 
@@ -357,6 +492,10 @@ def _view(lobby, power, user_name):
     state['lobby_players'] = [p['user_name'] for p in lobby['players']]
     state['selected_powers'] = {p['user_name']: p['selected_power'] for p in lobby['players']}
     state['eliminated_players'] = list(lobby.get('eliminated', []))
+    state['connected_players'] = sorted(_connected_names(lobby))
+    state['vacant_powers'] = _vacant_powers(lobby)
+    state['accepting_joins'] = lobby.get('accepting_joins', False)
+    state['join_requests'] = _open_join_requests(lobby)
     return state
 
 def _game_views(lobby):
@@ -441,28 +580,162 @@ def _handle_game_message(lobby, user_name, kind, msg):
         view = _view(lobby, power, user_name)
         return {'type': 'order_result', 'ok': True, 'error': None, 'orders': view['orders'], 'state': view}, _game_views(lobby)
 
-    game.game_state.vote_draw(player)
+    game.game_state.vote_draw(player, _draw_voters(lobby, game))
     reply = {'type': 'draw_result', 'ok': True, 'error': None, 'draw_votes': [p.name for p in game.game_state.draw_votes]}
     return reply, _game_views(lobby)
 
-def _kick_player(lobby, user_name, target):
-    """Host only: removes another player. Returns (reply, broadcast payload, socket to close). Call with _lock held."""
-    def fail(error):
-        return {'type': 'kick_result', 'ok': False, 'error': error}, None, None
+def _host_action_fail(reply_type, error):
+    return {'type': reply_type, 'ok': False, 'error': error}, None, None, []
 
+def _host_action_ok(reply_type, payload, views=None, closes=()):
+    return {'type': reply_type, 'ok': True, 'error': None}, payload, views, list(closes)
+
+# Host-only actions. Each returns (reply, lobby_update payload, game views, [(socket, final message, close code)]).
+# Call with _lock held; sockets are closed after the lock is released.
+
+def _kick_player(lobby, user_name, msg):
+    """Removes another player. In a running game their power becomes vacant; this is also how the host releases
+    the seat of someone who disconnected and is not coming back."""
+    reply_type = 'kick_result'
+    target = msg.get('user_name')
     if lobby['host'] != user_name:
-        return fail('Only the host can kick players.')
+        return _host_action_fail(reply_type, 'Only the host can kick players.')
     if not isinstance(target, str) or not any(p['user_name'] == target for p in lobby['players']):
-        return fail('That player is not in the lobby.')
+        return _host_action_fail(reply_type, 'That player is not in the lobby.')
     if target == user_name:
-        return fail('You cannot kick yourself.')
+        return _host_action_fail(reply_type, 'You cannot kick yourself.')
     # Unregister the socket first so its disconnect handler does not treat the kick as a normal leave.
     kicked_socket = _lobby_sockets.get(lobby['id'], {}).pop(target, None)
     snapshot = _remove_player(lobby['id'], target)
     payload = None
+    views = None
     if snapshot is not None:
         payload = {'type': 'lobby_update', 'event': 'kicked', 'user_name': target, **snapshot}
-    return {'type': 'kick_result', 'ok': True, 'error': None}, payload, kicked_socket
+        if lobby['id'] in _lobby_games:
+            views = _game_views(lobby)  # the power is vacant now, and the remaining votes may have ended the game
+    closes = [(kicked_socket, None, KICKED_CLOSE_CODE)] if kicked_socket is not None else []
+    return _host_action_ok(reply_type, payload, views=views, closes=closes)
+
+def _transfer_host(lobby, user_name, msg):
+    reply_type = 'host_transfer_result'
+    target = msg.get('user_name')
+    if lobby['host'] != user_name:
+        return _host_action_fail(reply_type, 'Only the host can hand over the host role.')
+    if not isinstance(target, str) or not any(p['user_name'] == target for p in lobby['players']):
+        return _host_action_fail(reply_type, 'That player is not in the lobby.')
+    if target == user_name:
+        return _host_action_fail(reply_type, 'You are already the host.')
+    if target not in _connected_names(lobby):
+        return _host_action_fail(reply_type, f'{target} is not connected.')
+    if lobby['started'] and _power_of(lobby, target) is None:
+        return _host_action_fail(reply_type, 'During a game the host must control a Great Power.')
+    lobby['host'] = target
+    payload = {'type': 'lobby_update', 'event': 'host_changed', 'user_name': target,
+               'previous_host': user_name, **_snapshot(lobby)}
+    return _host_action_ok(reply_type, payload)
+
+def _assign_power(lobby, user_name, msg):
+    """Gives a vacant power to a spectator in a running game."""
+    reply_type = 'assign_power_result'
+    target, power = msg.get('user_name'), msg.get('power')
+    if lobby['host'] != user_name:
+        return _host_action_fail(reply_type, 'Only the host can assign powers.')
+    if lobby['id'] not in _lobby_games:
+        return _host_action_fail(reply_type, 'The game has not started.')
+    member = next((p for p in lobby['players'] if p['user_name'] == target), None)
+    if member is None:
+        return _host_action_fail(reply_type, 'That player is not in the lobby.')
+    if member['selected_power'] != SPECTATOR_POWER:
+        return _host_action_fail(reply_type, f'{target} already controls {member["selected_power"]}.')
+    if power not in _vacant_powers(lobby):
+        return _host_action_fail(reply_type, 'That power is not vacant.')
+    member['selected_power'] = power
+    if target in lobby.get('eliminated', []):
+        lobby['eliminated'].remove(target)
+    payload = {'type': 'lobby_update', 'event': 'power_assigned', 'user_name': target, 'power': power,
+               **_snapshot(lobby)}
+    return _host_action_ok(reply_type, payload, views=_game_views(lobby))
+
+def _set_accepting_joins(lobby, user_name, msg):
+    reply_type = 'accepting_joins_result'
+    if lobby['host'] != user_name:
+        return _host_action_fail(reply_type, 'Only the host can change that.')
+    lobby['accepting_joins'] = bool(msg.get('value'))
+    closes = []
+    if not lobby['accepting_joins']:
+        # Anyone still waiting is turned away rather than left hanging.
+        rejection = {'type': 'join_rejected', 'message': 'The host stopped accepting new players.'}
+        for rid in list(lobby.get('join_requests', {})):
+            lobby['join_requests'].pop(rid)
+            waiter = _join_waiters.pop(rid, None)
+            if waiter is not None:
+                closes.append((waiter, rejection, JOIN_REJECTED_CLOSE_CODE))
+    payload = {'type': 'lobby_update', 'event': 'joins_toggled', 'user_name': user_name, **_snapshot(lobby)}
+    return _host_action_ok(reply_type, payload, closes=closes)
+
+def _answer_join(lobby, user_name, msg):
+    """decision is 'reject', 'spectator', or 'power' (with a vacant `power`)."""
+    reply_type = 'join_answer_result'
+    request_id, decision = msg.get('request_id'), msg.get('decision')
+    if lobby['host'] != user_name:
+        return _host_action_fail(reply_type, 'Only the host can answer join requests.')
+    request = lobby.get('join_requests', {}).get(request_id) if isinstance(request_id, str) else None
+    waiter = _join_waiters.get(request_id) if request is not None else None
+    if waiter is None:
+        return _host_action_fail(reply_type, 'That request is no longer waiting.')
+    if decision not in ('reject', 'spectator', 'power'):
+        return _host_action_fail(reply_type, 'Unknown decision.')
+    joiner = request['user_name']
+
+    if decision == 'reject':
+        del lobby['join_requests'][request_id]
+        del _join_waiters[request_id]
+        payload = {'type': 'lobby_update', 'event': 'join_rejected', 'user_name': joiner, **_snapshot(lobby)}
+        rejection = {'type': 'join_rejected', 'message': 'The host declined your request.'}
+        return _host_action_ok(reply_type, payload, closes=[(waiter, rejection, JOIN_REJECTED_CLOSE_CODE)])
+
+    if lobby['id'] not in _lobby_games:
+        return _host_action_fail(reply_type, 'The game has not started.')
+    if any(p['user_name'] == joiner for p in lobby['players']):
+        return _host_action_fail(reply_type, f'Someone named {joiner} is already playing. Reject this request.')
+    power = SPECTATOR_POWER
+    if decision == 'power':
+        power = msg.get('power')
+        if power not in _vacant_powers(lobby):
+            return _host_action_fail(reply_type, 'That power is not vacant.')
+
+    secret_token = _get_player_token()
+    lobby['players'].append({'user_name': joiner, 'selected_power': power, 'secret_token': secret_token})
+    del lobby['join_requests'][request_id]
+    del _join_waiters[request_id]
+    accepted = {
+        'type': 'join_accepted',
+        'lobby_id': lobby['id'],
+        'lobby_name': lobby['name'],
+        'user_name': joiner,
+        'secret_token': secret_token,
+        'power': power,
+        'map': lobby['settings']['map'],
+    }
+    payload = {'type': 'lobby_update', 'event': 'admitted', 'user_name': joiner, 'power': power, **_snapshot(lobby)}
+    return _host_action_ok(reply_type, payload, closes=[(waiter, accepted, 1000)])
+
+HOST_ACTIONS = {
+    'kick_player': _kick_player,
+    'transfer_host': _transfer_host,
+    'assign_power': _assign_power,
+    'set_accepting_joins': _set_accepting_joins,
+    'answer_join': _answer_join,
+}
+
+async def _close_sockets(closes):
+    for ws, message, code in closes:
+        try:
+            if message is not None:
+                await ws.send_json(message)
+            await ws.close(code=code)
+        except Exception:
+            pass  # already closed
 
 async def _handle_message(lobby_id, user_name, raw):
     try:
@@ -470,19 +743,19 @@ async def _handle_message(lobby_id, user_name, raw):
     except ValueError:
         return
     kind = msg.get('type') if isinstance(msg, dict) else None
-    if kind not in ('set_map', 'set_power', 'start_game', 'load_saved_game', 'submit_order', 'delete_order', 'draw', 'reveal_orders', 'resolve', 'kick_player'):
+    if kind not in ('set_map', 'set_power', 'start_game', 'load_saved_game', *GAME_REPLY_TYPES, *HOST_ACTIONS):
         return
 
     reply = None
     payload = None
     views = None
-    kicked_socket = None
+    closes = []
     with _lock:
         _, lobby = _find_lobby(lobby_id)
         if lobby is None:
             return
-        if kind == 'kick_player':
-            reply, payload, kicked_socket = _kick_player(lobby, user_name, msg.get('user_name'))
+        if kind in HOST_ACTIONS:
+            reply, payload, views, closes = HOST_ACTIONS[kind](lobby, user_name, msg)
         elif kind in GAME_REPLY_TYPES:
             reply, views = _handle_game_message(lobby, user_name, kind, msg)
         elif lobby['started']:
@@ -546,19 +819,16 @@ async def _handle_message(lobby_id, user_name, raw):
                 lobby.pop('prepared_save', None)
                 payload = {'type': 'game_started', **_snapshot(lobby)}
 
-    if kicked_socket is not None:
-        try:
-            await kicked_socket.close(code=KICKED_CLOSE_CODE)
-        except Exception:
-            pass
+    if closes:
+        await _close_sockets(closes)
     if reply is not None:
         ws = _lobby_sockets.get(lobby_id, {}).get(user_name)
         if ws is not None:
             await ws.send_json(reply)
+    if payload is not None:
+        await _broadcast(lobby_id, payload)
     if views is not None:
         await _send_game_views(lobby_id, views)
-    elif payload is not None:
-        await _broadcast(lobby_id, payload)
 
 def _token_matches(player, token):
     expected = player.get('secret_token')
@@ -593,13 +863,12 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
         _, lobby = _find_lobby(lobby_id)
         is_member = lobby is not None and any(
             p['user_name'] == user_name and _token_matches(p, token) for p in lobby['players'])
-        sockets = _lobby_sockets.get(lobby_id, {})
-        already_connected = user_name in sockets
-        # After the start, players reconnect from the game page and supersede their lobby-page socket.
-        can_register = is_member and (not already_connected or lobby['started'])
-        if can_register:
+        # The token proves who this is, so a new connection (refresh, page change, reconnect, another tab)
+        # always takes over the seat from an older one.
+        if is_member:
+            sockets = _lobby_sockets.setdefault(lobby_id, {})
             replaced = sockets.get(user_name)
-            _lobby_sockets.setdefault(lobby_id, {})[user_name] = websocket
+            sockets[user_name] = websocket
             snapshot = _snapshot(lobby)
             if lobby['id'] in _lobby_games:
                 game_view = _view(lobby, _power_of(lobby, user_name), user_name)
@@ -609,12 +878,9 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
     if not is_member:
         await websocket.close(code=4403)
         return
-    if not can_register:
-        await websocket.close(code=4409)
-        return
     if replaced is not None:
         try:
-            await replaced.close()
+            await replaced.close(code=REPLACED_CLOSE_CODE)
         except Exception:
             pass
 
@@ -631,38 +897,97 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
             except (ValueError, AttributeError):
                 is_leave = False
             if is_leave:
-                left = True  # deliberate exit: skip the reconnect grace period
+                left = True  # deliberate exit: give up the seat right away
                 break
             await _handle_message(lobby_id, user_name, raw)
     except WebSocketDisconnect:
         pass
     finally:
         snapshot = None
-        grace = False
+        views = None
+        was_current = False
         with _lock:
             sockets = _lobby_sockets.get(lobby_id, {})
-            if sockets.get(user_name) is websocket:
+            # A socket that was replaced or kicked is no longer the seat's connection, so its close means nothing.
+            was_current = sockets.get(user_name) is websocket
+            if was_current:
                 del sockets[user_name]
             if not sockets:
                 _lobby_sockets.pop(lobby_id, None)
-            _, lobby = _find_lobby(lobby_id)
-            if lobby is not None:
-                if left or not lobby['started']:
-                    snapshot = _remove_player(lobby_id, user_name)
-                else:
-                    grace = True
-        if grace:
-            # Players change pages when the game starts, so give them time to reconnect.
-            task = asyncio.create_task(_drop_after_grace(lobby_id, user_name))
-            _background_tasks.add(task)
-            task.add_done_callback(_background_tasks.discard)
-        elif snapshot is not None:
-            await _broadcast(lobby_id, {'type': 'lobby_update', 'event': 'left', 'user_name': user_name, **snapshot})
+            if was_current and left:
+                snapshot = _remove_player(lobby_id, user_name)
+                _, lobby = _find_lobby(lobby_id)
+                if snapshot is not None and lobby is not None and lobby_id in _lobby_games:
+                    views = _game_views(lobby)
+        if was_current and left:
+            if snapshot is not None:
+                await _broadcast(lobby_id, {'type': 'lobby_update', 'event': 'left', 'user_name': user_name, **snapshot})
+            if views is not None:
+                await _send_game_views(lobby_id, views)
+        elif was_current:
+            _spawn(_after_disconnect(lobby_id, user_name))
         if left:
             try:
                 await websocket.close()
             except Exception:
                 pass  # already closed
+
+@app.websocket('/ws/lobbies/{lobby_id}/requests/{request_id}')
+async def join_request_socket(websocket: WebSocket, lobby_id: str, request_id: str):
+    """Someone asking to join a running game waits here. The host's answer arrives as join_accepted (with the
+    new seat's token) or join_rejected; the request expires if the host does not answer in time."""
+    await websocket.accept()
+    token = await _receive_token(websocket)
+
+    with _lock:
+        _, lobby = _find_lobby(lobby_id)
+        request = lobby.get('join_requests', {}).get(request_id) if lobby is not None else None
+        valid = (request is not None and token is not None
+                 and secrets.compare_digest(request['token'].encode(), token.encode())
+                 and request['expires'] > time.monotonic()
+                 and request_id not in _join_waiters)
+        if valid:
+            _join_waiters[request_id] = websocket
+            deadline = request['expires']
+            payload = {'type': 'lobby_update', 'event': 'join_request', 'user_name': request['user_name'],
+                       **_snapshot(lobby)}
+    if not valid:
+        try:
+            await websocket.close(code=AUTH_FAILED_CLOSE_CODE if token is None else 4403)
+        except Exception:
+            pass
+        return
+
+    await _broadcast(lobby_id, payload)
+    try:
+        await websocket.send_json({'type': 'join_pending'})
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            await asyncio.wait_for(websocket.receive_text(), timeout=remaining)  # pings only
+    except (asyncio.TimeoutError, WebSocketDisconnect, RuntimeError):
+        pass
+    finally:
+        # The host answering removes the waiter first, so reaching here still registered means expiry or exit.
+        payload = None
+        with _lock:
+            still_waiting = _join_waiters.get(request_id) is websocket
+            if still_waiting:
+                del _join_waiters[request_id]
+                _, lobby = _find_lobby(lobby_id)
+                if lobby is not None:
+                    request = lobby.get('join_requests', {}).pop(request_id, None)
+                    payload = {'type': 'lobby_update', 'event': 'join_request_closed',
+                               'user_name': request['user_name'] if request else None, **_snapshot(lobby)}
+        if still_waiting:
+            try:
+                await websocket.send_json({'type': 'join_rejected', 'message': 'The host did not answer in time.'})
+                await websocket.close(code=JOIN_EXPIRED_CLOSE_CODE)
+            except Exception:
+                pass
+            if payload is not None:
+                await _broadcast(lobby_id, payload)
 
 # Single-player games: one browser plays every power, so there is no per-player identity to check.
 def _get(game_id):

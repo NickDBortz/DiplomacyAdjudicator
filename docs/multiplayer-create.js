@@ -16,10 +16,7 @@ document.getElementById('host-create').addEventListener('click', async () => {
         document.getElementById('menu-message').textContent = r.message;
         return;
     }
-    sessionStorage.setItem('diplomacyPlayerName', name);
-    sessionStorage.setItem('diplomacyGameName', gameName);
-    sessionStorage.setItem('diplomacyGameID', r.lobby.id);
-    sessionStorage.setItem('secretToken', r.secret_token);
+    rememberSeat(r.lobby.id, gameName, name, r.secret_token);
     location.href = 'lobby.html';
 });
 

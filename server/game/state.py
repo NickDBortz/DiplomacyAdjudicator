@@ -22,13 +22,23 @@ class GameState:
 
         self.queued_orders = []
 
-    def vote_draw(self, player):
+    def vote_draw(self, player, voters=None):
+        """Records a draw vote. `voters` limits who must agree (e.g. only powers someone controls);
+        by default every power that still has supply centers must vote."""
         if player not in self.draw_votes:
             self.draw_votes.append(player)
-            for p in self.player_list:
-                if p.get_supply_centers(self.territory_list) and p not in self.draw_votes:
-                    return
-            self.draw = True
+        self.check_draw(voters)
+
+    def check_draw(self, voters=None):
+        """Ends the game in a draw once every eligible power still holding supply centers has voted."""
+        if not self.draw_votes:
+            return False
+        eligible = self.player_list if voters is None else voters
+        for p in eligible:
+            if p.get_supply_centers(self.territory_list) and p not in self.draw_votes:
+                return False
+        self.draw = True
+        return True
 
     def get_player(self, name):
         name = name.lower().strip()
