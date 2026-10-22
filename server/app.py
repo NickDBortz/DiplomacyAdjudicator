@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from game import web_api
+from name_filter import clean_name
 
 MAX_SAVE_BYTES = 2_000_000
 MAX_LOBBIES = 200
@@ -162,9 +163,13 @@ def health():
 
 @app.post('/open_lobby')
 def open_lobby(lobby_request: LobbyRequest):
+    user_name, error = clean_name(lobby_request.user_name, 'name')
+    if error:
+        return {'ok': False, 'message': error}
+    lobby_name, error = clean_name(lobby_request.lobby_name, 'game name')
+    if error:
+        return {'ok': False, 'message': error}
     with _lock:
-        lobby_name = lobby_request.lobby_name
-        user_name = lobby_request.user_name
         password = lobby_request.lobby_password
         if len(_lobbies) >= MAX_LOBBIES:
             evicted = _lobbies.pop(next(iter(_lobbies)))
@@ -233,6 +238,9 @@ def _prune_join_requests(lobby):
 
 @app.post('/join_lobby/{lobby_id}')
 def join_lobby(lobby_id: str, req: JoinRequest):
+    user_name, error = clean_name(req.user_name, 'name')
+    if error:
+        return {'ok': False, 'message': error}
     with _lock:
         _, lobby = _find_lobby(lobby_id)
         if lobby is None:
@@ -242,8 +250,8 @@ def join_lobby(lobby_id: str, req: JoinRequest):
         if lobby['id'] in _lobby_pending_games:
             return {'ok': False, 'message': 'A save is prepared; the host must start or cancel it first.'}
         _prune_join_requests(lobby)
-        if any(p['user_name'] == req.user_name for p in lobby['players']) or any(
-                r['user_name'] == req.user_name for r in lobby['join_requests'].values()):
+        if any(p['user_name'] == user_name for p in lobby['players']) or any(
+                r['user_name'] == user_name for r in lobby['join_requests'].values()):
             return {'ok': False, 'message': 'Name already taken in this lobby.'}
         if lobby['needs_password']:
             _, hash = _get_salt_hash(req.lobby_password, lobby['salt'])
@@ -256,14 +264,14 @@ def join_lobby(lobby_id: str, req: JoinRequest):
             request_id = uuid.uuid4().hex
             request_token = _get_player_token()
             lobby['join_requests'][request_id] = {
-                'user_name': req.user_name,
+                'user_name': user_name,
                 'token': request_token,
                 'expires': time.monotonic() + JOIN_REQUEST_TIMEOUT_SECONDS,
             }
             return {'ok': True, 'pending': True, 'request_id': request_id, 'request_token': request_token,
                     'lobby': _get_client_safe_lobby(lobby)}
         secret_token = _get_player_token()
-        lobby['players'].append({'user_name': req.user_name, 'selected_power': None, 'secret_token': secret_token})
+        lobby['players'].append({'user_name': user_name, 'selected_power': None, 'secret_token': secret_token})
         return {'ok': True, 'lobby': _get_client_safe_lobby(lobby), 'secret_token': secret_token}
 
 def _game_save_data(lobby):
