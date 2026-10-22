@@ -218,6 +218,8 @@ function watchLobby(lobbyId, userName, secretToken, onMessage = () => {}) {
     let retryDelay = 1000;
     let retryTimer = null;
     let reconnecting = false;
+    const hasChat = typeof initChat === 'function';
+    if (hasChat) initChat(lobbyId, userName);
 
     const open = () => {
         retryTimer = null;
@@ -229,6 +231,7 @@ function watchLobby(lobbyId, userName, secretToken, onMessage = () => {}) {
             }
             retryDelay = 1000;
             onMessage(msg);
+            if (hasChat) chatReceive(msg);
             const pending = pendingReplies[msg.type];
             if (pending && pending.length > 0) {
                 pending.shift()(msg);

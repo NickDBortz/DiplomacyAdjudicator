@@ -7,6 +7,7 @@ import uuid
 import secrets
 import hashlib
 import time
+from collections import deque
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -33,6 +34,10 @@ JOIN_EXPIRED_CLOSE_CODE = 4408
 JOIN_REJECTED_CLOSE_CODE = 4412
 AUTH_FAILED_CLOSE_CODE = 4401
 AUTH_TIMEOUT_SECONDS = 10  # how long a new socket has to send its secret token
+CHAT_MAX_LENGTH = 500
+CHAT_HISTORY_LIMIT = 200  # per conversation; older messages are dropped
+CHAT_RATE_COUNT = 5  # at most this many messages per CHAT_RATE_SECONDS from one player
+CHAT_RATE_SECONDS = 5
 
 app = FastAPI(title='Diplomacy Adjudicator')
 app.add_middleware(
@@ -359,6 +364,7 @@ def _remove_player(lobby_id, user_name):
         return None
     removed = next(p for p in lobby['players'] if p['user_name'] == user_name)
     lobby['players'] = [p for p in lobby['players'] if p['user_name'] != user_name]
+    _forget_chat(lobby, user_name)
     game = _lobby_games.get(lobby_id)
     if game is not None and removed['selected_power'] not in (None, SPECTATOR_POWER):
         # The power is now vacant: its units hold, and a vote it can no longer withdraw should not count.
@@ -728,6 +734,88 @@ HOST_ACTIONS = {
     'answer_join': _answer_join,
 }
 
+def _chat(lobby):
+    return lobby.setdefault('chat', {'next_id': 1, 'lobby': deque(maxlen=CHAT_HISTORY_LIMIT), 'private': {}, 'recent': {}})
+
+def _can_private_chat(lobby, user_name):
+    """Private messages are part of the game, so only players who control a power can send or receive them."""
+    return lobby['started'] and _power_of(lobby, user_name) is not None
+
+def _chat_history(lobby, user_name):
+    """The lobby channel plus this player's own private conversations, oldest first."""
+    chat = _chat(lobby)
+    messages = list(chat['lobby'])
+    for pair, conversation in chat['private'].items():
+        if user_name in pair:
+            messages.extend(conversation)
+    return sorted(messages, key=lambda m: m['id'])
+
+def _forget_chat(lobby, user_name):
+    """A departing player's private conversations are deleted so a newcomer reusing the name cannot read them."""
+    chat = _chat(lobby)
+    for pair in [p for p in chat['private'] if user_name in p]:
+        del chat['private'][pair]
+    chat['recent'].pop(user_name, None)
+
+def _send_chat(lobby, user_name, msg):
+    """Returns (reply, recipients, payload); recipients is None when the message goes to the whole lobby."""
+    def fail(error):
+        return {'type': 'chat_result', 'ok': False, 'error': error}, None, None
+
+    text = msg.get('text')
+    if not isinstance(text, str) or not text.strip():
+        return fail('Message is empty.')
+    text = text.strip()
+    if len(text) > CHAT_MAX_LENGTH:
+        return fail(f'Messages are limited to {CHAT_MAX_LENGTH} characters.')
+    chat = _chat(lobby)
+    now = time.monotonic()
+    recent = chat['recent'].setdefault(user_name, deque(maxlen=CHAT_RATE_COUNT))
+    if len(recent) == CHAT_RATE_COUNT and now - recent[0] < CHAT_RATE_SECONDS:
+        return fail('You are sending messages too quickly.')
+
+    channel = msg.get('channel')
+    to = None
+    if channel == 'lobby':
+        recipients = None
+        conversation = chat['lobby']
+    elif channel == 'private':
+        to = msg.get('to')
+        if not lobby['started']:
+            return fail('Private messages are only available during a game.')
+        if not _can_private_chat(lobby, user_name):
+            return fail('Only players who control a power can send private messages.')
+        if not isinstance(to, str) or to == user_name or not any(p['user_name'] == to for p in lobby['players']):
+            return fail('That player is not in this game.')
+        if not _can_private_chat(lobby, to):
+            return fail(f'{to} does not control a power.')
+        recipients = {user_name, to}
+        conversation = chat['private'].setdefault(tuple(sorted((user_name, to))), deque(maxlen=CHAT_HISTORY_LIMIT))
+    else:
+        return fail('Unknown chat channel.')
+
+    recent.append(now)
+    message = {
+        'id': chat['next_id'],
+        'channel': channel,
+        'from': user_name,
+        'to': to,
+        'power': _power_of(lobby, user_name),
+        'text': text,
+        'time': int(time.time() * 1000),
+    }
+    chat['next_id'] += 1
+    conversation.append(message)
+    return {'type': 'chat_result', 'ok': True, 'id': message['id']}, recipients, {'type': 'chat_message', 'message': message}
+
+async def _send_to(lobby_id, user_names, payload):
+    for name, ws in list(_lobby_sockets.get(lobby_id, {}).items()):
+        if name in user_names:
+            try:
+                await ws.send_json(payload)
+            except Exception:
+                pass
+
 async def _close_sockets(closes):
     for ws, message, code in closes:
         try:
@@ -743,18 +831,22 @@ async def _handle_message(lobby_id, user_name, raw):
     except ValueError:
         return
     kind = msg.get('type') if isinstance(msg, dict) else None
-    if kind not in ('set_map', 'set_power', 'start_game', 'load_saved_game', *GAME_REPLY_TYPES, *HOST_ACTIONS):
+    if kind not in ('set_map', 'set_power', 'start_game', 'load_saved_game', 'chat_send', *GAME_REPLY_TYPES, *HOST_ACTIONS):
         return
 
     reply = None
     payload = None
     views = None
     closes = []
+    chat_payload = None
+    chat_recipients = None
     with _lock:
         _, lobby = _find_lobby(lobby_id)
         if lobby is None:
             return
-        if kind in HOST_ACTIONS:
+        if kind == 'chat_send':  # chat works in the lobby and during the game
+            reply, chat_recipients, chat_payload = _send_chat(lobby, user_name, msg)
+        elif kind in HOST_ACTIONS:
             reply, payload, views, closes = HOST_ACTIONS[kind](lobby, user_name, msg)
         elif kind in GAME_REPLY_TYPES:
             reply, views = _handle_game_message(lobby, user_name, kind, msg)
@@ -821,6 +913,11 @@ async def _handle_message(lobby_id, user_name, raw):
 
     if closes:
         await _close_sockets(closes)
+    if chat_payload is not None:
+        if chat_recipients is None:
+            await _broadcast(lobby_id, chat_payload)
+        else:
+            await _send_to(lobby_id, chat_recipients, chat_payload)
     if reply is not None:
         ws = _lobby_sockets.get(lobby_id, {}).get(user_name)
         if ws is not None:
@@ -870,6 +967,7 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
             replaced = sockets.get(user_name)
             sockets[user_name] = websocket
             snapshot = _snapshot(lobby)
+            chat_history = _chat_history(lobby, user_name)
             if lobby['id'] in _lobby_games:
                 game_view = _view(lobby, _power_of(lobby, user_name), user_name)
     if lobby is None:
@@ -887,6 +985,7 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
     await _broadcast(lobby_id, {'type': 'lobby_update', 'event': 'joined', 'user_name': user_name, **snapshot})
     if game_view is not None:
         await websocket.send_json({'type': 'game_state', 'state': game_view})
+    await websocket.send_json({'type': 'chat_history', 'messages': chat_history})
     left = False
     try:
         while True:
