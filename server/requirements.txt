@@ -1,2 +1,3 @@
 fastapi
 uvicorn[standard]
+better-profanity==0.7.0

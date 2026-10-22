@@ -35,6 +35,17 @@ The free Render instance sleeps when idle, so the first request after a break ca
 
 Every player gets a secret token when they join. The server checks it on every connection, so players can act only for themselves and only the host can use host controls.
 
+The server rejects player and lobby names that contain obscene words ([server/name_filter.py](server/name_filter.py)). It is a basic filter: whole words are checked against the [better-profanity](https://github.com/snguyenthanh/better_profanity) word list, and a few strong words are caught anywhere in a name. Common leetspeak and accents are normalised first. Edit the `ALLOWED` list in that file to stop a harmless word being blocked.
+
+### Chat
+
+The **Chat** button at the bottom-left of the lobby and game pages opens a chat panel that can be collapsed again.
+
+- **Lobby / Everyone** is visible to everyone in the lobby, and it carries over into the game.
+- **Private messages** are available during a game between two players who control powers. Pick a player from **Private message…** to start one; only the two of you can see it. Spectators can't send or receive private messages.
+- While the panel is collapsed or showing another conversation, new messages show a short pop-up, an unread count on the Chat button and tabs, and a count in the page title.
+- Messages are limited to 500 characters, with at most 5 every 5 seconds per player. The server keeps the last 200 messages of each conversation in memory; history is not part of save files. A player's private conversations are deleted when they leave or are kicked.
+
 ### Host controls
 
 - **Kick** removes a player. During a game their power becomes vacant.

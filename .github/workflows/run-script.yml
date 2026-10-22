@@ -18,10 +18,10 @@ jobs:
       with:
         python-version: '3.14'
 
-    # Step 3: Install Pytest
-    - name: Install Pytest
-      run: pip install pytest
-        
+    # Step 3: Install the server's dependencies plus the test tools
+    - name: Install dependencies
+      run: pip install -r server/requirements.txt pytest httpx2
+
     # Step 4: Run test script
     - name: Run Tests
       working-directory: ./server
