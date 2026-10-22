@@ -90,8 +90,6 @@ document.getElementById('join-submit').addEventListener('click', async () => {
         messageEl.textContent = 'Select a lobby.';
         return;
     }
-    if (password)
-        password = await sha256(password);
     const r = await request('POST', `/join_lobby/${selectedLobbyID}`, {'user_name': name, 'lobby_password': password}, true);
     if (!r.ok) {
         messageEl.textContent = r.message;
@@ -100,6 +98,7 @@ document.getElementById('join-submit').addEventListener('click', async () => {
     sessionStorage.setItem('diplomacyGameCode', selectedLobby);
     sessionStorage.setItem('diplomacyGameID', selectedLobbyID);
     sessionStorage.setItem('diplomacyPlayerName', name);
+    sessionStorage.setItem('secretToken', r.secret_token);
     location.href = 'lobby.html';
 });
 

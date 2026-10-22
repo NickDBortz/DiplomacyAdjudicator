@@ -13,14 +13,6 @@ function setStatus(text) {
     document.getElementById('status').textContent = text;
 }
 
-async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-}
-
 const loadingPopup = document.getElementById('loading-popup');
 
 function showLoading() {
@@ -50,11 +42,11 @@ function goTo(page) {
 }
 
 // Opens the lobby socket; the server pushes lobby_update on joins, leaves and settings changes, and game_started on start.
-function connectLobby(lobbyId, userName, onMessage, onClose) {
+function connectLobby(lobbyId, userName, secretToken, onMessage, onClose) {
     const url = `${API_BASE.replace(/^http/, 'ws')}/ws/lobbies/${encodeURIComponent(lobbyId)}?user_name=${encodeURIComponent(userName)}`;
     const ws = new WebSocket(url);
     let ping;
-    ws.onopen = () => { ping = setInterval(() => ws.send('ping'), 25000); };
+    ws.onopen = () => { ws.send(secretToken); ping = setInterval(() => ws.send('ping'), 25000); };
     ws.onmessage = e => onMessage(JSON.parse(e.data));
     ws.onclose = e => { clearInterval(ping); onClose(e.code); };
     return ws;
@@ -62,6 +54,7 @@ function connectLobby(lobbyId, userName, onMessage, onClose) {
 
 const LOBBY_CLOSE_MESSAGES = {
     4404: 'This lobby no longer exists.',
+    4401: 'Could not verify your identity. Please rejoin the lobby.',
     4403: 'You are not a member of this lobby.',
     4409: 'You are already connected to this lobby.',
     4410: 'You were kicked from the lobby by the host.',
@@ -120,9 +113,9 @@ function renderPlayerList(players, selfName, powers = {}) {
 }
 
 // Shared by the lobby and game pages; onMessage sees every server message first.
-function watchLobby(lobbyId, userName, onMessage = () => {}) {
+function watchLobby(lobbyId, userName, secretToken, onMessage = () => {}) {
     const mainDiv = document.getElementById('main');
-    return connectLobby(lobbyId, userName, msg => {
+    return connectLobby(lobbyId, userName, secretToken, msg => {
         onMessage(msg);
         const pending = pendingReplies[msg.type];
         if (pending && pending.length > 0) {
@@ -332,7 +325,7 @@ function joinGame(lobbyId, userName, baseInfo) {
     gameInfo.userName = userName;
     updateGameRole();
     renderGameInfo();
-    gameSocket = watchLobby(lobbyId, userName, handleGameMessage);
+    gameSocket = watchLobby(lobbyId, userName, sessionStorage.getItem('secretToken') || '', handleGameMessage);
 }
 
 function sendForReply(payload, replyType) {

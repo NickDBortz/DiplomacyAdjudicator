@@ -11,8 +11,6 @@ document.getElementById('host-create').addEventListener('click', async () => {
         document.getElementById('menu-message').textContent = 'Enter a game name.';
         return;
     }
-    if (password)
-        password = await sha256(password);
     const r = await request('POST', `/open_lobby`, {'user_name': name, 'lobby_name': gameName, 'lobby_password': password}, true);
     if (!r.ok) {
         document.getElementById('menu-message').textContent = r.message;
@@ -21,6 +19,7 @@ document.getElementById('host-create').addEventListener('click', async () => {
     sessionStorage.setItem('diplomacyPlayerName', name);
     sessionStorage.setItem('diplomacyGameName', gameName);
     sessionStorage.setItem('diplomacyGameID', r.lobby.id);
+    sessionStorage.setItem('secretToken', r.secret_token);
     location.href = 'lobby.html';
 });
 
