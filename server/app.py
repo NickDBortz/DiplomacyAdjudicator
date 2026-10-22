@@ -365,6 +365,9 @@ def _remove_player(lobby_id, user_name):
         power = game.game_state.get_player(removed['selected_power'])
         if power in game.game_state.draw_votes:
             game.game_state.draw_votes.remove(power)
+        # Everyone still playing may already have voted, in which case the game ends now.
+        if game.game_state.winner is None and not game.game_state.draw:
+            game.game_state.check_draw(_draw_voters(lobby, game))
     if lobby_id in _lobby_pending_games:
         _lobby_pending_games.pop(lobby_id, None)
         lobby.pop('prepared_save', None)
@@ -449,6 +452,11 @@ async def _send_game_views(lobby_id, views):
 def _power_of(lobby, user_name):
     power = next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
     return None if power == SPECTATOR_POWER else power
+
+def _draw_voters(lobby, game):
+    """Only powers a player controls vote on a draw; vacant powers cannot vote, so they do not block one."""
+    held = {p['selected_power'] for p in lobby['players']}
+    return [p for p in game.game_state.player_list if p.name in held]
 
 def _update_eliminations(lobby):
     game = _lobby_games[lobby['id']]
@@ -572,7 +580,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
         view = _view(lobby, power, user_name)
         return {'type': 'order_result', 'ok': True, 'error': None, 'orders': view['orders'], 'state': view}, _game_views(lobby)
 
-    game.game_state.vote_draw(player)
+    game.game_state.vote_draw(player, _draw_voters(lobby, game))
     reply = {'type': 'draw_result', 'ok': True, 'error': None, 'draw_votes': [p.name for p in game.game_state.draw_votes]}
     return reply, _game_views(lobby)
 
@@ -600,10 +608,13 @@ def _kick_player(lobby, user_name, msg):
     kicked_socket = _lobby_sockets.get(lobby['id'], {}).pop(target, None)
     snapshot = _remove_player(lobby['id'], target)
     payload = None
+    views = None
     if snapshot is not None:
         payload = {'type': 'lobby_update', 'event': 'kicked', 'user_name': target, **snapshot}
+        if lobby['id'] in _lobby_games:
+            views = _game_views(lobby)  # the power is vacant now, and the remaining votes may have ended the game
     closes = [(kicked_socket, None, KICKED_CLOSE_CODE)] if kicked_socket is not None else []
-    return _host_action_ok(reply_type, payload, closes=closes)
+    return _host_action_ok(reply_type, payload, views=views, closes=closes)
 
 def _transfer_host(lobby, user_name, msg):
     reply_type = 'host_transfer_result'
@@ -893,6 +904,7 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
         pass
     finally:
         snapshot = None
+        views = None
         was_current = False
         with _lock:
             sockets = _lobby_sockets.get(lobby_id, {})
@@ -904,9 +916,14 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
                 _lobby_sockets.pop(lobby_id, None)
             if was_current and left:
                 snapshot = _remove_player(lobby_id, user_name)
+                _, lobby = _find_lobby(lobby_id)
+                if snapshot is not None and lobby is not None and lobby_id in _lobby_games:
+                    views = _game_views(lobby)
         if was_current and left:
             if snapshot is not None:
                 await _broadcast(lobby_id, {'type': 'lobby_update', 'event': 'left', 'user_name': user_name, **snapshot})
+            if views is not None:
+                await _send_game_views(lobby_id, views)
         elif was_current:
             _spawn(_after_disconnect(lobby_id, user_name))
         if left:
