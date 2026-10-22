@@ -100,6 +100,7 @@ document.getElementById('join-submit').addEventListener('click', async () => {
     sessionStorage.setItem('diplomacyGameCode', selectedLobby);
     sessionStorage.setItem('diplomacyGameID', selectedLobbyID);
     sessionStorage.setItem('diplomacyPlayerName', name);
+    sessionStorage.setItem('secretToken', r.secret_token);
     location.href = 'lobby.html';
 });
 

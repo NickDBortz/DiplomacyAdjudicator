@@ -4,6 +4,7 @@ import json
 import os
 import threading
 import uuid
+import secrets
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -12,6 +13,7 @@ from pydantic import BaseModel
 
 from game import web_api
 
+MAX_SAVE_BYTES = 2_000_000
 MAX_LOBBIES = 200
 MAX_GAMES = 200
 MAX_ORDER_LENGTH = 200
@@ -20,6 +22,8 @@ MAPS_DIR = Path(__file__).resolve().parent / 'data' / 'maps'
 DEFAULT_MAP = 'classic_map'
 SPECTATOR_POWER = 'Spectator'
 KICKED_CLOSE_CODE = 4410
+AUTH_FAILED_CLOSE_CODE = 4401
+AUTH_TIMEOUT_SECONDS = 10  # how long a new socket has to send its secret token
 
 app = FastAPI(title='Diplomacy Adjudicator')
 app.add_middleware(
@@ -34,14 +38,12 @@ _lobby_sockets = {}  # lobby id -> {user_name: WebSocket}
 _lobby_games = {}  # lobby id -> Game, created when the host starts the lobby
 _lobby_pending_games = {}  # restored Game objects waiting for the host to start the lobby
 _background_tasks = set()
-_games = {}
 _lock = threading.Lock()
-
+_games = {}  # single-player games; independent of lobbies
 
 class OrderRequest(BaseModel):
     order: str
     power: str
-
 
 class DrawRequest(BaseModel):
     power: str
@@ -55,18 +57,44 @@ class JoinRequest(BaseModel):
     user_name: str
     lobby_password: str
 
+def _get_player_token():
+    return secrets.token_urlsafe(32)
 
-def _get(game_id):
-    game = _games.get(game_id)
-    if game is None:
-        raise HTTPException(404, 'Unknown game id')
-    return game
+def _get_client_safe_lobby(lobby):
+    return {
+        'id': lobby['id'],
+        'name': lobby['name'],
+        'needs_password': lobby['password'] != '',
+        'host': lobby['host'],
+        'started': lobby['started'],
+        'settings': lobby['settings'],
+        'players': [{'user_name': player['user_name'], 'selected_power': player['selected_power']} for player in lobby['players']]
+    }
 
+def _find_lobby(lobby_id):
+    for name, lobby in _lobbies.items():
+        if lobby['id'] == lobby_id:
+            return name, lobby
+    return None, None
 
-def _check_power(game, power):
-    if game.game_state.get_player(power) is None:
-        raise HTTPException(400, f'Unknown power: {power}')
+def _available_maps():
+    return sorted(p.stem for p in MAPS_DIR.glob('*.json'))
 
+def _available_powers(map_id):
+    try:
+        with open(MAPS_DIR / f'{map_id}.json', 'r', encoding='utf-8') as file:
+            return sorted(player['name'] for player in json.load(file)['players'])
+    except (OSError, ValueError, KeyError):
+        return []
+
+def _snapshot(lobby):
+    return {
+        'players': [p['user_name'] for p in lobby['players']],
+        'selected_powers': {p['user_name']: p['selected_power'] for p in lobby['players']},
+        'host': lobby['host'],
+        'settings': lobby['settings'],
+        'prepared_save': lobby.get('prepared_save'),
+    }
 
 @app.get('/health')
 def health():
@@ -85,6 +113,7 @@ def open_lobby(lobby_request: LobbyRequest):
         if lobby_name in _lobbies:
             return {'ok': False, 'message': 'Lobby name already in use.'}
         lobby_id = uuid.uuid4().hex
+        secret_token = _get_player_token()
         _lobbies[lobby_name] = {
             'id': lobby_id,
             'name': lobby_name,
@@ -92,9 +121,9 @@ def open_lobby(lobby_request: LobbyRequest):
             'host': user_name,
             'started': False,
             'settings': {'map': DEFAULT_MAP},
-            'players': [{'user_name': user_name, 'selected_power': None}],
+            'players': [{'user_name': user_name, 'selected_power': None, 'secret_token': secret_token}],
         }
-    return {'ok': True, 'lobby': _lobbies[lobby_name]}
+    return {'ok': True, 'lobby': _get_client_safe_lobby(_lobbies[lobby_name]), 'secret_token': secret_token}
 
 @app.get('/maps')
 def get_maps():
@@ -131,31 +160,10 @@ def join_lobby(lobby_id: str, req: JoinRequest):
                     return {'ok': False, 'message': 'Name already taken in this lobby.'}
                 if value['password'] != req.lobby_password:
                     return {'ok': False, 'message': 'Incorrect password.'}
-                _lobbies[key]['players'].append({'user_name': req.user_name, 'selected_power': None})
-                return {'ok': True, 'lobby': _lobbies[key]}
+                secret_token = _get_player_token()
+                _lobbies[key]['players'].append({'user_name': req.user_name, 'selected_power': None, 'secret_token': secret_token})
+                return {'ok': True, 'lobby': _get_client_safe_lobby(_lobbies[key]), 'secret_token': secret_token}
     return {'ok': False, 'message': 'Lobby does not exist.'}
-
-
-def _find_lobby(lobby_id):
-    for name, lobby in _lobbies.items():
-        if lobby['id'] == lobby_id:
-            return name, lobby
-    return None, None
-
-
-def _available_maps():
-    return sorted(p.stem for p in MAPS_DIR.glob('*.json'))
-
-def _available_powers(map_id):
-    try:
-        with open(MAPS_DIR / f'{map_id}.json', 'r', encoding='utf-8') as file:
-            return sorted(player['name'] for player in json.load(file)['players'])
-    except (OSError, ValueError, KeyError):
-        return []
-
-
-MAX_SAVE_BYTES = 2_000_000
-
 
 def _game_save_data(lobby):
     return {
@@ -245,17 +253,6 @@ def _restore_lobby_game(lobby, save_data):
     }
     return lobby['prepared_save']
 
-
-def _snapshot(lobby):
-    return {
-        'players': [p['user_name'] for p in lobby['players']],
-        'selected_powers': {p['user_name']: p['selected_power'] for p in lobby['players']},
-        'host': lobby['host'],
-        'settings': lobby['settings'],
-        'prepared_save': lobby.get('prepared_save'),
-    }
-
-
 def _remove_player(lobby_id, user_name):
     """Drops a player, hands the host role to the next in line, and closes the lobby when empty.
 
@@ -283,7 +280,6 @@ def _remove_player(lobby_id, user_name):
         )
     return _snapshot(lobby)
 
-
 async def _drop_after_grace(lobby_id, user_name):
     await asyncio.sleep(REJOIN_GRACE_SECONDS)
     with _lock:
@@ -293,14 +289,12 @@ async def _drop_after_grace(lobby_id, user_name):
     if snapshot is not None:
         await _broadcast(lobby_id, {'type': 'lobby_update', 'event': 'left', 'user_name': user_name, **snapshot})
 
-
 async def _broadcast(lobby_id, payload):
     for ws in list(_lobby_sockets.get(lobby_id, {}).values()):
         try:
             await ws.send_json(payload)
         except Exception:
             pass  # a dead socket is cleaned up by its own handler
-
 
 async def _send_game_views(lobby_id, views):
     for name, ws in list(_lobby_sockets.get(lobby_id, {}).items()):
@@ -310,11 +304,9 @@ async def _send_game_views(lobby_id, views):
             except Exception:
                 pass
 
-
 def _power_of(lobby, user_name):
     power = next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
     return None if power == SPECTATOR_POWER else power
-
 
 def _update_eliminations(lobby):
     game = _lobby_games[lobby['id']]
@@ -339,7 +331,6 @@ def _update_eliminations(lobby):
         if successor is not None:
             lobby['host'] = successor
 
-
 def _view(lobby, power, user_name):
     """Own orders only, or everyone's once the host has revealed them."""
     revealed = lobby.get('orders_revealed', False)
@@ -353,11 +344,9 @@ def _view(lobby, power, user_name):
     state['eliminated_players'] = list(lobby.get('eliminated', []))
     return state
 
-
 def _game_views(lobby):
     """Each player sees every unit and territory, plus their own orders until the host reveals all."""
     return {p['user_name']: _view(lobby, _power_of(lobby, p['user_name']), p['user_name']) for p in lobby['players']}
-
 
 GAME_REPLY_TYPES = {
     'submit_order': 'order_result',
@@ -366,7 +355,6 @@ GAME_REPLY_TYPES = {
     'reveal_orders': 'reveal_result',
     'resolve': 'resolve_result',
 }
-
 
 def _handle_game_message(lobby, user_name, kind, msg):
     """Returns (reply for the sender, per-player views to push to everyone or None)."""
@@ -442,7 +430,6 @@ def _handle_game_message(lobby, user_name, kind, msg):
     reply = {'type': 'draw_result', 'ok': True, 'error': None, 'draw_votes': [p.name for p in game.game_state.draw_votes]}
     return reply, _game_views(lobby)
 
-
 def _kick_player(lobby, user_name, target):
     """Host only: removes another player. Returns (reply, broadcast payload, socket to close). Call with _lock held."""
     def fail(error):
@@ -461,7 +448,6 @@ def _kick_player(lobby, user_name, target):
     if snapshot is not None:
         payload = {'type': 'lobby_update', 'event': 'kicked', 'user_name': target, **snapshot}
     return {'type': 'kick_result', 'ok': True, 'error': None}, payload, kicked_socket
-
 
 async def _handle_message(lobby_id, user_name, raw):
     try:
@@ -559,17 +545,39 @@ async def _handle_message(lobby_id, user_name, raw):
     elif payload is not None:
         await _broadcast(lobby_id, payload)
 
+def _token_matches(player, token):
+    expected = player.get('secret_token')
+    if not isinstance(expected, str) or not isinstance(token, str):
+        return False
+    return secrets.compare_digest(expected.encode(), token.encode())
+
+async def _receive_token(websocket):
+    """The client's first message must be its secret token; returns None if it is missing or late."""
+    try:
+        token = await asyncio.wait_for(websocket.receive_text(), timeout=AUTH_TIMEOUT_SECONDS)
+    except (asyncio.TimeoutError, WebSocketDisconnect, RuntimeError):
+        return None
+    return token.strip() or None
 
 @app.websocket('/ws/lobbies/{lobby_id}')
 async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
     await websocket.accept()
+
+    token = await _receive_token(websocket)
+    if token is None:
+        try:
+            await websocket.close(code=AUTH_FAILED_CLOSE_CODE)
+        except Exception:
+            pass
+        return
 
     # No awaits between these checks and registering the socket, so they are atomic on the event loop.
     replaced = None
     game_view = None
     with _lock:
         _, lobby = _find_lobby(lobby_id)
-        is_member = lobby is not None and any(p['user_name'] == user_name for p in lobby['players'])
+        is_member = lobby is not None and any(
+            p['user_name'] == user_name and _token_matches(p, token) for p in lobby['players'])
         sockets = _lobby_sockets.get(lobby_id, {})
         already_connected = user_name in sockets
         # After the start, players reconnect from the game page and supersede their lobby-page socket.
@@ -641,6 +649,17 @@ async def lobby_socket(websocket: WebSocket, lobby_id: str, user_name: str):
             except Exception:
                 pass  # already closed
 
+# Single-player games: one browser plays every power, so there is no per-player identity to check.
+def _get(game_id):
+    game = _games.get(game_id)
+    if game is None:
+        raise HTTPException(404, 'Unknown game id')
+    return game
+
+def _check_power(game, power):
+    if game.game_state.get_player(power) is None:
+        raise HTTPException(400, f'Unknown power: {power}')
+
 @app.post('/games')
 def create_game():
     with _lock:
@@ -650,11 +669,9 @@ def create_game():
         _games[game_id] = web_api.new_game()
     return {'game_id': game_id, 'state': web_api.get_state(_games[game_id])}
 
-
 @app.get('/games/{game_id}')
 def get_state(game_id: str):
     return web_api.get_state(_get(game_id))
-
 
 @app.post('/games/{game_id}/orders')
 def submit_order(game_id: str, req: OrderRequest):
@@ -664,13 +681,11 @@ def submit_order(game_id: str, req: OrderRequest):
         result['state'] = web_api.get_state(game)
     return result
 
-
 @app.post('/games/{game_id}/resolve')
 def resolve(game_id: str):
     game = _get(game_id)
     with _lock:
         return web_api.resolve(game)
-
 
 @app.post('/games/{game_id}/draw')
 def draw(game_id: str, req: DrawRequest):

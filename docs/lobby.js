@@ -1,6 +1,7 @@
 const playerName = sessionStorage.getItem('diplomacyPlayerName');
 const lobbyId = sessionStorage.getItem('diplomacyGameID');
 const lobbyName = sessionStorage.getItem('diplomacyGameName') || sessionStorage.getItem('diplomacyGameCode');
+const secretToken = sessionStorage.getItem('secretToken');
 
 const powerSelect = document.getElementById('power-select');
 const mapSelect = document.getElementById('map-select');
@@ -142,7 +143,7 @@ async function init() {
 
     savedGameStatus.textContent = 'Choose a save file downloaded by the host.';
 
-    ws = watchLobby(lobbyId, playerName, msg => {
+    ws = watchLobby(lobbyId, playerName, secretToken, msg => {
         if (msg.type === 'game_started') {
             enterGame(msg);
         } else if (msg.type === 'error') {

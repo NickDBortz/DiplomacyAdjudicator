@@ -21,6 +21,7 @@ document.getElementById('host-create').addEventListener('click', async () => {
     sessionStorage.setItem('diplomacyPlayerName', name);
     sessionStorage.setItem('diplomacyGameName', gameName);
     sessionStorage.setItem('diplomacyGameID', r.lobby.id);
+    sessionStorage.setItem('secretToken', r.secret_token);
     location.href = 'lobby.html';
 });
 
