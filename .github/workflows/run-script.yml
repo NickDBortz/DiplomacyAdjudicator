@@ -20,7 +20,7 @@ jobs:
 
     # Step 3: Install Pytest
     - name: Install Pytest
-      run: pip install pytest, fastapi
+      run: pip install pytest fastapi
         
     # Step 4: Run test script
     - name: Run Tests
