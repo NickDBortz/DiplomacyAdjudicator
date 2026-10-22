@@ -5,6 +5,7 @@ import os
 import threading
 import uuid
 import secrets
+import hashlib
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -60,11 +61,17 @@ class JoinRequest(BaseModel):
 def _get_player_token():
     return secrets.token_urlsafe(32)
 
+def _get_salt_hash(password, salt=None):
+    if salt is None:
+        salt = secrets.token_bytes(16)
+    hash = hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
+    return salt, hash
+
 def _get_client_safe_lobby(lobby):
     return {
         'id': lobby['id'],
         'name': lobby['name'],
-        'needs_password': lobby['password'] != '',
+        'needs_password': lobby['needs_password'],
         'host': lobby['host'],
         'started': lobby['started'],
         'settings': lobby['settings'],
@@ -114,10 +121,16 @@ def open_lobby(lobby_request: LobbyRequest):
             return {'ok': False, 'message': 'Lobby name already in use.'}
         lobby_id = uuid.uuid4().hex
         secret_token = _get_player_token()
+        needs_password = password != ''
+        salt, hash = '', ''
+        if needs_password:
+            salt, hash = _get_salt_hash(password)
         _lobbies[lobby_name] = {
             'id': lobby_id,
             'name': lobby_name,
-            'password': password,
+            'needs_password': password != '',
+            'salt': salt,
+            'hash': hash,
             'host': user_name,
             'started': False,
             'settings': {'map': DEFAULT_MAP},
@@ -134,7 +147,7 @@ def get_lobbies():
     lobbies = {}
     for key, value in _lobbies.items():
         if not value['started']:
-            lobbies[key] = {'id': value['id'], 'needs_password': value['password'] != '', 'Players': len(value['players'])}
+            lobbies[key] = {'id': value['id'], 'needs_password': value['needs_password'], 'Players': len(value['players'])}
     return lobbies
 
 @app.get('/lobbies/{lobby_id}/powers')
@@ -158,8 +171,10 @@ def join_lobby(lobby_id: str, req: JoinRequest):
                     return {'ok': False, 'message': 'A save is prepared; the host must start or cancel it first.'}
                 if any(p['user_name'] == req.user_name for p in value['players']):
                     return {'ok': False, 'message': 'Name already taken in this lobby.'}
-                if value['password'] != req.lobby_password:
-                    return {'ok': False, 'message': 'Incorrect password.'}
+                if value['needs_password']:
+                    _, hash = _get_salt_hash(req.lobby_password, _lobbies[key]['salt'])
+                    if not secrets.compare_digest(hash, _lobbies[key]['hash']):
+                        return {'ok': False, 'message': 'Incorrect password.'}
                 secret_token = _get_player_token()
                 _lobbies[key]['players'].append({'user_name': req.user_name, 'selected_power': None, 'secret_token': secret_token})
                 return {'ok': True, 'lobby': _get_client_safe_lobby(_lobbies[key]), 'secret_token': secret_token}
