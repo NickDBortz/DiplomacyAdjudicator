@@ -320,7 +320,7 @@ function updateGameRole() {
     const actions = document.getElementById('player-actions');
     const spectatorMessage = document.getElementById('spectator-message');
     const hostControls = document.getElementById('host-controls');
-    if (actions) actions.classList.toggle('hidden', spectator);
+    if (actions) actions.classList.toggle('hidden', spectator || gameInfo.state?.orders_revealed);
     if (spectatorMessage) {
         spectatorMessage.classList.toggle('hidden', !spectator);
         spectatorMessage.textContent = gameInfo.state?.player_eliminated
@@ -631,10 +631,9 @@ function initResolveControl() {
         if (gameInfo.state && gameInfo.state.orders_revealed) {
             confirmAction('Resolve Orders', 'Are you sure you want to resolve all orders?', () => send('resolve', 'resolve_result'));
         } else {
-            send('reveal_orders', 'reveal_result');
+            confirmAction('Render Orders', 'Show all orders (This will block further order submissions)?', () => send('reveal_orders', 'reveal_result'));
         }
     });
-
 }
 
 // Wires the order box and draw button; each callback returns the message to show (or a promise of it).
