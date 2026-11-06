@@ -353,9 +353,9 @@ function renderOrderExamples() {
         if (gameInfo.state.phase === 'Adjustment')
             el.textContent = 'Syntax examples: Build A PAR or Remove A PAR';
         else if (gameInfo.state.phase === 'Spring' || gameInfo.state.phase === 'Fall')
-            el.textContent = 'Syntax examples: A PAR H or A PAR - BUR';
+            el.textContent = 'Syntax examples: A PAR H, A PAR - BUR, F MAO - SPA(nc), or F MAO - SPA(sc)';
         else if (gameInfo.state.phase === 'Spring Retreat' || gameInfo.state.phase === 'Fall Retreat')
-            el.textContent = 'Syntax example: A PAR - BUR';
+            el.textContent = 'Syntax examples: A PAR - BUR, F MAO - SPA(nc), or F MAO - SPA(sc)';
         else
             el.textContent = '';
     }
@@ -689,7 +689,7 @@ function initSidebar() {
         <p>Enter one order for each unit. A unit without an order holds. Use the unit type (<code>A</code> for army, <code>F</code> for fleet), its territory abbreviation, and an action:</p>
         <ul>
             <li>Hold: <code>A PAR H</code></li>
-            <li>Move: <code>A PAR - BUR</code></li>
+            <li>Move: <code>A PAR - BUR</code>; to a split coast: <code>F MAO - SPA(nc)</code> or <code>F MAO - SPA(sc)</code></li>
             <li>Support a hold: <code>A BUR S A PAR H</code></li>
             <li>Support a move: <code>A MAR S A PAR - BUR</code></li>
             <li>Convoy: <code>F NTH C A LON - BEL</code>, with a matching army move <code>A LON - BEL</code>. Each fleet in the route needs a convoy order. Add <code>via convoy</code> to the army move to force a convoy.</li>
@@ -700,7 +700,7 @@ function initSidebar() {
         <h3>Adjustment</h3>
         <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control, for example <code>Build A PAR</code> or <code>Build F STP(nc)</code>. Remove with <code>Remove A PAR</code>. The classic game starts with an adjustment for the initial builds.</p>
         <h3>Order tips</h3>
-        <p>Use territory abbreviations shown on the map and single spaces between tokens. When a fleet moves or builds in a territory with multiple coasts, specify the destination coast where needed, for example <code>F MAO - SPA(nc)</code>. Input is case-insensitive.</p>
+        <p>Use territory abbreviations shown on the map and single spaces between tokens. For a fleet moving, retreating, or building in a territory with multiple coasts, use <code>(nc)</code> or <code>(sc)</code> on the destination where needed. Do not add a coast suffix to the starting territory. Input is case-insensitive.</p>
         <p>These are format examples, not necessarily legal orders in your current position. In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
 
     const tabs = [gameTab, helpTab];

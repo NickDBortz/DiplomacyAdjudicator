@@ -85,13 +85,13 @@ Enter one order per unit. Unit tokens are `A` (army) and `F` (fleet); territory 
 | Order | Example |
 | --- | --- |
 | Hold | `A PAR H` |
-| Move | `A PAR - BUR` |
+| Move | `A PAR - BUR`, `F MAO - SPA(nc)`, or `F MAO - SPA(sc)` |
 | Support a move or hold | `A MAR S A PAR - BUR` or `A MAR S A PAR H` |
 | Convoy an army | `F NTH C A LON - BEL` |
 | Build an army or fleet | `Build A PAR` or `Build F STP(nc)` |
 | Remove a unit | `Remove A PAR` |
 
-When a fleet moves or builds in a territory with multiple coasts, specify the destination coast with `(nc)` or `(sc)`. Order input is case-insensitive. During a retreat, use the normal move form, such as `A PAR - BUR`.
+When a fleet moves, retreats, or builds in a territory with multiple coasts, specify the destination coast with `(nc)` or `(sc)` where needed. Do not add a coast suffix to the starting territory. Order input is case-insensitive. During a retreat, use the normal move form, such as `A PAR - BUR`.
 
 ## Running locally
 
