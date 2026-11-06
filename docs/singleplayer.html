@@ -17,6 +17,11 @@
     <div id="local-sidebar">
       <button id="toggleBtn" class="togglebtn">&#9776;</button>
       <div class="sidebar-content">
+        <div class="sidebar-tabs" role="tablist" aria-label="Sidebar views">
+          <button type="button" id="game-tab" role="tab" aria-selected="true" aria-controls="game-panel">Game</button>
+          <button type="button" id="help-tab" role="tab" aria-selected="false" aria-controls="help-panel" tabindex="-1">Help</button>
+        </div>
+        <div id="game-panel" class="sidebar-panel game-panel" role="tabpanel" aria-labelledby="game-tab">
         <div class="orders">
           <p class="section-header">Great Power:</p>
           <select name="Great Power" id="greatpower">
@@ -36,6 +41,8 @@
 
         <button id="new-game">New Game</button>
         <button id="back-to-menu" class="btn btn-secondary">Main Menu</button>
+        </div>
+        <div id="help-panel" class="sidebar-panel help-panel" role="tabpanel" aria-labelledby="help-tab" tabindex="0" hidden></div>
       </div>
     </div>
   </div>

@@ -19,6 +19,68 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-height: 0;
+}
+
+.sidebar-tabs {
+    display: flex;
+    margin: 0 16px 8px;
+    border-bottom: 1px solid #444;
+}
+
+.sidebar-tabs button {
+    flex: 1;
+    padding: 10px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: #ccc;
+    font: inherit;
+    cursor: pointer;
+}
+
+.sidebar-tabs button[aria-selected="true"] {
+    border-bottom-color: #4a90e2;
+    color: #fff;
+    font-weight: bold;
+}
+
+.sidebar-tabs button:focus-visible {
+    outline: 2px solid #4a90e2;
+    outline-offset: -2px;
+}
+
+.sidebar-panel {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.game-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-panel[hidden] {
+    display: none;
+}
+
+.help-panel {
+    padding: 0 16px 20px;
+    line-height: 1.5;
+}
+
+.help-panel h2, .help-panel h3 {
+    color: #eee;
+}
+
+.sidebar .help-panel p {
+    margin: 8px 0 12px;
+}
+
+.help-panel code {
+    color: #9dc9ff;
+    overflow-wrap: anywhere;
 }
 
 .sidebar.collapsed .sidebar-content {

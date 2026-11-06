@@ -5,7 +5,7 @@ Diplomacy console API (window.diplomacy):
   diplomacy.resolve()                       adjudicate and redraw
   diplomacy.state                           latest game state
   diplomacy.newGame()                       restart
-Order syntax is case-sensitive: "A PAR - BUR", "F NTH C A LON - BEL",
+Order syntax is case-insensitive: "A PAR - BUR", "F NTH C A LON - BEL",
 "Build A PAR", "Remove A PAR", "F STP(nc) - BAR".`;
 
 let gameId;
