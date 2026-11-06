@@ -754,13 +754,15 @@ function buildMap() {
         label.textContent = t.abbr;
         svg.appendChild(label);
         if (t.land && t.supply_center) {
-        const [sx, sy] = t.supply_center_pos;
-        const c = document.createElementNS(SVG_NS, 'circle');
-        c.setAttribute('cx', sx);
-        c.setAttribute('cy', sy);
-        c.setAttribute('r', 4);
-        c.setAttribute('fill', '#000');
-        svg.appendChild(c);
+            const [sx, sy] = t.supply_center_pos;
+            const c = document.createElementNS(SVG_NS, 'circle');
+            c.setAttribute('cx', sx);
+            c.setAttribute('cy', sy);
+            c.setAttribute('r', 4);
+            c.setAttribute('fill', '#f5bf1b');
+            c.setAttribute('stroke', '#000');
+            c.setAttribute('stroke-width', 1);
+            svg.appendChild(c);
         }
     }
     const unitLayer = document.createElementNS(SVG_NS, 'g');
@@ -798,7 +800,7 @@ function render(state) {
     for (const t of state.territories) {
         const el = document.getElementById('terr-' + t.abbr);
         const def = byAbbr[t.abbr];
-        el.setAttribute('fill', t.owner ? colors[t.owner] : (def.land ? '#DDD' : mapData.water_color));
+        el.setAttribute('fill', def.land ? (t.owner ? colors[t.owner] : '#DDD') : mapData.water_color);
     }
     const layer = document.getElementById('units');
     layer.innerHTML = '';
@@ -826,51 +828,51 @@ function render(state) {
 
     for (const o of state.orders) {
         if (o.type == 'Advance') {
-        const from = byAbbr[o.territory];
-        const to = byAbbr[o.dest_territory];
-        const unit = state.units.find(u => u.territory === o.territory && !u.dislodged);
-        if (unit) {
-            const [fromX, fromY] = unitPosition(from, unit);
-            const [toX, toY] = unitPosition(to, {'type': unit.type, 'coast': o.dest_coast});
-            drawArrow(fromX, fromY, toX, toY, '#F00');
-        }
-        } else if (o.type == 'Support') {
-        const from = byAbbr[o.territory];
-        let [toX, toY] = [0, 0];
-        // The supported order may belong to another power, so the server inlines what is needed.
-        let supported = o.supported_order_id != null ? state.orders[o.supported_order_id] : null;
-        if (!supported && o.supported_territory) {
-            supported = {type: o.supported_type, territory: o.supported_territory, dest_territory: o.supported_dest, dest_coast: o.supported_coast};
-        }
-        if (supported) {
-            if (supported && supported.type == 'Advance') {
-            const adv_from = byAbbr[supported.territory];
-            const adv_to = byAbbr[supported.dest_territory];
-
-            const unit = state.units.find(u => u.territory === supported.territory && !u.dislodged);
-            if (unit) {
-                const [adv_fromX, adv_fromY] = unitPosition(adv_from, unit);
-                const [adv_toX, adv_toY] = unitPosition(adv_to, {'type': unit.type, 'coast': supported.dest_coast});
-                // to points to halfway between from and to for visual clarity
-                toX = (adv_fromX + adv_toX) / 2;
-                toY = (adv_fromY + adv_toY) / 2;
-            }
-            } else if (supported) {
-            const loc = byAbbr[supported.territory];
-            const unit = state.units.find(u => u.territory === supported.territory && !u.dislodged);
-            if (unit) {
-                [toX, toY] = unitPosition(loc, unit);
-            }
-            }
-
-            if (supported) {
+            const from = byAbbr[o.territory];
+            const to = byAbbr[o.dest_territory];
             const unit = state.units.find(u => u.territory === o.territory && !u.dislodged);
             if (unit) {
                 const [fromX, fromY] = unitPosition(from, unit);
-                drawArrow(fromX, fromY, toX, toY, '#0F0');
+                const [toX, toY] = unitPosition(to, {'type': unit.type, 'coast': o.dest_coast});
+                drawArrow(fromX, fromY, toX, toY, '#F00');
             }
+        } else if (o.type == 'Support') {
+            const from = byAbbr[o.territory];
+            let [toX, toY] = [0, 0];
+            // The supported order may belong to another power, so the server inlines what is needed.
+            let supported = o.supported_order_id != null ? state.orders[o.supported_order_id] : null;
+            if (!supported && o.supported_territory) {
+                supported = {type: o.supported_type, territory: o.supported_territory, dest_territory: o.supported_dest, dest_coast: o.supported_coast};
             }
-        }
+            if (supported) {
+                if (supported && supported.type == 'Advance') {
+                    const adv_from = byAbbr[supported.territory];
+                    const adv_to = byAbbr[supported.dest_territory];
+
+                    const unit = state.units.find(u => u.territory === supported.territory && !u.dislodged);
+                    if (unit) {
+                        const [adv_fromX, adv_fromY] = unitPosition(adv_from, unit);
+                        const [adv_toX, adv_toY] = unitPosition(adv_to, {'type': unit.type, 'coast': supported.dest_coast});
+                        // to points to halfway between from and to for visual clarity
+                        toX = (adv_fromX + adv_toX) / 2;
+                        toY = (adv_fromY + adv_toY) / 2;
+                    }
+                } else if (supported) {
+                    const loc = byAbbr[supported.territory];
+                    const unit = state.units.find(u => u.territory === supported.territory && !u.dislodged);
+                    if (unit) {
+                        [toX, toY] = unitPosition(loc, unit);
+                    }
+                }
+
+                if (supported) {
+                    const unit = state.units.find(u => u.territory === o.territory && !u.dislodged);
+                    if (unit) {
+                        const [fromX, fromY] = unitPosition(from, unit);
+                        drawArrow(fromX, fromY, toX, toY, '#0F0');
+                    }
+                }
+            }
         }
     }
 
