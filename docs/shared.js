@@ -320,7 +320,7 @@ function updateGameRole() {
     const actions = document.getElementById('player-actions');
     const spectatorMessage = document.getElementById('spectator-message');
     const hostControls = document.getElementById('host-controls');
-    if (actions) actions.classList.toggle('hidden', spectator);
+    if (actions) actions.classList.toggle('hidden', spectator || gameInfo.state?.orders_revealed);
     if (spectatorMessage) {
         spectatorMessage.classList.toggle('hidden', !spectator);
         spectatorMessage.textContent = gameInfo.state?.player_eliminated
@@ -344,6 +344,21 @@ function applyGameState(state) {
     renderSubmittedOrders(state);
     updateGameRole();
     renderGameInfo();
+    renderOrderExamples();
+}
+
+function renderOrderExamples() {
+    const el = document.getElementById('order-example');
+    if (el && gameInfo.power !== 'Spectator') {
+        if (gameInfo.state.phase === 'Adjustment')
+            el.textContent = 'Syntax examples: Build A PAR or Remove A PAR';
+        else if (gameInfo.state.phase === 'Spring' || gameInfo.state.phase === 'Fall')
+            el.textContent = 'Syntax examples: A PAR H, A PAR - BUR, F MAO - SPA(nc), or F MAO - SPA(sc)';
+        else if (gameInfo.state.phase === 'Spring Retreat' || gameInfo.state.phase === 'Fall Retreat')
+            el.textContent = 'Syntax examples: A PAR - BUR, F MAO - SPA(nc), or F MAO - SPA(sc)';
+        else
+            el.textContent = '';
+    }
 }
 
 function downloadGameSave(saveData) {
@@ -616,10 +631,9 @@ function initResolveControl() {
         if (gameInfo.state && gameInfo.state.orders_revealed) {
             confirmAction('Resolve Orders', 'Are you sure you want to resolve all orders?', () => send('resolve', 'resolve_result'));
         } else {
-            send('reveal_orders', 'reveal_result');
+            confirmAction('Render Orders', 'Show all orders (This will block further order submissions)?', () => send('reveal_orders', 'reveal_result'));
         }
     });
-
 }
 
 // Wires the order box and draw button; each callback returns the message to show (or a promise of it).
@@ -658,6 +672,58 @@ function initSidebar() {
     document.getElementById('toggleBtn').addEventListener('click', () => {
         const collapsed = sidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('shifted', collapsed);
+    });
+
+    const gameTab = document.getElementById('game-tab');
+    const helpTab = document.getElementById('help-tab');
+    const gamePanel = document.getElementById('game-panel');
+    const helpPanel = document.getElementById('help-panel');
+    if (!gameTab || !helpTab || !gamePanel || !helpPanel) return;
+
+    helpPanel.innerHTML = `
+        <h2>How to play</h2>
+        <p>Negotiate with the other powers and compete for supply centers. The first power to reach the map's winning count wins. All orders for a phase resolve at the same time.</p>
+        <p>Armies move on land; fleets move through water and coastal territories. A unit can hold, move, support another unit, or convoy an army. Support adds strength; equal opposing forces can bounce. Attacks can cut support.</p>
+        <h3>Movement: Spring and Fall</h3>
+        <p>Enter one order for each unit. A unit without an order holds. Use the unit type (<code>A</code> for army, <code>F</code> for fleet), its territory abbreviation, and an action:</p>
+        <ul>
+            <li>Hold: <code>A PAR H</code></li>
+            <li>Move: <code>A PAR - BUR</code>; to a split coast: <code>F MAO - SPA(nc)</code> or <code>F MAO - SPA(sc)</code></li>
+            <li>Support a hold: <code>A BUR S A PAR H</code></li>
+            <li>Support a move: <code>A MAR S A PAR - BUR</code></li>
+            <li>Convoy: <code>F NTH C A LON - BEL</code>, with a matching army move <code>A LON - BEL</code>. Each fleet in the route needs a convoy order. Add <code>via convoy</code> to the army move to force a convoy.</li>
+        </ul>
+        <p>Support must be to a territory the supporting unit can reach. Convoys use fleets at sea to move an army between coastal territories.</p>
+        <h3>Retreats</h3>
+        <p>A dislodged unit can retreat using the move format, for example <code>A PAR - BUR</code>. Its destination must be legal and unoccupied; a unit without a valid retreat is disbanded.</p>
+        <h3>Adjustment</h3>
+        <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control, for example <code>Build A PAR</code> or <code>Build F STP(nc)</code>. Remove with <code>Remove A PAR</code>. The classic game starts with an adjustment for the initial builds.</p>
+        <h3>Order tips</h3>
+        <p>Use territory abbreviations shown on the map and single spaces between tokens. For a fleet moving, retreating, or building in a territory with multiple coasts, use <code>(nc)</code> or <code>(sc)</code> on the destination where needed. Do not add a coast suffix to the starting territory. Input is case-insensitive.</p>
+        <p>These are format examples, not necessarily legal orders in your current position. In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
+
+    const tabs = [gameTab, helpTab];
+    const panels = [gamePanel, helpPanel];
+    function selectTab(index, focus = false) {
+        tabs.forEach((tab, i) => {
+            const selected = i === index;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
+            panels[i].hidden = !selected;
+        });
+        if (focus) tabs[index].focus();
+    }
+    tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => selectTab(index));
+        tab.addEventListener('keydown', event => {
+            let next;
+            if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') next = 1 - index;
+            else if (event.key === 'Home') next = 0;
+            else if (event.key === 'End') next = tabs.length - 1;
+            else return;
+            event.preventDefault();
+            selectTab(next, true);
+        });
     });
 }
 

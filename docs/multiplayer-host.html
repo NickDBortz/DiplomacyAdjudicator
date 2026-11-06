@@ -16,6 +16,11 @@
   <div id="sidebar" class="sidebar">
     <button id="toggleBtn" class="togglebtn">&#9776;</button>
     <div class="sidebar-content">
+      <div class="sidebar-tabs" role="tablist" aria-label="Sidebar views">
+        <button type="button" id="game-tab" class="tab" role="tab" aria-selected="true" aria-controls="game-panel">Game</button>
+        <button type="button" id="help-tab" class="tab" role="tab" aria-selected="false" aria-controls="help-panel" tabindex="-1">Help</button>
+      </div>
+      <div id="game-panel" class="sidebar-panel game-panel" role="tabpanel" aria-labelledby="game-tab">
       <div class="orders">
         <p class="section-header">Hosting</p>
         <p id="info" class="info"></p>
@@ -24,6 +29,7 @@
 
         <div id="player-actions">
           <p class="section-header">Enter Your Order:</p>
+          <p id="order-example" class="host-note" aria-live="polite"></p>
           <input id="order" type="text">
           <button id="submit-order" class="btn">Submit Order</button>
           <p id="order-error" class="info"></p>
@@ -56,6 +62,8 @@
         </div>
       </div>
       <button id="leave-game" class="btn btn-danger">Leave Game</button>
+      </div>
+      <div id="help-panel" class="sidebar-panel help-panel" role="tabpanel" aria-labelledby="help-tab" tabindex="0" hidden></div>
     </div>
   </div>
   <div id="main">

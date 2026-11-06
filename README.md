@@ -24,6 +24,8 @@ The front end in `docs/` is published to GitHub Pages and talks to the backend h
 - **Singleplayer**: one browser plays every power. Choose a power, enter its orders, switch to the next power, and resolve when all orders are in.
 - **Multiplayer**: host or join a game where each player controls one power.
 
+Use the sidebar's **Help** tab for a rules overview and order examples; switch back to **Game** to enter orders.
+
 The free Render instance sleeps when idle, so the first request after a break can take around 30 seconds.
 
 ### Multiplayer
@@ -83,13 +85,13 @@ Enter one order per unit. Unit tokens are `A` (army) and `F` (fleet); territory 
 | Order | Example |
 | --- | --- |
 | Hold | `A PAR H` |
-| Move | `A PAR - BUR` |
+| Move | `A PAR - BUR`, `F MAO - SPA(nc)`, or `F MAO - SPA(sc)` |
 | Support a move or hold | `A MAR S A PAR - BUR` or `A MAR S A PAR H` |
 | Convoy an army | `F NTH C A LON - BEL` |
 | Build an army or fleet | `Build A PAR` or `Build F STP(nc)` |
 | Remove a unit | `Remove A PAR` |
 
-For a fleet in a territory with multiple coasts, specify the coast with `(nc)` or `(sc)`; these suffixes are lowercase. Order and unit tokens use the capitalization shown above. During a retreat, use the normal move form, such as `A PAR - BUR`.
+When a fleet moves, retreats, or builds in a territory with multiple coasts, specify the destination coast with `(nc)` or `(sc)` where needed. Do not add a coast suffix to the starting territory. Order input is case-insensitive. During a retreat, use the normal move form, such as `A PAR - BUR`.
 
 ## Running locally
 
