@@ -12,6 +12,7 @@ class OrderParser:
         self.allow_transformations = True
 
     def parse_order_string(self, order_string, owner=None):
+        order_string = order_string.lower()
         order = self._parse_order_string(order_string)
         if order is not None:
             if self.adjudicator.queue_order(order, owner):
@@ -25,9 +26,9 @@ class OrderParser:
             if idx < 0 or idx >= len(split_order_string):
                 raise Exception()
             unit_type = split_order_string[idx]
-            if unit_type not in ['A', 'F', BUILD, DISBAND]:
+            if unit_type not in ['a', 'f', BUILD.lower(), DISBAND.lower()]:
                 raise Exception()
-            return ARMY if unit_type == 'A' else FLEET if unit_type == 'F' else unit_type
+            return ARMY if unit_type == 'a' else FLEET if unit_type == 'f' else unit_type
 
         def expect_territory_abbr(split_order_string, idx, allow_coast=False):
             if idx < 0 or idx >= len(split_order_string):
@@ -39,7 +40,7 @@ class OrderParser:
                 if len(split_terr_coast) > 1:
                     territory_abbr = split_terr_coast[0]
                     coast = split_terr_coast[1].split(')')[0]
-                    if coast not in (NORTH_COAST, SOUTH_COAST):
+                    if coast not in (NORTH_COAST.lower(), SOUTH_COAST.lower()):
                         raise Exception()
             terr = self.game_state.get_territory(territory_abbr)
             if terr is not None:
@@ -50,7 +51,7 @@ class OrderParser:
             if idx < 0 or idx >= len(split_order_string):
                 raise Exception()
             order_type = split_order_string[idx]
-            if order_type not in ['H', '-', 'S', 'T', 'T(nc)', 'T(sc)', 'C', 'B']:
+            if order_type not in ['h', '-', 's', 't', 't(nc)', 't(sc)', 'c', 'b']:
                 raise Exception()
             return order_type
 
@@ -62,7 +63,7 @@ class OrderParser:
             unit_type = expect_unit_type(split_order_string, idx)
             idx += 1
 
-            if unit_type == BUILD:
+            if unit_type == BUILD.lower():
                 unit_type = expect_unit_type(split_order_string, idx)
                 idx += 1
                 territory, coast = expect_territory_abbr(split_order_string, idx, allow_coast=True)
@@ -70,7 +71,7 @@ class OrderParser:
                 unit = Unit(territory.owner, unit_type, territory)
                 return BuildOrder(unit, territory, coast)
 
-            if unit_type == DISBAND:
+            if unit_type == DISBAND.lower():
                 unit_type = expect_unit_type(split_order_string, idx)
                 idx += 1
                 territory, _ = expect_territory_abbr(split_order_string, idx)
@@ -100,7 +101,7 @@ class OrderParser:
             if unit is None or (unit.type != unit_type and not territory.is_coast):
                 raise Exception()
 
-            if order_type == 'H':
+            if order_type == 'h':
                 return HoldOrder(unit)
             elif order_type == '-':
                 dest_territory, coast = expect_territory_abbr(split_order_string, idx, allow_coast=True)
@@ -109,21 +110,21 @@ class OrderParser:
                 if len(split_order_string) > idx+1:
                     is_via_convoy = split_order_string[idx].strip().lower() == 'via' and split_order_string[idx+1].strip().lower() == 'convoy'
                 return AdvanceOrder(unit, dest_territory, coast, is_via_convoy)
-            elif order_type == 'S':
+            elif order_type == 's':
                 supported_order_string = ' '.join(split_order_string[idx:])
                 supported_order = self._parse_order_string(supported_order_string)
                 if not isinstance(supported_order, Order):
                     raise Exception()
                 return SupportOrder(unit, supported_order)
-            elif order_type.startswith('T') and self.allow_transformations: # This is a house rule and isn't always allowed
+            elif order_type.startswith('t') and self.allow_transformations: # This is a house rule and isn't always allowed
                 split_terr_coast = order_type.split('(')
                 coast = None
                 if len(split_terr_coast) > 1:
                     coast = split_terr_coast[1].split(')')[0]
-                    if coast not in (NORTH_COAST, SOUTH_COAST):
+                    if coast not in (NORTH_COAST.lower(), SOUTH_COAST.lower()):
                         raise Exception()
                 return TransformOrder(unit, coast)
-            elif order_type == 'C':
+            elif order_type == 'c':
                 if unit_type != FLEET:
                     raise Exception()
                 advance_order_string = ' '.join(split_order_string[idx:])
