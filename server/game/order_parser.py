@@ -28,7 +28,7 @@ class OrderParser:
             unit_type = split_order_string[idx]
             if unit_type not in ['a', 'f', BUILD.lower(), DISBAND.lower()]:
                 raise Exception()
-            return ARMY.lower() if unit_type == 'a' else FLEET.lower() if unit_type == 'f' else unit_type
+            return ARMY if unit_type == 'a' else FLEET if unit_type == 'f' else unit_type
 
         def expect_territory_abbr(split_order_string, idx, allow_coast=False):
             if idx < 0 or idx >= len(split_order_string):
@@ -116,7 +116,7 @@ class OrderParser:
                 if not isinstance(supported_order, Order):
                     raise Exception()
                 return SupportOrder(unit, supported_order)
-            elif order_type.startswith('T') and self.allow_transformations: # This is a house rule and isn't always allowed
+            elif order_type.startswith('t') and self.allow_transformations: # This is a house rule and isn't always allowed
                 split_terr_coast = order_type.split('(')
                 coast = None
                 if len(split_terr_coast) > 1:
