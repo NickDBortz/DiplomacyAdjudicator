@@ -344,6 +344,19 @@ function applyGameState(state) {
     renderSubmittedOrders(state);
     updateGameRole();
     renderGameInfo();
+    renderOrderExamples();
+}
+
+function renderOrderExamples() {
+    const el = document.getElementById('order-example');
+    if (el && gameInfo.power !== 'Spectator') {
+        if (gameInfo.state.phase === 'Adjustment')
+            el.textContent = 'Example: Build A TRI or Remove A TRI';
+        else if (gameInfo.state.phase === 'Spring' || gameInfo.state.phase === 'Fall')
+            el.textContent = 'Example: A TRI - BUR or A TRI H or A TRI S F ADR - ALB or F ADR S A TRI H or F ADR C A TRI - APU or A TRI T';
+        else if (gameInfo.state.phase === 'Spring Retreat' || gameInfo.state.phase === 'Fall Retreat')
+            el.textContent = 'Example: A TRI - BUR';
+    }
 }
 
 function downloadGameSave(saveData) {
