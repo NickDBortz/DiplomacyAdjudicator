@@ -22,12 +22,13 @@ class OrderGenerator:
             units_to_build = power.units_to_build(self.game_state.territory_list)
             if units_to_build > 0:
                 for supply_center in power.get_supply_centers(self.game_state.territory_list):
-                    if supply_center.unit is None:
-                        if supply_center.is_coast:
-                            if len(supply_center.north_coast) > 0:
-                                valid_orders.append(f'Build F {supply_center.abbr}(nc)')
-                                valid_orders.append(f'Build F {supply_center.abbr}(sc)')
-                        valid_orders.append(f'Build A {supply_center.abbr}')
+                    territory = self.game_state.get_territory(supply_center)
+                    if territory.unit is None:
+                        if territory.is_coast:
+                            if len(territory.north_coast) > 0:
+                                valid_orders.append(f'Build F {territory.abbr}(nc)')
+                                valid_orders.append(f'Build F {territory.abbr}(sc)')
+                        valid_orders.append(f'Build A {territory.abbr}')
             elif units_to_build < 0:
                 for unit in power.units:
                     unit_type_text = 'A' if unit.type == ARMY else 'F'
