@@ -13,10 +13,15 @@ class OrderParser:
         self.allow_transformations = True
 
     def parse_order_string(self, order_string, owner=None):
-        order_string = order_string.lower()
+        order_string = order_string.lower().strip()
 
         valid_orders = self.order_generator.generate_valid_orders(owner)
-        if order_string not in valid_orders:
+        found = False
+        for order in valid_orders:
+            if order_string == order.lower().strip():
+                found = True
+                break
+        if not found:
             return False
 
         order = self._parse_order_string(order_string)

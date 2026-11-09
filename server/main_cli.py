@@ -15,6 +15,11 @@ def add_fleet(territory, owner, coast=None):
     return unit
 
 if __name__ == "__main__":
-    game = Game()
+    map = Game(start_phase='Spring', render=False, allow_transformations=True)
 
-    game.do_gameplay_loop()
+    # game.do_gameplay_loop()
+    french_army = add_army(map.game_state.get_territory('STP'), map.game_state.get_player('France'))
+
+    print(map.order_generator.generate_valid_orders())
+
+    map.submit_order('A STP T(sc)')

@@ -2,8 +2,9 @@ from game.enums import ARMY, ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHAS
 from game.territory import LandTerritory
 
 class OrderGenerator:
-    def __init__(self, game_state):
+    def __init__(self, game_state, adjudicator):
         self.game_state = game_state
+        self.adjudicator = adjudicator
 
     def generate_valid_orders(self, power=None):
         phase = self.game_state.get_phase()
@@ -49,17 +50,13 @@ class OrderGenerator:
                         advances_of_unit[unit] = [dest_territory]
 
         if power is not None:
-            # Get the player
-            player = self.game_state.get_player(power)
-            if player is None:
-                return None
-            
             # Get the player units
-            units = player.units
+            units = power.units
 
         for unit in units:
             # Get unit type
-            type_text = 'A' if unit.type == ARMY else 'F'
+            unit_type = unit.type
+            type_text = 'A' if unit_type == ARMY else 'F'
 
             # Get the unit territory
             start_territory = unit.territory
@@ -70,8 +67,11 @@ class OrderGenerator:
 
             # Add transform order (requires coast territory)
             if isinstance(start_territory, LandTerritory) and start_territory.is_coast:
-                # TODO: If Army, handle multiple coasts to transform to
-                valid_orders.append(f'{type_text} {start_territory_abbr} T')
+                if unit_type == ARMY and len(start_territory.north_coast) > 0:
+                    valid_orders.append(f'{type_text} {start_territory_abbr} T(nc)')
+                    valid_orders.append(f'{type_text} {start_territory_abbr} T(sc)')
+                else:
+                    valid_orders.append(f'{type_text} {start_territory_abbr} T')
 
             # Add advance order
             for dest_territory in advances_of_unit[unit]:
@@ -96,6 +96,10 @@ class OrderGenerator:
                 # For advances
                 if dest_territory in advances_to:
                     for supported_unit in advances_to[dest_territory]:
+                        # Skip support of self
+                        if supported_unit == unit:
+                            continue
+
                         supported_unit_type_text = 'A' if supported_unit.type == ARMY else 'F'
                         supported_unit_start_territory = supported_unit.territory
                         supported_unit_start_territory_abbr = supported_unit_start_territory.abbr
@@ -108,5 +112,22 @@ class OrderGenerator:
     
     def _generate_valid_retreat_orders(self, power=None):
         valid_orders = []
+
+        dislodged = self.adjudicator.gather_dislodged(power)
+
+        for unit in dislodged:
+            unit_type = unit.type
+            unit_type_text = 'A' if unit_type == ARMY else 'F'
+
+            start_territory = unit.dislodged_from
+            start_territory_abbr = start_territory.abbr
+
+            for dest_territory in start_territory.adjacents:
+                # TODO: Handle multiple coasts
+                if unit.can_traverse(dest_territory):
+                    if dest_territory.unit is None:
+                        if len(dest_territory.contesting) == 0 or len(dest_territory.contesting) == 1 and dest_territory.contesting[0].unit == unit:
+                            dest_territory_abbr = dest_territory.abbr
+                            valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}')
 
         return valid_orders

@@ -15,7 +15,7 @@ class Game:
 
         self.game_state = GameState(players, territories)
         self.adjudicator = Adjudicator(self.game_state, supply_centers_to_win)
-        self.order_generator = OrderGenerator(self.game_state)
+        self.order_generator = OrderGenerator(self.game_state, self.adjudicator)
         self.order_parser = OrderParser(self.adjudicator, self.game_state, self.order_generator)
         if render:
             self.renderer = CV2Renderer(width, height, vertices, water_color, territories_obj, self.game_state)
