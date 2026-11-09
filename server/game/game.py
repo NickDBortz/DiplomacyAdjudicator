@@ -3,6 +3,7 @@ from game.state import GameState
 from game.adjudicator import Adjudicator
 from game.order_parser import OrderParser
 from game.renderer import BlankRenderer, CV2Renderer
+from game.order_generator import OrderGenerator
 from game.enums import ADJUSTMENT_PHASE, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class Game:
@@ -14,7 +15,8 @@ class Game:
 
         self.game_state = GameState(players, territories)
         self.adjudicator = Adjudicator(self.game_state, supply_centers_to_win)
-        self.order_parser = OrderParser(self.adjudicator, self.game_state)
+        self.order_generator = OrderGenerator(self.game_state)
+        self.order_parser = OrderParser(self.adjudicator, self.game_state, self.order_generator)
         if render:
             self.renderer = CV2Renderer(width, height, vertices, water_color, territories_obj, self.game_state)
         else:

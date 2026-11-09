@@ -3,9 +3,10 @@ from game.unit import Unit
 from game.enums import NORTH_COAST, SOUTH_COAST, ARMY, FLEET, BUILD, DISBAND, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class OrderParser:
-    def __init__(self, adjudicator, game_state):
+    def __init__(self, adjudicator, game_state, order_generator):
         self.adjudicator = adjudicator
         self.game_state = game_state
+        self.order_generator = order_generator
         self.allow_transformations = False
 
     def activate_transformations(self):
@@ -13,6 +14,11 @@ class OrderParser:
 
     def parse_order_string(self, order_string, owner=None):
         order_string = order_string.lower()
+
+        valid_orders = self.order_generator.generate_valid_orders(owner)
+        if order_string not in valid_orders:
+            return False
+
         order = self._parse_order_string(order_string)
         if order is not None:
             if self.adjudicator.queue_order(order, owner):
