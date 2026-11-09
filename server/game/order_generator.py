@@ -18,6 +18,22 @@ class OrderGenerator:
     def _generate_valid_adjustment_orders(self, power=None):
         valid_orders = []
 
+        if power is not None:
+            units_to_build = power.units_to_build(self.game_state.territory_list)
+            if units_to_build > 0:
+                for supply_center in power.get_supply_centers(self.game_state.territory_list):
+                    if supply_center.unit is None:
+                        if supply_center.is_coast:
+                            if len(supply_center.north_coast) > 0:
+                                valid_orders.append(f'Build F {supply_center.abbr}(nc)')
+                                valid_orders.append(f'Build F {supply_center.abbr}(sc)')
+                        valid_orders.append(f'Build A {supply_center.abbr}')
+            elif units_to_build < 0:
+                for unit in power.units:
+                    unit_type_text = 'A' if unit.type == ARMY else 'F'
+                    unit_territory_abbr = unit.territory.abbr
+                    valid_orders.append(f'Remove {unit_type_text} {unit_territory_abbr}')
+
         return valid_orders
 
     def _generate_valid_standard_orders(self, power=None):
