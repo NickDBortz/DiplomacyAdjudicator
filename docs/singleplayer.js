@@ -182,6 +182,10 @@ document.getElementById('submit-order').addEventListener('click', async () => {
       queuedOrders[power].push(order);
       setGreatPowerInfo();
       orderErrorElement.textContent = 'Order submitted successfully!';
+      // Reset the map order picker after successful submission
+      if (typeof resetMapOrderPicker === 'function') {
+        resetMapOrderPicker();
+      }
     } else {
       orderErrorElement.textContent = `Error submitting order for ${power}: ${ok['error']}`;
     }
