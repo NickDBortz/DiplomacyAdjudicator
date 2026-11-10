@@ -1,5 +1,7 @@
 # Unit Rendering Implementation Summary
 
+> This describes an earlier icon design and implementation. The current icons are a helmeted soldier and a ship, defined in `docs/army.svg` and `docs/fleet.svg`.
+
 ## What Was Changed
 
 I've successfully improved the rendering of armies and fleets from simple A/F circle markers to meaningful SVG icons that clearly represent each unit type.

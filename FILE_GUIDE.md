@@ -1,5 +1,7 @@
 # Unit Rendering Improvements - File Guide
 
+> The demo pages and implementation details below describe an earlier icon design. The current game uses `docs/army.svg` and `docs/fleet.svg`.
+
 ## 📋 Documentation Files
 
 ### Main Documentation

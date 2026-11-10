@@ -1,5 +1,7 @@
 # Army and Fleet Unit Rendering Improvements
 
+> This describes an earlier icon design and implementation. The current icons are a helmeted soldier and a ship, defined in `docs/army.svg` and `docs/fleet.svg`.
+
 ## Overview
 
 The Diplomacy game's unit rendering has been significantly improved by replacing simple circle markers with meaningful SVG icons that clearly distinguish between **Army** and **Fleet** units.
