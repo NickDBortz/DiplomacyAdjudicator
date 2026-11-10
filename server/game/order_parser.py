@@ -1,18 +1,36 @@
+import re
 from game.orders import Order, BuildOrder, DisbandOrder, HoldOrder, AdvanceOrder, SupportOrder, TransformOrder, ConvoyOrder
 from game.unit import Unit
 from game.enums import NORTH_COAST, SOUTH_COAST, ARMY, FLEET, BUILD, DISBAND, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class OrderParser:
-    def __init__(self, adjudicator, game_state):
+    def __init__(self, adjudicator, game_state, order_generator):
         self.adjudicator = adjudicator
         self.game_state = game_state
+        self.order_generator = order_generator
         self.allow_transformations = False
 
     def activate_transformations(self):
         self.allow_transformations = True
 
     def parse_order_string(self, order_string, owner=None):
-        order_string = order_string.lower()
+        order_string = order_string.lower().strip()
+
+        valid_orders = self.order_generator.generate_valid_orders(owner)
+        found = False
+        for order in valid_orders:
+            if order_string == order.lower().strip():
+                found = True
+                break
+            # If the order is an army movement that ends with a coastal specification, it's allowed to be attempted
+            if re.match(r'^a \w\w\w - \w\w\w\((nc|sc)\)$', order_string):
+                order_string = order_string[:-4]
+                if order_string == order.lower().strip():
+                    found = True
+                    break
+        if not found:
+            return False
+
         order = self._parse_order_string(order_string)
         if order is not None:
             if self.adjudicator.queue_order(order, owner):

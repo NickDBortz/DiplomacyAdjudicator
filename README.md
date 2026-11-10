@@ -24,7 +24,9 @@ The front end in `docs/` is published to GitHub Pages and talks to the backend h
 - **Singleplayer**: one browser plays every power. Choose a power, enter its orders, switch to the next power, and resolve when all orders are in.
 - **Multiplayer**: host or join a game where each player controls one power.
 
-Use the sidebar's **Help** tab for a rules overview and order examples; switch back to **Game** to enter orders.
+Use the sidebar's **Help** tab for a rules overview; switch back to **Game** to submit orders.
+In the Game tab, filter available orders by unit or build location and order type, then select and submit an order. Available orders refresh as the game changes; an order can still fail when adjudicated because orders resolve simultaneously.
+The map outlines the selected unit or location in blue and related units and destinations in gold. Choosing an order narrows the preview; submitting it or using **Clear selection** removes the highlights. A dashed marker indicates a dislodged unit being previewed.
 
 The free Render instance sleeps when idle, so the first request after a break can take around 30 seconds.
 
@@ -49,6 +51,8 @@ The **Chat** button at the bottom-left of the lobby and game pages opens a chat 
 - Messages are limited to 500 characters, with at most 5 every 5 seconds per player. The server keeps the last 200 messages of each conversation in memory; history is not part of save files. A player's private conversations are deleted when they leave or are kicked.
 
 ### Host controls
+
+In a multiplayer game, open or close **Host Controls** using its sidebar header.
 
 - **Kick** removes a player. During a game their power becomes vacant.
 - **Make host** hands the host role to another connected player. During a game the new host must control a power.

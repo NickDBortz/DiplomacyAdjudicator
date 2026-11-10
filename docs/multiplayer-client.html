@@ -28,9 +28,18 @@
         <ul id="player-list" class="lobby-list"></ul>
 
         <div id="player-actions">
-          <p class="section-header">Enter Your Order:</p>
-          <p id="order-example" class="host-note" aria-live="polite"></p>
-          <input id="order" type="text">
+          <p class="section-header">Select Your Order:</p>
+          <div class="order-picker">
+            <label for="order-unit">Unit or build location</label>
+            <select id="order-unit" disabled><option value="">All units and locations</option></select>
+            <label for="order-type">Order type</label>
+            <select id="order-type" disabled><option value="">All order types</option></select>
+            <label for="order-choice">Available orders</label>
+            <select id="order-choice" disabled><option value="">Waiting for game state</option></select>
+            <p id="order-picker-status" class="order-picker-status" aria-live="polite">Waiting for available orders.</p>
+            <p class="order-highlight-legend"><span class="legend-source">Blue: selected unit or location</span><span class="legend-target">Gold: related units and destinations</span></p>
+            <button type="button" id="clear-order-selection" class="order-picker-clear">Clear selection</button>
+          </div>
           <button id="submit-order" class="btn">Submit Order</button>
           <p id="order-error" class="info"></p>
 
@@ -41,8 +50,8 @@
         <p id="spectator-message" class="menu-message hidden">You are spectating. Orders appear after the host renders them.</p>
       </div>
 
-      <div id="host-controls" class="host-controls hidden">
-        <p class="section-header">Host Controls</p>
+      <details id="host-controls" class="host-controls hidden">
+        <summary class="host-controls-toggle">Host Controls</summary>
         <button id="download-save" class="btn btn-secondary">Download Save</button>
         <button id="resolve" class="btn">Render Orders</button>
         <p class="host-note">Only the host can render and resolve orders.</p>
@@ -61,7 +70,7 @@
           </div>
         </div>
 
-      </div>
+      </details>
       <button id="leave-game" class="btn btn-danger">Leave Game</button>
       </div>
       <div id="help-panel" class="sidebar-panel help-panel" role="tabpanel" aria-labelledby="help-tab" tabindex="0" hidden></div>

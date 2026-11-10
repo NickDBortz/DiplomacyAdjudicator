@@ -82,12 +82,17 @@ class Adjudicator:
 
         self.game_state.advance_phase(skip_retreat, skip_adjustment)
 
-    def gather_dislodged(self):
+    def gather_dislodged(self, player=None):
         dislodged = []
-        for player in self.game_state.player_list:
+        if player is not None:
             for unit in player.units:
                 if unit.dislodged:
                     dislodged.append(unit)
+        else:
+            for player in self.game_state.player_list:
+                for unit in player.units:
+                    if unit.dislodged:
+                        dislodged.append(unit)
         return dislodged
 
     def _resolve_general_orders(self):

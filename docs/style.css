@@ -100,6 +100,34 @@
     overflow-y: auto;
 }
 
+.sidebar-panel,
+.orders {
+    scrollbar-width: thin;
+    scrollbar-color: #666 #1b1b1b;
+}
+
+.sidebar-panel::-webkit-scrollbar,
+.orders::-webkit-scrollbar {
+    width: 10px;
+}
+
+.sidebar-panel::-webkit-scrollbar-track,
+.orders::-webkit-scrollbar-track {
+    background: #1b1b1b;
+}
+
+.sidebar-panel::-webkit-scrollbar-thumb,
+.orders::-webkit-scrollbar-thumb {
+    background: #666;
+    border: 2px solid #1b1b1b;
+    border-radius: 6px;
+}
+
+.sidebar-panel::-webkit-scrollbar-thumb:hover,
+.orders::-webkit-scrollbar-thumb:hover {
+    background: #4a90e2;
+}
+
 /* Singleplayer wraps the content in this div, which must fill the sidebar for the bottom buttons to pin. */
 #local-sidebar {
     display: flex;
@@ -120,6 +148,42 @@
 .host-controls .section-header {
     margin-top: 12px;
     color: #4a90e2;
+}
+
+.host-controls-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    color: #4a90e2;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+}
+
+.host-controls-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.host-controls-toggle::after {
+    content: '+';
+    font-size: 20px;
+    line-height: 1;
+}
+
+details[open] > .host-controls-toggle::after {
+    content: '-';
+}
+
+.host-controls-toggle:hover {
+    color: #9dc9ff;
+}
+
+.host-controls-toggle:focus-visible {
+    outline: 2px solid #4a90e2;
+    outline-offset: -2px;
+    border-radius: 4px;
 }
 
 .host-controls .host-note {
@@ -202,6 +266,18 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 }
 .unit text { font-size: 14px; font-weight: bold; text-anchor: middle; dominant-baseline: central; pointer-events: none; fill: #fff; }
 .unit circle { stroke: #000; stroke-width: 2; }
+.territory.order-highlight-source, .unit.order-highlight-source circle {
+    stroke: #00c8ff;
+    stroke-width: 3;
+    filter: brightness(1.2);
+}
+.territory.order-highlight-target, .unit.order-highlight-target circle {
+    stroke: #ffcf40;
+    stroke-width: 3;
+    filter: brightness(1.2);
+}
+.unit.dislodged-preview circle { stroke-dasharray: 3 2; }
+.unit.dislodged-preview { pointer-events: none; }
 
 .sidebar p {
     margin: 12px 16px 6px;
@@ -266,6 +342,70 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     color: #eee;
 }
 
+.order-picker {
+    margin: 0 16px 16px;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #1b1b1b;
+}
+
+.order-picker label {
+    display: block;
+    margin: 0 0 5px;
+    color: #ddd;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.sidebar .order-picker select {
+    width: 100%;
+    margin: 0 0 12px;
+    box-sizing: border-box;
+}
+
+.sidebar .order-picker select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.sidebar .order-picker-status {
+    margin: 0;
+    color: #aaa;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.sidebar .order-highlight-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin: 10px 0;
+    color: #ddd;
+    font-size: 12px;
+}
+
+.order-highlight-legend span::before {
+    content: '';
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 5px;
+    border-radius: 50%;
+}
+.legend-source::before { background: #00c8ff; }
+.legend-target::before { background: #ffcf40; }
+.order-picker-clear {
+    padding: 6px 10px;
+    border: 1px solid #777;
+    border-radius: 4px;
+    background: #292929;
+    color: #eee;
+    cursor: pointer;
+}
+.order-picker-clear:hover { background: #444; }
+.order-picker-clear:focus-visible { outline: 2px solid #4a90e2; outline-offset: 2px; }
+
 .info {
     white-space: pre-line;
 
@@ -282,42 +422,6 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 
     border-left: 4px solid #4a90e2;
     border-radius: 6px;
-}
-
-#order {
-    width: calc(100% - 32px);
-    margin: 0 16px 16px;
-    padding: 10px 12px;
-
-    background-color: #222;
-    color: #eee;
-
-    border: 1px solid #444;
-    border-radius: 4px;
-
-    font-size: 14px;
-    box-sizing: border-box;
-
-    outline: none;
-    transition: border-color 0.2s, background-color 0.2s;
-}
-
-#order:hover {
-    border-color: #666;
-}
-
-#order:focus {
-    border-color: #4a90e2;
-    background-color: #2a2a2a;
-}
-
-#order::placeholder {
-    color: #777;
-}
-
-#order:focus {
-    border-color: #4a90e2;
-    box-shadow: 0 0 8px rgba(74, 144, 226, 0.3);
 }
 
 .btn {

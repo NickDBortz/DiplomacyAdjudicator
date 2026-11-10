@@ -12,6 +12,7 @@ let gameId;
 let greatPower;
 let drawVotes = [];
 let queuedOrders = {};
+let orderRequestId = 0;
 
 const infoElement = document.getElementById('info');
 const orderErrorElement = document.getElementById('order-error');
@@ -21,10 +22,15 @@ Object.assign(window.diplomacy, {
     const r = await request('POST', '/games');
     gameId = r.game_id;
     render(r.state);
+    await refreshAvailableOrders();
   },
   async order(order, power) {
     const r = await request('POST', `/games/${gameId}/orders`, { order, power });
     render(r.state);
+    if (r.ok) {
+      resetOrderFilters();
+      await refreshAvailableOrders();
+    }
     return { ok: r.ok, error: r.error };
   },
   async orders(list, power) {
@@ -32,10 +38,35 @@ Object.assign(window.diplomacy, {
     for (const o of list) results.push(await this.order(o, power));
     return results;
   },
-  async resolve() { render(await request('POST', `/games/${gameId}/resolve`)); },
+  async resolve() {
+    render(await request('POST', `/games/${gameId}/resolve`));
+    await refreshAvailableOrders();
+  },
   help() { console.log(CONSOLE_HELP); },
-  async draw(power) { render(await request('POST', `/games/${gameId}/draw`, { power })); }
+  async draw(power) {
+    render(await request('POST', `/games/${gameId}/draw`, { power }));
+    await refreshAvailableOrders();
+  }
 });
+
+async function refreshAvailableOrders() {
+  const requestId = ++orderRequestId;
+  const power = greatPower;
+  const currentGameId = gameId;
+  if (!power || !currentGameId) {
+    setOrderPicker([], 'Select a power to see available orders.');
+    return;
+  }
+  setOrderPicker([], 'Loading available orders...');
+  try {
+    const result = await request('GET', `/games/${currentGameId}/valid-orders?power=${encodeURIComponent(power)}`);
+    if (requestId !== orderRequestId || power !== greatPower || currentGameId !== gameId) return;
+    if (!Array.isArray(result.valid_orders)) throw new Error('Invalid available orders response.');
+    setOrderPicker(result.valid_orders);
+  } catch (e) {
+    if (requestId === orderRequestId) setOrderPicker([], `Could not load available orders: ${e.message}`);
+  }
+}
 
 function populateGreatPowerSelect() {
   const select = document.getElementById('greatpower');
@@ -47,6 +78,7 @@ function populateGreatPowerSelect() {
   select.addEventListener('change', () => {
     greatPower = select.value;
     setGreatPowerInfo();
+    refreshAvailableOrders();
   });
   for (const p of window.diplomacy.state.players) {
     const option = document.createElement('option');
@@ -126,28 +158,35 @@ function setGreatPowerInfo() {
 }
 
 function resetLocalUi() {
+  orderRequestId++;
   queuedOrders = {};
   drawVotes = [];
   document.getElementById('greatpower').value = '';
   greatPower = '';
   infoElement.textContent = '';
-  document.getElementById('order').value = '';
+  setOrderPicker([], 'Select a power to see available orders.');
 }
 
 document.getElementById('submit-order').addEventListener('click', async () => {
-  const order = document.getElementById('order').value;
+  const order = document.getElementById('order-choice').value;
   const power = document.getElementById('greatpower').value;
 
-  const ok = await window.diplomacy.order(order, power);
-  if (ok.ok) {
-    if (!queuedOrders[power]) {
-      queuedOrders[power] = [];
+  if (!power || !order) {
+    orderErrorElement.textContent = 'Select a power and an order.';
+    return;
+  }
+  try {
+    const ok = await window.diplomacy.order(order, power);
+    if (ok.ok) {
+      if (!queuedOrders[power]) queuedOrders[power] = [];
+      queuedOrders[power].push(order);
+      setGreatPowerInfo();
+      orderErrorElement.textContent = 'Order submitted successfully!';
+    } else {
+      orderErrorElement.textContent = `Error submitting order for ${power}: ${ok['error']}`;
     }
-    queuedOrders[power].push(order);
-    orderErrorElement.textContent = 'Order submitted successfully!';
-    setGreatPowerInfo();
-  } else {
-    orderErrorElement.textContent = `Error submitting order for ${power}: ${ok['error']}`;
+  } catch (e) {
+    orderErrorElement.textContent = `Error submitting order for ${power}: ${e.message}`;
   }
 });
 

@@ -332,6 +332,11 @@ function updateGameRole() {
 
 // The server sends every unit and territory, plus this player's orders (everyone's once revealed).
 function applyGameState(state) {
+    const previous = gameInfo.state;
+    if (previous && (previous.phase !== state.phase || previous.year !== state.year ||
+        previous.player_power !== state.player_power || state.orders_revealed)) {
+        resetOrderFilters();
+    }
     render(state);
     gameInfo.state = state;
     gameInfo.power = state.player_power ?? gameInfo.power;
@@ -344,21 +349,198 @@ function applyGameState(state) {
     renderSubmittedOrders(state);
     updateGameRole();
     renderGameInfo();
-    renderOrderExamples();
+    if (!Array.isArray(state.valid_orders)) {
+        setOrderPicker([], 'Available orders were not provided by the server.');
+    } else {
+        setOrderPicker(state.valid_orders, state.orders_revealed
+            ? 'Orders are revealed; wait for the host to resolve them.'
+            : 'No available orders for this power.');
+    }
 }
 
-function renderOrderExamples() {
-    const el = document.getElementById('order-example');
-    if (el && gameInfo.power !== 'Spectator') {
-        if (gameInfo.state.phase === 'Adjustment')
-            el.textContent = 'Syntax examples: Build A PAR or Remove A PAR';
-        else if (gameInfo.state.phase === 'Spring' || gameInfo.state.phase === 'Fall')
-            el.textContent = 'Syntax examples: A PAR H, A PAR - BUR, F MAO - SPA(nc), or F MAO - SPA(sc)';
-        else if (gameInfo.state.phase === 'Spring Retreat' || gameInfo.state.phase === 'Fall Retreat')
-            el.textContent = 'Syntax examples: A PAR - BUR, F MAO - SPA(nc), or F MAO - SPA(sc)';
-        else
-            el.textContent = '';
+let availableOrders = [];
+
+function orderDetails(text) {
+    const parts = text.split(' ');
+    const adjustment = parts[0] === 'Build' || parts[0] === 'Remove';
+    const unit = adjustment ? parts[2].replace(/\([^)]*\)$/, '')
+        : `${parts[0]} ${parts[1]}`;
+    const action = adjustment ? parts[0] : parts[2].split('(')[0];
+    const types = { H: 'Hold', '-': 'Move', S: 'Support', C: 'Convoy', T: 'Transform',
+        Build: 'Build', Remove: 'Remove' };
+    return { text, unit, type: types[action] || action };
+}
+
+function replaceOptions(select, placeholder, values, label = value => value) {
+    const previous = select.value;
+    select.replaceChildren(new Option(placeholder, ''));
+    for (const value of values) select.add(new Option(label(value), value));
+    select.value = values.includes(previous) ? previous : '';
+}
+
+function unitFilterLabel(unit) {
+    const parts = unit.split(' ');
+    const abbr = parts.length === 2 ? parts[1] : parts[0];
+    const territory = mapData.territories.find(t => t.abbr === abbr);
+    const name = territory ? territory.name : abbr;
+    if (parts.length === 1) return name;
+    return `${parts[0] === 'A' ? 'Army' : 'Fleet'} ${name}`;
+}
+
+function setOrderPicker(orders, emptyMessage = 'No available orders for this power.') {
+    const unitSelect = document.getElementById('order-unit');
+    if (!unitSelect) return;
+    availableOrders = orders.map(orderDetails);
+    const typeSelect = document.getElementById('order-type');
+    const units = [...new Set(availableOrders.map(o => o.unit))]
+        .sort((a, b) => unitFilterLabel(a).localeCompare(unitFilterLabel(b)));
+    replaceOptions(unitSelect, 'All units and locations', units, unitFilterLabel);
+    replaceOptions(typeSelect, 'All order types', [...new Set(availableOrders.map(o => o.type))].sort());
+    unitSelect.disabled = availableOrders.length === 0;
+    typeSelect.disabled = availableOrders.length === 0;
+    renderOrderChoices(emptyMessage);
+}
+
+function renderOrderChoices(emptyMessage = 'No available orders for this power.') {
+    const unit = document.getElementById('order-unit').value;
+    const type = document.getElementById('order-type').value;
+    const matching = availableOrders.filter(o => (!unit || o.unit === unit) && (!type || o.type === type));
+    const select = document.getElementById('order-choice');
+    replaceOptions(select, matching.length ? 'Select an order' : 'No matching orders', matching.map(o => o.text));
+    select.disabled = matching.length === 0;
+    document.getElementById('order-picker-status').textContent = availableOrders.length
+        ? `${matching.length} of ${availableOrders.length} available orders. Select one to submit.`
+        : emptyMessage;
+    updateOrderHighlights();
+}
+
+function resetOrderFilters() {
+    for (const id of ['order-unit', 'order-type', 'order-choice']) {
+        const select = document.getElementById(id);
+        if (select) select.value = '';
     }
+}
+
+function clearOrderSelection() {
+    resetOrderFilters();
+    renderOrderChoices();
+}
+
+function orderHighlightData(unit, type, selected, orders) {
+    const sources = new Set();
+    const targets = new Set();
+    const actors = new Set();
+    const related = new Set();
+    const addUnit = (set, kind, territory) => set.add(`${kind} ${territory}`);
+    const sourceUnit = unit.split(' ');
+    if (unit) {
+        sources.add(sourceUnit.length === 2 ? sourceUnit[1] : sourceUnit[0]);
+        if (sourceUnit.length === 2) addUnit(actors, sourceUnit[0], sourceUnit[1]);
+        else {
+            for (const order of orders) {
+                if (order.unit === unit && order.type === 'Remove') {
+                    const parts = order.text.split(' ');
+                    addUnit(actors, parts[1], unit);
+                }
+            }
+        }
+    }
+    if (!selected && !type) return { sources, targets, actors, related };
+
+    const matches = orders.filter(o => (!unit || o.unit === unit) && (!type || o.type === type) &&
+        (!selected || o.text === selected));
+    for (const order of matches) {
+        const parts = order.text.split(' ');
+        const adjustment = parts[0] === 'Build' || parts[0] === 'Remove';
+        const origin = (adjustment ? parts[2] : parts[1]).replace(/\([^)]*\)$/, '');
+        sources.add(origin);
+        if (!adjustment || parts[0] === 'Remove') {
+            addUnit(actors, adjustment ? parts[1] : parts[0], origin);
+        }
+        if (adjustment) continue;
+        if (parts[2] === '-') {
+            targets.add(parts[3].replace(/\([^)]*\)$/, ''));
+        } else if (parts[2] === 'S' || parts[2] === 'C') {
+            const other = parts[4].replace(/\([^)]*\)$/, '');
+            targets.add(other);
+            addUnit(related, parts[3], other);
+            if (parts[5] === '-' && parts[6]) targets.add(parts[6].replace(/\([^)]*\)$/, ''));
+        }
+    }
+    return { sources, targets, actors, related };
+}
+
+function updateOrderHighlights() {
+    if (!svg || !window.diplomacy.state) return;
+    const unitSelect = document.getElementById('order-unit');
+    const typeSelect = document.getElementById('order-type');
+    const choiceSelect = document.getElementById('order-choice');
+    if (!unitSelect || !typeSelect || !choiceSelect) return;
+    const highlights = orderHighlightData(unitSelect.value, typeSelect.value, choiceSelect.value, availableOrders);
+    svg.querySelectorAll('.order-highlight-source, .order-highlight-target').forEach(el => {
+        el.classList.remove('order-highlight-source', 'order-highlight-target');
+    });
+    const preview = svg.querySelector('#dislodged-preview');
+    preview.replaceChildren();
+    for (const abbr of highlights.targets) {
+        const territory = document.getElementById(`terr-${abbr}`);
+        if (territory) territory.classList.add('order-highlight-target');
+    }
+    for (const abbr of highlights.sources) {
+        const territory = document.getElementById(`terr-${abbr}`);
+        if (territory) {
+            territory.classList.remove('order-highlight-target');
+            territory.classList.add('order-highlight-source');
+        }
+    }
+    const state = window.diplomacy.state;
+    const powerSelect = document.getElementById('greatpower');
+    const power = powerSelect ? powerSelect.value : state.player_power;
+    for (const unit of state.units) {
+        const abbr = unit.dislodged ? unit.dislodged_from : unit.territory;
+        const key = `${unit.type} ${abbr}`;
+        const actor = unit.owner === power && highlights.actors.has(key);
+        const related = !unit.dislodged && highlights.related.has(key);
+        if (!actor && !related) continue;
+        if (unit.dislodged) {
+            const territory = mapData.territories.find(t => t.abbr === abbr);
+            if (!territory) continue;
+            const [x, y] = unitPosition(territory, unit);
+            const marker = document.createElementNS(SVG_NS, 'g');
+            marker.setAttribute('class', 'unit dislodged-preview order-highlight-source');
+            const circle = document.createElementNS(SVG_NS, 'circle');
+            circle.setAttribute('cx', x + 17);
+            circle.setAttribute('cy', y + 17);
+            circle.setAttribute('r', 10);
+            const player = state.players.find(p => p.name === unit.owner);
+            if (!player) continue;
+            circle.setAttribute('fill', player.color);
+            const text = document.createElementNS(SVG_NS, 'text');
+            text.setAttribute('x', x + 17);
+            text.setAttribute('y', y + 17);
+            text.textContent = unit.type;
+            const title = document.createElementNS(SVG_NS, 'title');
+            title.textContent = `Dislodged ${unit.type === 'A' ? 'army' : 'fleet'} from ${territory.name}`;
+            marker.append(circle, text, title);
+            preview.appendChild(marker);
+        } else {
+            for (const marker of svg.querySelectorAll('#units .unit')) {
+                if (marker.dataset.territory === abbr && marker.dataset.owner === unit.owner &&
+                    marker.dataset.type === unit.type) {
+                    marker.classList.add(actor ? 'order-highlight-source' : 'order-highlight-target');
+                }
+            }
+        }
+    }
+}
+
+function initOrderPicker() {
+    const unit = document.getElementById('order-unit');
+    if (!unit) return;
+    unit.addEventListener('change', () => renderOrderChoices());
+    document.getElementById('order-type').addEventListener('change', () => renderOrderChoices());
+    document.getElementById('order-choice').addEventListener('change', updateOrderHighlights);
+    document.getElementById('clear-order-selection').addEventListener('click', clearOrderSelection);
 }
 
 function downloadGameSave(saveData) {
@@ -636,20 +818,20 @@ function initResolveControl() {
     });
 }
 
-// Wires the order box and draw button; each callback returns the message to show (or a promise of it).
+// Wires the order selector and draw button; callbacks return the message to show.
 function initOrderControls(onSubmit, onDraw) {
-    const orderEl = document.getElementById('order');
+    const orderEl = document.getElementById('order-choice');
     const messageEl = document.getElementById('order-error');
 
     document.getElementById('submit-order').addEventListener('click', async () => {
-        const order = orderEl.value.trim();
+        const order = orderEl.value;
         if (!order) {
-            messageEl.textContent = 'Enter an order.';
+            messageEl.textContent = 'Select an order.';
             return;
         }
         try {
             messageEl.textContent = await onSubmit(order);
-            if (messageEl.textContent === 'Order submitted.') orderEl.value = '';
+            if (messageEl.textContent === 'Order submitted.') clearOrderSelection();
         } catch (e) {
             messageEl.textContent = e.message;
         }
@@ -673,6 +855,7 @@ function initSidebar() {
         const collapsed = sidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('shifted', collapsed);
     });
+    initOrderPicker();
 
     const gameTab = document.getElementById('game-tab');
     const helpTab = document.getElementById('help-tab');
@@ -685,22 +868,21 @@ function initSidebar() {
         <p>Negotiate with the other powers and compete for supply centers. The first power to reach the map's winning count wins. All orders for a phase resolve at the same time.</p>
         <p>Armies move on land; fleets move through water and coastal territories. A unit can hold, move, support another unit, or convoy an army. Support adds strength; equal opposing forces can bounce. Attacks can cut support.</p>
         <h3>Movement: Spring and Fall</h3>
-        <p>Enter one order for each unit. A unit without an order holds. Use the unit type (<code>A</code> for army, <code>F</code> for fleet), its territory abbreviation, and an action:</p>
+        <p>Select one order for each unit. A unit without an order holds. Filter the available orders by unit and type to narrow the list.</p>
         <ul>
-            <li>Hold: <code>A PAR H</code></li>
-            <li>Move: <code>A PAR - BUR</code>; to a split coast: <code>F MAO - SPA(nc)</code> or <code>F MAO - SPA(sc)</code></li>
-            <li>Support a hold: <code>A BUR S A PAR H</code></li>
-            <li>Support a move: <code>A MAR S A PAR - BUR</code></li>
-            <li>Convoy: <code>F NTH C A LON - BEL</code>, with a matching army move <code>A LON - BEL</code>. Each fleet in the route needs a convoy order. Add <code>via convoy</code> to the army move to force a convoy.</li>
+            <li>Hold keeps a unit in its current territory.</li>
+            <li>Move sends a unit to a neighboring territory or an army along a convoy route.</li>
+            <li>Support strengthens another unit's hold or move.</li>
+            <li>Convoy transports an army by sea. Each fleet in the route needs a matching convoy order and the army needs a matching move.</li>
         </ul>
         <p>Support must be to a territory the supporting unit can reach. Convoys use fleets at sea to move an army between coastal territories.</p>
         <h3>Retreats</h3>
-        <p>A dislodged unit can retreat using the move format, for example <code>A PAR - BUR</code>. Its destination must be legal and unoccupied; a unit without a valid retreat is disbanded.</p>
+        <p>A dislodged unit can retreat to a legal, unoccupied destination; a unit without a valid retreat is disbanded.</p>
         <h3>Adjustment</h3>
-        <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control, for example <code>Build A PAR</code> or <code>Build F STP(nc)</code>. Remove with <code>Remove A PAR</code>. The classic game starts with an adjustment for the initial builds.</p>
+        <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control. The classic game starts with an adjustment for the initial builds.</p>
         <h3>Order tips</h3>
-        <p>Use territory abbreviations shown on the map and single spaces between tokens. For a fleet moving, retreating, or building in a territory with multiple coasts, use <code>(nc)</code> or <code>(sc)</code> on the destination where needed. Do not add a coast suffix to the starting territory. Input is case-insensitive.</p>
-        <p>These are format examples, not necessarily legal orders in your current position. In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
+        <p>For a fleet moving, retreating, or building in a territory with multiple coasts, choose the appropriate coast when available. Available orders can still fail when resolved because all players' orders are simultaneous.</p>
+        <p>In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
 
     const tabs = [gameTab, helpTab];
     const panels = [gamePanel, helpPanel];
@@ -834,6 +1016,9 @@ function buildMap() {
     const unitLayer = document.createElementNS(SVG_NS, 'g');
     unitLayer.setAttribute('id', 'units');
     svg.appendChild(unitLayer);
+    const previewLayer = document.createElementNS(SVG_NS, 'g');
+    previewLayer.setAttribute('id', 'dislodged-preview');
+    svg.appendChild(previewLayer);
     container.appendChild(svg);
 }
 
@@ -875,6 +1060,9 @@ function render(state) {
         const [x, y] = unitPosition(byAbbr[u.territory], u);
         const g = document.createElementNS(SVG_NS, 'g');
         g.setAttribute('class', 'unit');
+        g.dataset.territory = u.territory;
+        g.dataset.owner = u.owner;
+        g.dataset.type = u.type;
         const c = document.createElementNS(SVG_NS, 'circle');
         c.setAttribute('cx', x);
         c.setAttribute('cy', y);
@@ -952,6 +1140,7 @@ function render(state) {
         : 'All players chose to draw. The game ends in a draw.';
     }
     window.diplomacy.state = state;
+    updateOrderHighlights();
 }
 
 function drawArrow(fromX, fromY, toX, toY, color) {

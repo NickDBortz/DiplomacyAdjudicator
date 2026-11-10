@@ -1,10 +1,53 @@
 """JSON-friendly helpers around Game for the HTTP API. Each takes an explicit Game."""
 from game.game import Game
 from game.unit import Unit
-from game.enums import ARMY, FLEET, HOLD, ADVANCE, SUPPORT, CONVOY, TRANSFORM, BUILD, DISBAND
+from game.enums import ARMY, FLEET, HOLD, ADVANCE, SUPPORT, CONVOY, TRANSFORM, BUILD, DISBAND, ADJUSTMENT_PHASE, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 
 ALL_ORDERS = object()  # pass as get_state(power=...) to include every power's orders
+
+
+def get_valid_orders(game, player):
+    """Return generated orders that can currently be submitted for this player."""
+    state = game.game_state
+    if player is None or state.winner is not None or state.draw:
+        return []
+
+    phase = state.get_phase()
+    queued = [order for order in state.queued_orders if order.unit.owner == player]
+    adjustment_count = player.units_to_build(state.territory_list) if phase == ADJUSTMENT_PHASE else 0
+    queued_builds = [order for order in queued if order.type == BUILD]
+    queued_removals = [order for order in queued if order.type == DISBAND]
+    dislodged = game.adjudicator.gather_dislodged()
+    positions = [(unit, unit.territory) for unit in dislodged]
+    result = []
+    seen = set()
+    try:
+        for text in game.order_generator.generate_valid_orders(player):
+            if text in seen:
+                continue
+            order = game.order_parser._parse_order_string(text.lower())
+            if order is None or not order.is_valid or order.unit.owner != player:
+                continue
+            if order.type == BUILD:
+                if len(queued_builds) >= adjustment_count or any(
+                    existing.dest_territory == order.dest_territory for existing in queued_builds
+                ):
+                    continue
+            elif order.type == DISBAND and len(queued_removals) >= -adjustment_count:
+                continue
+            if phase in (SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE):
+                if order.type != ADVANCE or order.is_utilizing_convoy or order.unit not in dislodged:
+                    continue
+                if any(not attack.is_utilizing_convoy and attack.unit_territory == order.dest_territory
+                       for attack in order.unit.dislodged_from.contesting):
+                    continue
+            seen.add(text)
+            result.append(text)
+    finally:
+        for unit, territory in positions:
+            unit.territory = territory
+    return result
 
 
 def new_game(map_path='data/maps/classic_map.json', start_phase=None):
