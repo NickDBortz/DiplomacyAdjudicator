@@ -97,7 +97,7 @@ mapSelect.addEventListener('change', () => {
 });
 
 startBtn.addEventListener('click', () => {
-    ws.send(JSON.stringify({ type: 'start_game' }));
+    confirmAction('Start Game', 'Start the game? Ensure all players have selected the correct Great Power.', () => ws.send(JSON.stringify({ type: 'start_game' })));
 });
 
 loadSavedGameBtn.addEventListener('click', async () => {
