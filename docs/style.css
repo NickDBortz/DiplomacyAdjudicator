@@ -266,15 +266,12 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 }
 .unit text { font-size: 14px; font-weight: bold; text-anchor: middle; dominant-baseline: central; pointer-events: none; fill: #fff; }
 .unit circle { stroke: #000; stroke-width: 2; }
-.territory.order-highlight-source, .unit.order-highlight-source circle {
-    stroke: #00c8ff;
-    stroke-width: 3;
-    filter: brightness(1.2);
+.unit use { filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8)); }
+.territory.order-highlight-source, .unit.order-highlight-source circle, .unit.order-highlight-source use {
+    filter: drop-shadow(0 0 8px #00c8ff) brightness(1.2);
 }
-.territory.order-highlight-target, .unit.order-highlight-target circle {
-    stroke: #ffcf40;
-    stroke-width: 3;
-    filter: brightness(1.2);
+.territory.order-highlight-target, .unit.order-highlight-target circle, .unit.order-highlight-target use {
+    filter: drop-shadow(0 0 8px #ffcf40) brightness(1.2);
 }
 .unit.dislodged-preview circle { stroke-dasharray: 3 2; }
 .unit.dislodged-preview { pointer-events: none; }

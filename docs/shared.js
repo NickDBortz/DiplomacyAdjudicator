@@ -977,6 +977,46 @@ function buildMap() {
     bg.setAttribute('fill', 'black');
     svg.appendChild(bg);
 
+    // Add symbol definitions for unit markers
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    
+    // Army symbol
+    const armySymbol = document.createElementNS(SVG_NS, 'symbol');
+    armySymbol.setAttribute('id', 'army-symbol');
+    armySymbol.setAttribute('viewBox', '0 0 100 100');
+    armySymbol.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    armySymbol.innerHTML = `
+      <path d="M 50 15 L 75 30 L 75 55 Q 50 75 50 75 Q 25 75 25 55 L 25 30 Z" 
+            fill="currentColor" stroke="none"/>
+      <path d="M 50 15 L 75 30 L 75 55 Q 50 75 50 75 Q 25 75 25 55 L 25 30 Z" 
+            fill="none" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+      <line x1="50" y1="25" x2="50" y2="65" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="40" x2="62" y2="40" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="50" cy="68" r="2.5" fill="#fff"/>
+    `;
+    defs.appendChild(armySymbol);
+    
+    // Fleet symbol
+    const fleetSymbol = document.createElementNS(SVG_NS, 'symbol');
+    fleetSymbol.setAttribute('id', 'fleet-symbol');
+    fleetSymbol.setAttribute('viewBox', '0 0 100 100');
+    fleetSymbol.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    fleetSymbol.innerHTML = `
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>
+      <path d="M 35 35 L 45 28 L 55 28 L 65 35 L 62 50 L 38 50 Z" 
+            fill="currentColor" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+      <line x1="50" y1="28" x2="50" y2="55" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+      <polygon points="50,32 58,48 50,48" fill="#fff" opacity="0.7"/>
+      <circle cx="50" cy="65" r="2.5" fill="#fff"/>
+      <line x1="47" y1="67" x2="53" y2="67" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M 47 67 Q 45 72 48 75" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M 53 67 Q 55 72 52 75" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="50" y1="67" x2="50" y2="72" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+    `;
+    defs.appendChild(fleetSymbol);
+    
+    svg.appendChild(defs);
+
     for (const t of mapData.territories) {
         const polygons = smoothPolygons(t.polygons.map(poly => poly.map(i => mapData.vertices[i])));
         const d = polygons
@@ -1063,16 +1103,18 @@ function render(state) {
         g.dataset.territory = u.territory;
         g.dataset.owner = u.owner;
         g.dataset.type = u.type;
-        const c = document.createElementNS(SVG_NS, 'circle');
-        c.setAttribute('cx', x);
-        c.setAttribute('cy', y);
-        c.setAttribute('r', 10);
-        c.setAttribute('fill', colors[u.owner]);
-        const txt = document.createElementNS(SVG_NS, 'text');
-        txt.setAttribute('x', x);
-        txt.setAttribute('y', y);
-        txt.textContent = u.type;
-        g.append(c, txt);
+        g.setAttribute('transform', `translate(${x}, ${y})`);
+        
+        const use = document.createElementNS(SVG_NS, 'use');
+        const symbolId = u.type === 'Army' ? '#army-symbol' : '#fleet-symbol';
+        use.setAttribute('href', symbolId);
+        use.setAttribute('x', '-12');
+        use.setAttribute('y', '-12');
+        use.setAttribute('width', '24');
+        use.setAttribute('height', '24');
+        use.style.color = colors[u.owner];
+        
+        g.appendChild(use);
         layer.appendChild(g);
     }
 
