@@ -3333,7 +3333,7 @@ def test_unit_may_not_retreat_to_area_from_which_it_is_attacked():
     assert_equal('Map Phase', map.game_state.get_phase(), 'Spring Retreat')
 
     map.submit_order('F ANK - BLA')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 1)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
@@ -3566,7 +3566,7 @@ def test_not_retreating_to_attackers_does_not_mean_contested():
 
     map.submit_order('A KIE - BER')
     map.submit_order('A PRU - BER')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 2)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 1)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)

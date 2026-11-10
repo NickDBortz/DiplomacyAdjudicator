@@ -217,6 +217,13 @@ class OrderGenerator:
                         len(dest_territory.contesting) == 1 and dest_territory.contesting[0].unit == unit
                     ):
                         continue
+                    found_attacker = False
+                    for contesting_order in start_territory.contesting:
+                        if not contesting_order.is_utilizing_convoy and contesting_order.unit_territory == dest_territory:
+                            found_attacker = True
+                            break
+                    if found_attacker:
+                        continue
                     dest_territory_abbr = dest_territory.abbr
                     if unit_type == FLEET and isinstance(dest_territory, LandTerritory) and dest_territory.north_coast:
                         if unit.can_traverse(dest_territory, coast=NORTH_COAST):
