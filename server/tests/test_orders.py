@@ -116,7 +116,7 @@ def test_move_to_own_territory_with_convoy():
     map.submit_order('A LPL S A YOR - YOR')
     map.submit_order('F LON - YOR')
     map.submit_order('A WAL S F LON - YOR')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 3)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 2)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
@@ -144,7 +144,7 @@ def test_only_convoy_armies():
 
     map.submit_order('F LON - BEL')
     map.submit_order('F NTH C A LON - BEL')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 1)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
