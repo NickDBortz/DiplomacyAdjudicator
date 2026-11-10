@@ -375,6 +375,30 @@ function applyGameState(state) {
 }
 
 let availableOrders = [];
+let mapOrderTargets = [];
+
+function orderMapTargets(order) {
+    const parts = order.text.split(' ');
+    const territory = value => value.replace(/\([^)]*\)$/, '');
+    if (parts[2] === '-') return [territory(parts[3])];
+    if (parts[2] === 'S' || parts[2] === 'C') {
+        const targets = [territory(parts[4])];
+        if (parts[5] === '-' && parts[6]) targets.push(territory(parts[6]));
+        return targets;
+    }
+    return [];
+}
+
+function setPickerStatus(message) {
+    document.getElementById('order-picker-status').textContent = message;
+    const mapStatus = document.getElementById('map-order-status');
+    if (mapStatus) mapStatus.textContent = message;
+}
+
+function matchingOrderTargets(order) {
+    const targets = orderMapTargets(order);
+    return mapOrderTargets.every((target, index) => targets[index] === target);
+}
 
 function orderDetails(text) {
     const parts = text.split(' ');
@@ -406,6 +430,9 @@ function unitFilterLabel(unit) {
 function setOrderPicker(orders, emptyMessage = 'No available orders for this power.') {
     const unitSelect = document.getElementById('order-unit');
     if (!unitSelect) return;
+    if (orders.length !== availableOrders.length || orders.some((text, i) => text !== availableOrders[i].text)) {
+        mapOrderTargets = [];
+    }
     availableOrders = orders.map(orderDetails);
     const typeSelect = document.getElementById('order-type');
     const units = [...new Set(availableOrders.map(o => o.unit))]
@@ -420,17 +447,19 @@ function setOrderPicker(orders, emptyMessage = 'No available orders for this pow
 function renderOrderChoices(emptyMessage = 'No available orders for this power.') {
     const unit = document.getElementById('order-unit').value;
     const type = document.getElementById('order-type').value;
-    const matching = availableOrders.filter(o => (!unit || o.unit === unit) && (!type || o.type === type));
+    const matching = availableOrders.filter(o => (!unit || o.unit === unit) && (!type || o.type === type) &&
+        matchingOrderTargets(o));
     const select = document.getElementById('order-choice');
     replaceOptions(select, matching.length ? 'Select an order' : 'No matching orders', matching.map(o => o.text));
     select.disabled = matching.length === 0;
-    document.getElementById('order-picker-status').textContent = availableOrders.length
+    setPickerStatus(availableOrders.length
         ? `${matching.length} of ${availableOrders.length} available orders. Select one to submit.`
-        : emptyMessage;
+        : emptyMessage);
     updateOrderHighlights();
 }
 
 function resetOrderFilters() {
+    mapOrderTargets = [];
     for (const id of ['order-unit', 'order-type', 'order-choice']) {
         const select = document.getElementById(id);
         if (select) select.value = '';
@@ -442,7 +471,7 @@ function clearOrderSelection() {
     renderOrderChoices();
 }
 
-function orderHighlightData(unit, type, selected, orders) {
+function orderHighlightData(unit, type, selected, orders, showTargets = false) {
     const sources = new Set();
     const targets = new Set();
     const actors = new Set();
@@ -461,7 +490,7 @@ function orderHighlightData(unit, type, selected, orders) {
             }
         }
     }
-    if (!selected && !type) return { sources, targets, actors, related };
+    if (!selected && !type && !showTargets) return { sources, targets, actors, related };
 
     const matches = orders.filter(o => (!unit || o.unit === unit) && (!type || o.type === type) &&
         (!selected || o.text === selected));
@@ -492,7 +521,8 @@ function updateOrderHighlights() {
     const typeSelect = document.getElementById('order-type');
     const choiceSelect = document.getElementById('order-choice');
     if (!unitSelect || !typeSelect || !choiceSelect) return;
-    const highlights = orderHighlightData(unitSelect.value, typeSelect.value, choiceSelect.value, availableOrders);
+    const highlights = orderHighlightData(unitSelect.value, typeSelect.value, choiceSelect.value,
+        availableOrders.filter(matchingOrderTargets), mapOrderTargets.length > 0);
     svg.querySelectorAll('.order-highlight-source, .order-highlight-target').forEach(el => {
         el.classList.remove('order-highlight-source', 'order-highlight-target');
     });
@@ -524,6 +554,7 @@ function updateOrderHighlights() {
             const [x, y] = unitPosition(territory, unit);
             const marker = document.createElementNS(SVG_NS, 'g');
             marker.setAttribute('class', 'unit dislodged-preview order-highlight-source');
+            marker.dataset.territory = abbr;
             const circle = document.createElementNS(SVG_NS, 'circle');
             circle.setAttribute('cx', x + 17);
             circle.setAttribute('cy', y + 17);
@@ -553,10 +584,62 @@ function updateOrderHighlights() {
 function initOrderPicker() {
     const unit = document.getElementById('order-unit');
     if (!unit) return;
-    unit.addEventListener('change', () => renderOrderChoices());
-    document.getElementById('order-type').addEventListener('change', () => renderOrderChoices());
+    unit.addEventListener('change', () => { mapOrderTargets = []; renderOrderChoices(); });
+    document.getElementById('order-type').addEventListener('change', () => { mapOrderTargets = []; renderOrderChoices(); });
     document.getElementById('order-choice').addEventListener('change', updateOrderHighlights);
     document.getElementById('clear-order-selection').addEventListener('click', clearOrderSelection);
+}
+
+function selectMapTerritory(abbr) {
+    const unitSelect = document.getElementById('order-unit');
+    if (!unitSelect || !availableOrders.length) return;
+    const typeSelect = document.getElementById('order-type');
+    const choiceSelect = document.getElementById('order-choice');
+    const selectedUnit = unitSelect.value;
+    const sourceOptions = [...unitSelect.options].filter(option =>
+        option.value && option.value.split(' ').pop().replace(/\([^)]*\)$/, '') === abbr);
+    const currentOrders = availableOrders.filter(order => order.unit === selectedUnit &&
+        (!typeSelect.value || order.type === typeSelect.value));
+    let nextTargets = [...mapOrderTargets, abbr];
+    let matches = currentOrders.filter(order => {
+        const targets = orderMapTargets(order);
+        return nextTargets.every((target, index) => targets[index] === target);
+    });
+    if (!matches.length && mapOrderTargets.length && !sourceOptions.length) {
+        nextTargets = [...mapOrderTargets.slice(0, -1), abbr];
+        matches = currentOrders.filter(order => {
+            const targets = orderMapTargets(order);
+            return nextTargets.every((target, index) => targets[index] === target);
+        });
+    }
+
+    if (selectedUnit && matches.length) {
+        mapOrderTargets = nextTargets;
+        choiceSelect.value = '';
+        renderOrderChoices();
+        if (matches.length === 1) {
+            choiceSelect.value = matches[0].text;
+            updateOrderHighlights();
+            setPickerStatus(`Order selected: ${matches[0].text}. Submit to confirm.`);
+        } else {
+            setPickerStatus(`${matches.length} matching orders. Select an order or tap the next territory.`);
+        }
+        return;
+    }
+
+    if (sourceOptions.length === 1) {
+        unitSelect.value = sourceOptions[0].value;
+        mapOrderTargets = [];
+        choiceSelect.value = '';
+        if (!availableOrders.some(order => order.unit === unitSelect.value &&
+            (!typeSelect.value || order.type === typeSelect.value))) typeSelect.value = '';
+        renderOrderChoices();
+        setPickerStatus(`Selected ${sourceOptions[0].text}. Select an order or tap a related territory.`);
+    } else if (sourceOptions.length > 1) {
+        setPickerStatus('Multiple units are available here. Select one from the unit dropdown.');
+    } else {
+        setPickerStatus('No matching order for that territory. Choose another territory or use the dropdowns.');
+    }
 }
 
 function downloadGameSave(saveData) {
@@ -987,6 +1070,14 @@ function buildMap() {
     container.innerHTML = '';
     svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('viewBox', `0 0 ${mapData.width} ${mapData.height}`);
+    if (document.getElementById('order-unit')) {
+        svg.addEventListener('click', event => {
+            const unit = event.target.closest('.unit');
+            const territory = event.target.closest('.territory');
+            if (unit && unit.dataset.territory) selectMapTerritory(unit.dataset.territory);
+            else if (territory) selectMapTerritory(territory.id.slice(5));
+        });
+    }
     const bg = document.createElementNS(SVG_NS, 'rect');
     bg.setAttribute('width', mapData.width);
     bg.setAttribute('height', mapData.height);
@@ -1003,7 +1094,6 @@ function buildMap() {
         path.setAttribute('class', 'territory');
         path.setAttribute('id', 'terr-' + t.abbr);
         path.setAttribute('fill-rule', 'evenodd');
-        path.addEventListener('click', () => console.log(`${t.name} (${t.abbr})`));
         const title = document.createElementNS(SVG_NS, 'title');
         title.textContent = `${t.name} (${t.abbr})`;
         path.appendChild(title);
@@ -1026,6 +1116,7 @@ function buildMap() {
             c.setAttribute('fill', '#f5bf1b');
             c.setAttribute('stroke', '#000');
             c.setAttribute('stroke-width', 1);
+            c.setAttribute('pointer-events', 'none');
             svg.appendChild(c);
         }
     }

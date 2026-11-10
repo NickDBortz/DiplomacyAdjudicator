@@ -295,7 +295,8 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     filter: brightness(1.2);
 }
 .unit.dislodged-preview circle { stroke-dasharray: 3 2; }
-.unit.dislodged-preview { pointer-events: none; }
+#map line, #map polygon { pointer-events: none; }
+.map-order-status { margin: 8px 0; color: #ddd; font-size: 13px; }
 
 .sidebar p {
     margin: 12px 16px 6px;
