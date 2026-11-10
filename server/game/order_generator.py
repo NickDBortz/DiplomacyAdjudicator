@@ -121,7 +121,7 @@ class OrderGenerator:
 
             # Add transform order (requires coast territory)
             if isinstance(start_territory, LandTerritory) and start_territory.is_coast:
-                if unit_type == ARMY and len(start_territory.north_coast) > 0:
+                if len(start_territory.north_coast) > 0:
                     valid_orders.append(f'{type_text} {start_territory_abbr} T({NORTH_COAST})')
                     valid_orders.append(f'{type_text} {start_territory_abbr} T({SOUTH_COAST})')
                 else:
