@@ -100,6 +100,34 @@
     overflow-y: auto;
 }
 
+.sidebar-panel,
+.orders {
+    scrollbar-width: thin;
+    scrollbar-color: #666 #1b1b1b;
+}
+
+.sidebar-panel::-webkit-scrollbar,
+.orders::-webkit-scrollbar {
+    width: 10px;
+}
+
+.sidebar-panel::-webkit-scrollbar-track,
+.orders::-webkit-scrollbar-track {
+    background: #1b1b1b;
+}
+
+.sidebar-panel::-webkit-scrollbar-thumb,
+.orders::-webkit-scrollbar-thumb {
+    background: #666;
+    border: 2px solid #1b1b1b;
+    border-radius: 6px;
+}
+
+.sidebar-panel::-webkit-scrollbar-thumb:hover,
+.orders::-webkit-scrollbar-thumb:hover {
+    background: #4a90e2;
+}
+
 /* Singleplayer wraps the content in this div, which must fill the sidebar for the bottom buttons to pin. */
 #local-sidebar {
     display: flex;
