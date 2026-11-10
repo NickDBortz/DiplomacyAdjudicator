@@ -30,7 +30,7 @@ function createPicker() {
         'order-choice': select(),
         'order-picker-status': {},
     };
-    const context = vm.createContext({ mapData, Option, document: { getElementById: id => elements[id] } });
+    const context = vm.createContext({ mapData, Option, svg: null, document: { getElementById: id => elements[id] } });
     vm.runInContext(pickerSource, context);
     return { context, elements };
 }
@@ -85,7 +85,10 @@ test('multiplayer submits the selected order and rejects an empty selection', as
         'submit-order': button(),
         draw: button(),
     };
-    const context = vm.createContext({ document: { getElementById: id => elements[id] } });
+    const context = vm.createContext({
+        document: { getElementById: id => elements[id] },
+        clearOrderSelection() { elements['order-choice'].value = ''; },
+    });
     const controlsSource = source.slice(source.indexOf('function initOrderControls('), source.indexOf('function initSidebar('));
     vm.runInContext(controlsSource, context);
     const submitted = [];
@@ -103,4 +106,64 @@ test('multiplayer submits the selected order and rejects an empty selection', as
     assert.deepEqual(submitted, ['Build F BRE']);
     assert.equal(elements['order-choice'].value, '');
     assert.equal(elements['order-error'].textContent, 'Order submitted.');
+});
+
+test('highlights follow filters and narrow to the selected support or convoy', () => {
+    const { context } = createPicker();
+    const details = [
+        'A MAR S A PAR - BUR',
+        'A MAR S A PAR H',
+        'A MAR - BUR',
+        'F NTH C A LON - BEL',
+    ].map(order => context.orderDetails(order));
+    const asArray = set => [...set].sort();
+    let result = context.orderHighlightData('', '', '', details);
+    assert.deepEqual(asArray(result.sources), []);
+    assert.deepEqual(asArray(result.targets), []);
+
+    result = context.orderHighlightData('A MAR', '', '', details);
+    assert.deepEqual(asArray(result.sources), ['MAR']);
+    assert.deepEqual(asArray(result.actors), ['A MAR']);
+    assert.deepEqual(asArray(result.targets), []);
+
+    result = context.orderHighlightData('A MAR', 'Support', '', details);
+    assert.deepEqual(asArray(result.sources), ['MAR']);
+    assert.deepEqual(asArray(result.targets), ['BUR', 'PAR']);
+    assert.deepEqual(asArray(result.related), ['A PAR']);
+
+    result = context.orderHighlightData('A MAR', 'Support', 'A MAR S A PAR H', details);
+    assert.deepEqual(asArray(result.targets), ['PAR']);
+    assert.deepEqual(asArray(result.related), ['A PAR']);
+
+    result = context.orderHighlightData('', '', 'F NTH C A LON - BEL', details);
+    assert.deepEqual(asArray(result.sources), ['NTH']);
+    assert.deepEqual(asArray(result.targets), ['BEL', 'LON']);
+    assert.deepEqual(asArray(result.actors), ['F NTH']);
+    assert.deepEqual(asArray(result.related), ['A LON']);
+});
+
+test('highlights handle build, remove, coasts, retreat and unmatched filters', () => {
+    const { context } = createPicker();
+    const details = [
+        'Build A STP',
+        'Build F STP(nc)',
+        'Remove F BRE',
+        'F MAO - SPA(sc)',
+        'A PAR - PIC',
+    ].map(order => context.orderDetails(order));
+    const asArray = set => [...set].sort();
+    let result = context.orderHighlightData('STP', '', '', details);
+    assert.deepEqual(asArray(result.sources), ['STP']);
+    assert.deepEqual(asArray(result.actors), []);
+    result = context.orderHighlightData('BRE', '', '', details);
+    assert.deepEqual(asArray(result.sources), ['BRE']);
+    assert.deepEqual(asArray(result.actors), ['F BRE']);
+    result = context.orderHighlightData('F MAO', 'Move', 'F MAO - SPA(sc)', details);
+    assert.deepEqual(asArray(result.targets), ['SPA']);
+    result = context.orderHighlightData('A PAR', 'Move', 'A PAR - PIC', details);
+    assert.deepEqual(asArray(result.actors), ['A PAR']);
+    assert.deepEqual(asArray(result.targets), ['PIC']);
+    result = context.orderHighlightData('A PAR', 'Support', '', details);
+    assert.deepEqual(asArray(result.sources), ['PAR']);
+    assert.deepEqual(asArray(result.targets), []);
 });

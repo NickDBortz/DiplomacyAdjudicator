@@ -27,7 +27,10 @@ Object.assign(window.diplomacy, {
   async order(order, power) {
     const r = await request('POST', `/games/${gameId}/orders`, { order, power });
     render(r.state);
-    await refreshAvailableOrders();
+    if (r.ok) {
+      resetOrderFilters();
+      await refreshAvailableOrders();
+    }
     return { ok: r.ok, error: r.error };
   },
   async orders(list, power) {

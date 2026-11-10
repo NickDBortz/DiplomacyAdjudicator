@@ -38,6 +38,8 @@
             <label for="order-choice">Available orders</label>
             <select id="order-choice" disabled><option value="">Select a power first</option></select>
             <p id="order-picker-status" class="order-picker-status" aria-live="polite">Select a power to see available orders.</p>
+            <p class="order-highlight-legend"><span class="legend-source">Blue: selected unit or location</span><span class="legend-target">Gold: related units and destinations</span></p>
+            <button type="button" id="clear-order-selection" class="order-picker-clear">Clear selection</button>
           </div>
           <button id="submit-order" class="btn">Submit Order</button>
           <p id="order-error" class="info"></p>

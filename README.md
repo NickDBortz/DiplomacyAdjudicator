@@ -26,6 +26,7 @@ The front end in `docs/` is published to GitHub Pages and talks to the backend h
 
 Use the sidebar's **Help** tab for a rules overview; switch back to **Game** to submit orders.
 In the Game tab, filter available orders by unit or build location and order type, then select and submit an order. Available orders refresh as the game changes; an order can still fail when adjudicated because orders resolve simultaneously.
+The map outlines the selected unit or location in blue and related units and destinations in gold. Choosing an order narrows the preview; submitting it or using **Clear selection** removes the highlights. A dashed marker indicates a dislodged unit being previewed.
 
 The free Render instance sleeps when idle, so the first request after a break can take around 30 seconds.
 
