@@ -18,11 +18,7 @@ if __name__ == "__main__":
     map = Game(start_phase='Spring', render=False, allow_transformations=True)
 
     # game.do_gameplay_loop()
-    french_army = add_army(map.game_state.get_territory('MAR'), map.game_state.get_player('France'))
-    french_fleet = add_fleet(map.game_state.get_territory('SPA'), map.game_state.get_player('France'), coast='sc')
-    italian_fleet = add_fleet(map.game_state.get_territory('LYO'), map.game_state.get_player('Italy'))
-    turkish_fleet1 = add_fleet(map.game_state.get_territory('TYS'), map.game_state.get_player('Turkey'))
-    turkish_fleet2 = add_fleet(map.game_state.get_territory('WES'), map.game_state.get_player('Turkey'))
+    french_army = add_army(map.game_state.get_territory('GAS'), map.game_state.get_player('France'))
 
     orders = map.order_generator.generate_valid_orders()
     split_order = orders[0].split(' ')
@@ -40,8 +36,4 @@ if __name__ == "__main__":
             print(f'{prefix1} {prefix2}: ')
             print(order)
 
-    map.submit_order('A MAR - LYO')
-    map.submit_order('F SPA S A MAR - LYO')
-    map.submit_order('F LYO H')
-    map.submit_order('F TYS S F WES - LYO')
-    map.submit_order('F WES - LYO')
+    map.submit_order('A GAS - SPA(nc)')
