@@ -18,8 +18,14 @@ if __name__ == "__main__":
     map = Game(start_phase='Spring', render=False, allow_transformations=True)
 
     # game.do_gameplay_loop()
-    french_army = add_army(map.game_state.get_territory('STP'), map.game_state.get_player('France'))
+    english_army = add_army(map.game_state.get_territory('PIC'), map.game_state.get_player('England'))
+    english_fleet = add_fleet(map.game_state.get_territory('ENG'), map.game_state.get_player('England'))
+    french_army1 = add_army(map.game_state.get_territory('PAR'), map.game_state.get_player('France'))
+    french_army2 = add_army(map.game_state.get_territory('BRE'), map.game_state.get_player('France'))
 
     print(map.order_generator.generate_valid_orders())
 
-    map.submit_order('A STP T(sc)')
+    map.submit_order('A PIC H')
+    map.submit_order('F ENG C A PIC - LON')
+    map.submit_order('A PAR - PIC')
+    map.submit_order('A BRE S A PAR - PIC')

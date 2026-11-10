@@ -3786,7 +3786,7 @@ def test_no_coastal_crawl_in_retreat():
     assert_equal('Map Phase', map.game_state.get_phase(), 'Spring Retreat')
 
     map.submit_order('F POR - SPA(nc)')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 1)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
@@ -3826,7 +3826,7 @@ def test_contested_for_both_coasts():
     assert_equal('Map Phase', map.game_state.get_phase(), 'Spring Retreat')
 
     map.submit_order('F WES - SPA(sc)')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 1)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)

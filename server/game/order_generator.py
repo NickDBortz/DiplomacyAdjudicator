@@ -1,4 +1,4 @@
-from game.enums import ARMY, ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE
+from game.enums import ARMY, FLEET, ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE, NORTH_COAST, SOUTH_COAST
 from game.territory import LandTerritory
 
 class OrderGenerator:
@@ -26,8 +26,8 @@ class OrderGenerator:
                     if territory.unit is None:
                         if territory.is_coast:
                             if len(territory.north_coast) > 0:
-                                valid_orders.append(f'Build F {territory.abbr}(nc)')
-                                valid_orders.append(f'Build F {territory.abbr}(sc)')
+                                valid_orders.append(f'Build F {territory.abbr}({NORTH_COAST})')
+                                valid_orders.append(f'Build F {territory.abbr}({SOUTH_COAST})')
                         valid_orders.append(f'Build A {territory.abbr}')
             elif units_to_build < 0:
                 for unit in power.units:
@@ -85,8 +85,8 @@ class OrderGenerator:
             # Add transform order (requires coast territory)
             if isinstance(start_territory, LandTerritory) and start_territory.is_coast:
                 if unit_type == ARMY and len(start_territory.north_coast) > 0:
-                    valid_orders.append(f'{type_text} {start_territory_abbr} T(nc)')
-                    valid_orders.append(f'{type_text} {start_territory_abbr} T(sc)')
+                    valid_orders.append(f'{type_text} {start_territory_abbr} T({NORTH_COAST})')
+                    valid_orders.append(f'{type_text} {start_territory_abbr} T({SOUTH_COAST})')
                 else:
                     valid_orders.append(f'{type_text} {start_territory_abbr} T')
 
@@ -96,10 +96,20 @@ class OrderGenerator:
                 if dest_territory == start_territory:
                     continue
 
+                # Skip if can't traverse
+                if not unit.can_traverse(dest_territory):
+                    continue
+
                 dest_territory_abbr = dest_territory.abbr
-                # TODO: If Fleet, handle multiple coasts
+                if unit_type == FLEET:
+                    if isinstance(dest_territory, LandTerritory) and len(dest_territory.north_coast) > 0:
+                        if unit.can_traverse(dest_territory, coast=NORTH_COAST):
+                            valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr}({NORTH_COAST})')
+                        if unit.can_traverse(dest_territory, coast=SOUTH_COAST):
+                            valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr}({SOUTH_COAST})')
+                if unit.can_traverse(dest_territory):
+                    valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr}')
                 # TODO: If Army and valid convoy, handle via convoy variant
-                valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr}')
 
             # Add support order
             for dest_territory in advances_of_unit[unit]:
@@ -117,12 +127,20 @@ class OrderGenerator:
                         if supported_unit == unit:
                             continue
 
-                        supported_unit_type_text = 'A' if supported_unit.type == ARMY else 'F'
+                        supported_unit_type = supported_unit.type
+                        supported_unit_type_text = 'A' if supported_unit_type == ARMY else 'F'
                         supported_unit_start_territory = supported_unit.territory
                         supported_unit_start_territory_abbr = supported_unit_start_territory.abbr
                         dest_territory_abbr = dest_territory.abbr
                         # TODO: If supporting fleet, handle multiple coasts
-                        valid_orders.append(f'{type_text} {start_territory_abbr} S {supported_unit_type_text} {supported_unit_start_territory_abbr} - {dest_territory_abbr}')
+                        if supported_unit_type == FLEET:
+                            if isinstance(dest_territory, LandTerritory) and len(dest_territory.north_coast) > 0:
+                                if unit.can_traverse(dest_territory, coast=NORTH_COAST, for_support=True):
+                                    valid_orders.append(f'{type_text} {start_territory_abbr} S {supported_unit_type_text} {supported_unit_start_territory_abbr} - {dest_territory_abbr}({NORTH_COAST})')
+                                if unit.can_traverse(dest_territory, coast=SOUTH_COAST, for_support=True):
+                                    valid_orders.append(f'{type_text} {start_territory_abbr} S {supported_unit_type_text} {supported_unit_start_territory_abbr} - {dest_territory_abbr}({SOUTH_COAST})')
+                        if unit.can_traverse(dest_territory, for_support=True):
+                            valid_orders.append(f'{type_text} {start_territory_abbr} S {supported_unit_type_text} {supported_unit_start_territory_abbr} - {dest_territory_abbr}')
 
             # Add convoy order
         return valid_orders
@@ -141,10 +159,19 @@ class OrderGenerator:
 
             for dest_territory in start_territory.adjacents:
                 # TODO: Handle multiple coasts
+                unit.territory = unit.dislodged_from
                 if unit.can_traverse(dest_territory):
                     if dest_territory.unit is None:
                         if len(dest_territory.contesting) == 0 or len(dest_territory.contesting) == 1 and dest_territory.contesting[0].unit == unit:
                             dest_territory_abbr = dest_territory.abbr
-                            valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}')
+                            if unit_type == FLEET:
+                                if isinstance(dest_territory, LandTerritory) and len(dest_territory.north_coast) > 0:
+                                    if unit.can_traverse(dest_territory, coast=NORTH_COAST):
+                                        valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}({NORTH_COAST})')
+                                    if unit.can_traverse(dest_territory, coast=SOUTH_COAST):
+                                        valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}({SOUTH_COAST})')
+                            if unit.can_traverse(dest_territory):
+                                valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}')
+                unit.territory = None
 
         return valid_orders
