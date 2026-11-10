@@ -373,7 +373,7 @@ let availableOrders = [];
 function orderDetails(text) {
     const parts = text.split(' ');
     const adjustment = parts[0] === 'Build' || parts[0] === 'Remove';
-    const unit = adjustment ? `${parts[0]} ${parts[1]} ${parts[2].replace(/\([^)]*\)$/, '')}`
+    const unit = adjustment ? parts[2].replace(/\([^)]*\)$/, '')
         : `${parts[0]} ${parts[1]}`;
     const action = adjustment ? parts[0] : parts[2].split('(')[0];
     const types = { H: 'Hold', '-': 'Move', S: 'Support', C: 'Convoy', T: 'Transform',
@@ -381,11 +381,20 @@ function orderDetails(text) {
     return { text, unit, type: types[action] || action };
 }
 
-function replaceOptions(select, placeholder, values) {
+function replaceOptions(select, placeholder, values, label = value => value) {
     const previous = select.value;
     select.replaceChildren(new Option(placeholder, ''));
-    for (const value of values) select.add(new Option(value, value));
+    for (const value of values) select.add(new Option(label(value), value));
     select.value = values.includes(previous) ? previous : '';
+}
+
+function unitFilterLabel(unit) {
+    const parts = unit.split(' ');
+    const abbr = parts.length === 2 ? parts[1] : parts[0];
+    const territory = mapData.territories.find(t => t.abbr === abbr);
+    const name = territory ? territory.name : abbr;
+    if (parts.length === 1) return name;
+    return `${parts[0] === 'A' ? 'Army' : 'Fleet'} ${name}`;
 }
 
 function setOrderPicker(orders, emptyMessage = 'No available orders for this power.') {
@@ -393,7 +402,9 @@ function setOrderPicker(orders, emptyMessage = 'No available orders for this pow
     if (!unitSelect) return;
     availableOrders = orders.map(orderDetails);
     const typeSelect = document.getElementById('order-type');
-    replaceOptions(unitSelect, 'All units and locations', [...new Set(availableOrders.map(o => o.unit))].sort());
+    const units = [...new Set(availableOrders.map(o => o.unit))]
+        .sort((a, b) => unitFilterLabel(a).localeCompare(unitFilterLabel(b)));
+    replaceOptions(unitSelect, 'All units and locations', units, unitFilterLabel);
     replaceOptions(typeSelect, 'All order types', [...new Set(availableOrders.map(o => o.type))].sort());
     unitSelect.disabled = availableOrders.length === 0;
     typeSelect.disabled = availableOrders.length === 0;
