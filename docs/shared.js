@@ -552,23 +552,13 @@ function updateOrderHighlights() {
             const territory = mapData.territories.find(t => t.abbr === abbr);
             if (!territory) continue;
             const [x, y] = unitPosition(territory, unit);
-            const marker = document.createElementNS(SVG_NS, 'g');
-            marker.setAttribute('class', 'unit dislodged-preview order-highlight-source');
-            marker.dataset.territory = abbr;
-            const circle = document.createElementNS(SVG_NS, 'circle');
-            circle.setAttribute('cx', x + 17);
-            circle.setAttribute('cy', y + 17);
-            circle.setAttribute('r', 10);
             const player = state.players.find(p => p.name === unit.owner);
             if (!player) continue;
-            circle.setAttribute('fill', player.color);
-            const text = document.createElementNS(SVG_NS, 'text');
-            text.setAttribute('x', x + 17);
-            text.setAttribute('y', y + 17);
-            text.textContent = unit.type;
+            const marker = createUnitMarker(unit, x + 17, y + 17, player.color);
+            marker.classList.add('dislodged-preview', 'order-highlight-source');
             const title = document.createElementNS(SVG_NS, 'title');
             title.textContent = `Dislodged ${unit.type === 'A' ? 'army' : 'fleet'} from ${territory.name}`;
-            marker.append(circle, text, title);
+            marker.appendChild(title);
             preview.appendChild(marker);
         } else {
             for (const marker of svg.querySelectorAll('#units .unit')) {
@@ -1126,6 +1116,9 @@ function buildMap() {
     const previewLayer = document.createElementNS(SVG_NS, 'g');
     previewLayer.setAttribute('id', 'dislodged-preview');
     svg.appendChild(previewLayer);
+    const orderLayer = document.createElementNS(SVG_NS, 'g');
+    orderLayer.setAttribute('id', 'map-orders');
+    svg.appendChild(orderLayer);
     container.appendChild(svg);
 }
 
@@ -1152,6 +1145,24 @@ function unitPosition(t, unit) {
     return unit.type === 'A' ? t.army_pos : t.coast_pos;
 }
 
+function createUnitMarker(unit, x, y, color) {
+    const marker = document.createElementNS(SVG_NS, 'g');
+    marker.setAttribute('class', 'unit');
+    marker.dataset.territory = unit.territory;
+    marker.dataset.owner = unit.owner;
+    marker.dataset.type = unit.type;
+    marker.setAttribute('transform', `translate(${x}, ${y})`);
+    const icon = document.createElementNS(SVG_NS, 'use');
+    icon.setAttribute('href', unit.type === 'A' ? 'army.svg#army' : 'fleet.svg#fleet');
+    icon.setAttribute('x', -13);
+    icon.setAttribute('y', -13);
+    icon.setAttribute('width', 26);
+    icon.setAttribute('height', 26);
+    icon.style.color = color;
+    marker.appendChild(icon);
+    return marker;
+}
+
 function render(state) {
     const colors = Object.fromEntries(state.players.map(p => [p.name, p.color]));
     const byAbbr = Object.fromEntries(mapData.territories.map(t => [t.abbr, t]));
@@ -1165,27 +1176,11 @@ function render(state) {
     for (const u of state.units) {
         if (!u.territory || u.dislodged) continue;
         const [x, y] = unitPosition(byAbbr[u.territory], u);
-        const g = document.createElementNS(SVG_NS, 'g');
-        g.setAttribute('class', 'unit');
-        g.dataset.territory = u.territory;
-        g.dataset.owner = u.owner;
-        g.dataset.type = u.type;
-        const c = document.createElementNS(SVG_NS, 'circle');
-        c.setAttribute('cx', x);
-        c.setAttribute('cy', y);
-        c.setAttribute('r', 10);
-        c.setAttribute('fill', colors[u.owner]);
-        const txt = document.createElementNS(SVG_NS, 'text');
-        txt.setAttribute('x', x);
-        txt.setAttribute('y', y);
-        txt.textContent = u.type;
-        g.append(c, txt);
-        layer.appendChild(g);
+        layer.appendChild(createUnitMarker(u, x, y, colors[u.owner]));
     }
 
     // Remove old orders
-    const oldOrders = document.querySelectorAll('line, polygon');
-    oldOrders.forEach(el => el.remove());
+    document.getElementById('map-orders').replaceChildren();
 
     for (const o of state.orders) {
         if (o.type == 'Advance') {
@@ -1258,7 +1253,7 @@ function drawArrow(fromX, fromY, toX, toY, color) {
     line.setAttribute('y2', toY);
     line.setAttribute('stroke', color);
     line.setAttribute('stroke-width', '2');
-    svg.appendChild(line);
+    document.getElementById('map-orders').appendChild(line);
     const arrow = document.createElementNS(SVG_NS, 'polygon');
     const arrowSize = 10;
     const angle = Math.atan2(toY - fromY, toX - fromX);
@@ -1269,5 +1264,5 @@ function drawArrow(fromX, fromY, toX, toY, color) {
     ].map(p => p.join(',')).join(' ');
     arrow.setAttribute('points', arrowPoints);
     arrow.setAttribute('fill', color);
-    svg.appendChild(arrow);
+    document.getElementById('map-orders').appendChild(arrow);
 }
