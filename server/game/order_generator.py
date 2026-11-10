@@ -207,7 +207,9 @@ class OrderGenerator:
             try:
                 unit.territory = start_territory
                 for dest_territory in start_territory.adjacents:
-                    if not unit.can_traverse(dest_territory):
+                    if not (unit.can_traverse(dest_territory) or
+                            unit.can_traverse(dest_territory, coast=NORTH_COAST) or
+                            unit.can_traverse(dest_territory, coast=SOUTH_COAST)):
                         continue
                     if dest_territory.unit is not None:
                         continue
