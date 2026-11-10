@@ -50,8 +50,8 @@
         <p id="spectator-message" class="menu-message hidden">You are spectating. Orders appear after the host renders them.</p>
       </div>
 
-      <div id="host-controls" class="host-controls hidden">
-        <p class="section-header">Host Controls</p>
+      <details id="host-controls" class="host-controls hidden">
+        <summary class="host-controls-toggle">Host Controls</summary>
         <button id="download-save" class="btn btn-secondary">Download Save</button>
         <button id="resolve" class="btn">Render Orders</button>
         <p class="host-note">Only the host can render and resolve orders.</p>
@@ -69,7 +69,7 @@
             <button id="assign-power-btn" class="btn">Assign Power</button>
           </div>
         </div>
-      </div>
+      </details>
       <button id="leave-game" class="btn btn-danger">Leave Game</button>
       </div>
       <div id="help-panel" class="sidebar-panel help-panel" role="tabpanel" aria-labelledby="help-tab" tabindex="0" hidden></div>

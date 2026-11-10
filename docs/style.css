@@ -150,6 +150,42 @@
     color: #4a90e2;
 }
 
+.host-controls-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    color: #4a90e2;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+}
+
+.host-controls-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.host-controls-toggle::after {
+    content: '+';
+    font-size: 20px;
+    line-height: 1;
+}
+
+details[open] > .host-controls-toggle::after {
+    content: '-';
+}
+
+.host-controls-toggle:hover {
+    color: #9dc9ff;
+}
+
+.host-controls-toggle:focus-visible {
+    outline: 2px solid #4a90e2;
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
 .host-controls .host-note {
     margin: 0 16px 12px;
     font-size: 12px;

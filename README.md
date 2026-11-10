@@ -52,6 +52,8 @@ The **Chat** button at the bottom-left of the lobby and game pages opens a chat 
 
 ### Host controls
 
+In a multiplayer game, open or close **Host Controls** using its sidebar header.
+
 - **Kick** removes a player. During a game their power becomes vacant.
 - **Make host** hands the host role to another connected player. During a game the new host must control a power.
 - **Open Game to New Players** lists a running game on the join page. Anyone who asks to join waits until the host admits them as a spectator, gives them a vacant power, or rejects them. A request expires if it isn't answered within 3 minutes.
