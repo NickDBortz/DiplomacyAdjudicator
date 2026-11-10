@@ -43,6 +43,7 @@ class OrderGenerator:
         # Calculate all advances keyed by target territory
         advances_to = {}
         advances_of_unit = {}
+        supports_of_unit = {}
         hold_in = {}
         units = []
         for player in self.game_state.player_list:
@@ -55,6 +56,11 @@ class OrderGenerator:
 
                 for dest_territory in start_territory.adjacents:
                     if not unit.can_traverse(dest_territory) and not unit.can_traverse(dest_territory, coast=NORTH_COAST) and not unit.can_traverse(dest_territory, coast=SOUTH_COAST):
+                        if unit.can_traverse(dest_territory, for_support=True):
+                            if unit in supports_of_unit:
+                                supports_of_unit[unit].append(dest_territory)
+                            else:
+                                supports_of_unit[unit] = [dest_territory]
                         continue
 
                     # Fill out the dict for which territories have advancing units
@@ -68,6 +74,11 @@ class OrderGenerator:
                         advances_of_unit[unit].append(dest_territory)
                     else:
                         advances_of_unit[unit] = [dest_territory]
+
+                    if unit in supports_of_unit:
+                        supports_of_unit[unit].append(dest_territory)
+                    else:
+                        supports_of_unit[unit] = [dest_territory]
 
                 if unit.type == ARMY:
                     convoyable_territories = self._get_valid_convoy_territories_from(unit)
@@ -83,6 +94,12 @@ class OrderGenerator:
                                 advances_of_unit[unit].append(dest_territory)
                         else:
                             advances_of_unit[unit] = [dest_territory]
+
+                        if unit in supports_of_unit:
+                            if dest_territory not in supports_of_unit[unit]:
+                                supports_of_unit[unit].append(dest_territory)
+                        else:
+                            supports_of_unit[unit] = [dest_territory]
 
         if power is not None:
             # Get the player units
@@ -132,7 +149,7 @@ class OrderGenerator:
                         valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr} via convoy')
 
             # Add support order
-            for dest_territory in advances_of_unit[unit]:
+            for dest_territory in supports_of_unit[unit]:
                 # For holds
                 if dest_territory in hold_in:
                     supported_unit = hold_in[dest_territory]
