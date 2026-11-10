@@ -1184,7 +1184,7 @@ def test_impossible_fleet_move_cannot_be_supported():
     map.submit_order('A BUR S F KIE - MUC')
     map.submit_order('A MUC - KIE')
     map.submit_order('A BER S A MUC - KIE')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 3)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 2)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
@@ -1206,7 +1206,7 @@ def test_impossible_coast_move_cannot_be_supported():
     map.submit_order('F WES S F LYO - SPA(sc)')
     map.submit_order('F SPA - LYO')
     map.submit_order('F MAR S F SPA - LYO')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 3)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 2)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
@@ -1230,7 +1230,7 @@ def test_impossible_army_move_cannot_be_supported():
     map.submit_order('F LYO H')
     map.submit_order('F TYS S F WES - LYO')
     map.submit_order('F WES - LYO')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 4)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 3)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
@@ -1880,7 +1880,7 @@ def test_the_friendly_head_to_head_battle():
     map.submit_order('F DEN S A BER - KIE')
     map.submit_order('F HEL S A BER - KIE')
     map.submit_order('F BAL S A PRU - BER')
-    map.submit_order('F PRU - BER')
+    map.submit_order('A PRU - BER')
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 10)
 
     map.adjudicator.resolve_orders()
@@ -2077,7 +2077,7 @@ def test_dislodged_convoy_does_not_cause_a_bounce():
     map.submit_order('A LON - HOL')
     map.submit_order('F HEL S F SKA - NTH')
     map.submit_order('F SKA - NTH')
-    map.submit_order('F BEL - HOL')
+    map.submit_order('A BEL - HOL')
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 5)
 
     map.adjudicator.resolve_orders()
@@ -3373,7 +3373,7 @@ def test_unit_may_not_retreat_to_a_contested_area():
     assert_equal('Map Phase', map.game_state.get_phase(), 'Spring Retreat')
 
     map.submit_order('A VIE - BOH')
-    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 1)
+    assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)
 
     map.adjudicator.resolve_orders()
     assert_equal('Map Queued orders Count', len(map.game_state.queued_orders), 0)

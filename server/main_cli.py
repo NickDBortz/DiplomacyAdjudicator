@@ -18,14 +18,30 @@ if __name__ == "__main__":
     map = Game(start_phase='Spring', render=False, allow_transformations=True)
 
     # game.do_gameplay_loop()
-    english_army = add_army(map.game_state.get_territory('PIC'), map.game_state.get_player('England'))
-    english_fleet = add_fleet(map.game_state.get_territory('ENG'), map.game_state.get_player('England'))
-    french_army1 = add_army(map.game_state.get_territory('PAR'), map.game_state.get_player('France'))
-    french_army2 = add_army(map.game_state.get_territory('BRE'), map.game_state.get_player('France'))
+    french_army = add_army(map.game_state.get_territory('MAR'), map.game_state.get_player('France'))
+    french_fleet = add_fleet(map.game_state.get_territory('SPA'), map.game_state.get_player('France'), coast='sc')
+    italian_fleet = add_fleet(map.game_state.get_territory('LYO'), map.game_state.get_player('Italy'))
+    turkish_fleet1 = add_fleet(map.game_state.get_territory('TYS'), map.game_state.get_player('Turkey'))
+    turkish_fleet2 = add_fleet(map.game_state.get_territory('WES'), map.game_state.get_player('Turkey'))
 
-    print(map.order_generator.generate_valid_orders())
+    orders = map.order_generator.generate_valid_orders()
+    split_order = orders[0].split(' ')
+    prefix1 = split_order[0]
+    prefix2 = split_order[1]
+    print(f'{prefix1} {prefix2}: ')
+    for order in orders:
+        split_order = order.split(' ')
+        if split_order[0] == prefix1 and split_order[1] == prefix2:
+            print(order)
+        else:
+            prefix1 = split_order[0]
+            prefix2 = split_order[1]
+            print()
+            print(f'{prefix1} {prefix2}: ')
+            print(order)
 
-    map.submit_order('A PIC H')
-    map.submit_order('F ENG C A PIC - LON')
-    map.submit_order('A PAR - PIC')
-    map.submit_order('A BRE S A PAR - PIC')
+    map.submit_order('A MAR - LYO')
+    map.submit_order('F SPA S A MAR - LYO')
+    map.submit_order('F LYO H')
+    map.submit_order('F TYS S F WES - LYO')
+    map.submit_order('F WES - LYO')

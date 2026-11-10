@@ -1,5 +1,5 @@
 from game.enums import ARMY, FLEET, ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE, NORTH_COAST, SOUTH_COAST
-from game.territory import LandTerritory
+from game.territory import LandTerritory, WaterTerritory
 
 class OrderGenerator:
     def __init__(self, game_state, adjudicator):
@@ -54,6 +54,9 @@ class OrderGenerator:
                 hold_in[start_territory] = unit
 
                 for dest_territory in start_territory.adjacents:
+                    if not unit.can_traverse(dest_territory) and not unit.can_traverse(dest_territory, coast=NORTH_COAST) and not unit.can_traverse(dest_territory, coast=SOUTH_COAST):
+                        continue
+
                     # Fill out the dict for which territories have advancing units
                     if dest_territory in advances_to:
                         advances_to[dest_territory].append(unit)
@@ -65,6 +68,21 @@ class OrderGenerator:
                         advances_of_unit[unit].append(dest_territory)
                     else:
                         advances_of_unit[unit] = [dest_territory]
+
+                if unit.type == ARMY:
+                    convoyable_territories = self._get_valid_convoy_territories_from(unit)
+                    for dest_territory in convoyable_territories:
+                        if dest_territory in advances_to:
+                            if unit not in advances_to[dest_territory]:
+                                advances_to[dest_territory].append(unit)
+                        else:
+                            advances_to[dest_territory] = [unit]
+
+                        if unit in advances_of_unit:
+                            if dest_territory not in advances_of_unit[unit]:
+                                advances_of_unit[unit].append(dest_territory)
+                        else:
+                            advances_of_unit[unit] = [dest_territory]
 
         if power is not None:
             # Get the player units
@@ -96,10 +114,6 @@ class OrderGenerator:
                 if dest_territory == start_territory:
                     continue
 
-                # Skip if can't traverse
-                if not unit.can_traverse(dest_territory):
-                    continue
-
                 dest_territory_abbr = dest_territory.abbr
                 if unit_type == FLEET:
                     if isinstance(dest_territory, LandTerritory) and len(dest_territory.north_coast) > 0:
@@ -107,9 +121,15 @@ class OrderGenerator:
                             valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr}({NORTH_COAST})')
                         if unit.can_traverse(dest_territory, coast=SOUTH_COAST):
                             valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr}({SOUTH_COAST})')
-                if unit.can_traverse(dest_territory):
-                    valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr}')
-                # TODO: If Army and valid convoy, handle via convoy variant
+                valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr}')
+
+            # Add convoy advance order
+            if unit_type == ARMY:
+                convoyable_territories = self._get_valid_convoy_territories_from(unit)
+                for dest_territory in convoyable_territories:
+                    dest_territory_abbr = dest_territory.abbr
+                    if dest_territory in advances_of_unit[unit]:
+                        valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr} via convoy')
 
             # Add support order
             for dest_territory in advances_of_unit[unit]:
@@ -132,7 +152,6 @@ class OrderGenerator:
                         supported_unit_start_territory = supported_unit.territory
                         supported_unit_start_territory_abbr = supported_unit_start_territory.abbr
                         dest_territory_abbr = dest_territory.abbr
-                        # TODO: If supporting fleet, handle multiple coasts
                         if supported_unit_type == FLEET:
                             if isinstance(dest_territory, LandTerritory) and len(dest_territory.north_coast) > 0:
                                 if unit.can_traverse(dest_territory, coast=NORTH_COAST, for_support=True):
@@ -143,6 +162,14 @@ class OrderGenerator:
                             valid_orders.append(f'{type_text} {start_territory_abbr} S {supported_unit_type_text} {supported_unit_start_territory_abbr} - {dest_territory_abbr}')
 
             # Add convoy order
+            if unit_type == FLEET:
+                convoy_pairs = self._get_valid_convoy_pairs(unit)
+                for pair in convoy_pairs:
+                    start_t, end_t = pair
+                    convoying_unit = start_t.unit
+                    convoying_unit_type_text = 'A' if convoying_unit.type == ARMY else 'F'
+                    valid_orders.append(f'{type_text} {start_territory_abbr} C {convoying_unit_type_text} {start_t.abbr} - {end_t.abbr}')
+
         return valid_orders
     
     def _generate_valid_retreat_orders(self, power=None):
@@ -158,7 +185,6 @@ class OrderGenerator:
             start_territory_abbr = start_territory.abbr
 
             for dest_territory in start_territory.adjacents:
-                # TODO: Handle multiple coasts
                 unit.territory = unit.dislodged_from
                 if unit.can_traverse(dest_territory):
                     if dest_territory.unit is None:
@@ -175,3 +201,51 @@ class OrderGenerator:
                 unit.territory = None
 
         return valid_orders
+
+    def _get_valid_convoy_territories_from(self, unit):
+        start_territory = unit.territory
+        convoyable_territories = []
+        fleet_territories = [adj for adj in start_territory.adjacents if isinstance(adj, WaterTerritory) and adj.unit is not None]
+        visited = []
+
+        while len(fleet_territories) > 0:
+            t = fleet_territories.pop()
+            visited.append(t)
+            for adj in t.adjacents:
+                if isinstance(adj, LandTerritory):
+                    if adj not in convoyable_territories and adj != start_territory:
+                        convoyable_territories.append(adj)
+                else:
+                    if adj not in visited:
+                        if adj.unit is not None:
+                            fleet_territories.append(adj)
+
+        return convoyable_territories
+
+    def _get_valid_convoy_pairs(self, unit):
+        convoyable_territories = []
+        fleet_territories = [unit.territory]
+        visited = []
+
+        while len(fleet_territories) > 0:
+            t = fleet_territories.pop()
+            visited.append(t)
+            for adj in t.adjacents:
+                if isinstance(adj, LandTerritory):
+                    if adj not in convoyable_territories:
+                        convoyable_territories.append(adj)
+                else:
+                    if adj not in visited:
+                        if adj.unit is not None:
+                            fleet_territories.append(adj)
+        convoy_pairs = []
+        for i in range(len(convoyable_territories)):
+            start_t = convoyable_territories[i]
+            if start_t.unit is not None and start_t.unit.type == ARMY:
+                for j in range(len(convoyable_territories)):
+                    if i == j:
+                        continue
+
+                    end_t = convoyable_territories[j]
+                    convoy_pairs.append((start_t, end_t))
+        return convoy_pairs
