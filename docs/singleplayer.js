@@ -161,16 +161,15 @@ function resetLocalUi() {
   document.getElementById('greatpower').value = '';
   greatPower = '';
   infoElement.textContent = '';
-  document.getElementById('order').value = '';
   setOrderPicker([], 'Select a power to see available orders.');
 }
 
 document.getElementById('submit-order').addEventListener('click', async () => {
-  const order = document.getElementById('order').value;
+  const order = document.getElementById('order-choice').value;
   const power = document.getElementById('greatpower').value;
 
-  if (!power || !order.trim()) {
-    orderErrorElement.textContent = 'Select a power and enter an order.';
+  if (!power || !order) {
+    orderErrorElement.textContent = 'Select a power and an order.';
     return;
   }
   try {

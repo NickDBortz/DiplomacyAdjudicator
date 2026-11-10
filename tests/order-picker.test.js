@@ -51,7 +51,7 @@ test('adjustment options group builds and removals by full territory name', () =
     ]);
     elements['order-type'].value = 'Build';
     context.renderOrderChoices();
-    assert.equal(elements['order-picker-status'].textContent, '3 of 4 available orders. Selecting one fills the order box.');
+    assert.equal(elements['order-picker-status'].textContent, '3 of 4 available orders. Select one to submit.');
 });
 
 test('movement and retreat options show the unit and full territory name', () => {
@@ -73,4 +73,34 @@ test('movement and retreat options show the unit and full territory name', () =>
     assert.equal(units.value, 'F MAO');
     assert.equal(elements['order-type'].value, 'Move');
     assert.equal(elements['order-choice'].options.length, 3);
+});
+
+test('multiplayer submits the selected order and rejects an empty selection', async () => {
+    function button() {
+        return { addEventListener(type, handler) { this[type] = handler; } };
+    }
+    const elements = {
+        'order-choice': { value: '' },
+        'order-error': { textContent: '' },
+        'submit-order': button(),
+        draw: button(),
+    };
+    const context = vm.createContext({ document: { getElementById: id => elements[id] } });
+    const controlsSource = source.slice(source.indexOf('function initOrderControls('), source.indexOf('function initSidebar('));
+    vm.runInContext(controlsSource, context);
+    const submitted = [];
+    context.initOrderControls(async order => {
+        submitted.push(order);
+        return 'Order submitted.';
+    }, () => '');
+
+    await elements['submit-order'].click();
+    assert.equal(elements['order-error'].textContent, 'Select an order.');
+    assert.deepEqual(submitted, []);
+
+    elements['order-choice'].value = 'Build F BRE';
+    await elements['submit-order'].click();
+    assert.deepEqual(submitted, ['Build F BRE']);
+    assert.equal(elements['order-choice'].value, '');
+    assert.equal(elements['order-error'].textContent, 'Order submitted.');
 });

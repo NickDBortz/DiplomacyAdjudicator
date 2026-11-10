@@ -28,8 +28,7 @@
         <ul id="player-list" class="lobby-list"></ul>
 
         <div id="player-actions">
-          <p class="section-header">Enter Your Order:</p>
-          <p id="order-example" class="host-note" aria-live="polite"></p>
+          <p class="section-header">Select Your Order:</p>
           <div class="order-picker">
             <label for="order-unit">Unit or build location</label>
             <select id="order-unit" disabled><option value="">All units and locations</option></select>
@@ -39,7 +38,6 @@
             <select id="order-choice" disabled><option value="">Waiting for game state</option></select>
             <p id="order-picker-status" class="order-picker-status" aria-live="polite">Waiting for available orders.</p>
           </div>
-          <input id="order" type="text">
           <button id="submit-order" class="btn">Submit Order</button>
           <p id="order-error" class="info"></p>
 

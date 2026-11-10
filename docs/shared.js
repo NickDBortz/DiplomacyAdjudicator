@@ -344,27 +344,12 @@ function applyGameState(state) {
     renderSubmittedOrders(state);
     updateGameRole();
     renderGameInfo();
-    renderOrderExamples();
     if (!Array.isArray(state.valid_orders)) {
         setOrderPicker([], 'Available orders were not provided by the server.');
     } else {
         setOrderPicker(state.valid_orders, state.orders_revealed
             ? 'Orders are revealed; wait for the host to resolve them.'
             : 'No available orders for this power.');
-    }
-}
-
-function renderOrderExamples() {
-    const el = document.getElementById('order-example');
-    if (el && gameInfo.power !== 'Spectator') {
-        if (gameInfo.state.phase === 'Adjustment')
-            el.textContent = 'Syntax examples: Build A PAR or Remove A PAR';
-        else if (gameInfo.state.phase === 'Spring' || gameInfo.state.phase === 'Fall')
-            el.textContent = 'Syntax examples: A PAR H, A PAR - BUR, F MAO - SPA(nc), or F MAO - SPA(sc)';
-        else if (gameInfo.state.phase === 'Spring Retreat' || gameInfo.state.phase === 'Fall Retreat')
-            el.textContent = 'Syntax examples: A PAR - BUR, F MAO - SPA(nc), or F MAO - SPA(sc)';
-        else
-            el.textContent = '';
     }
 }
 
@@ -419,7 +404,7 @@ function renderOrderChoices(emptyMessage = 'No available orders for this power.'
     replaceOptions(select, matching.length ? 'Select an order' : 'No matching orders', matching.map(o => o.text));
     select.disabled = matching.length === 0;
     document.getElementById('order-picker-status').textContent = availableOrders.length
-        ? `${matching.length} of ${availableOrders.length} available orders. Selecting one fills the order box.`
+        ? `${matching.length} of ${availableOrders.length} available orders. Select one to submit.`
         : emptyMessage;
 }
 
@@ -428,9 +413,6 @@ function initOrderPicker() {
     if (!unit) return;
     unit.addEventListener('change', () => renderOrderChoices());
     document.getElementById('order-type').addEventListener('change', () => renderOrderChoices());
-    document.getElementById('order-choice').addEventListener('change', event => {
-        if (event.target.value) document.getElementById('order').value = event.target.value;
-    });
 }
 
 function downloadGameSave(saveData) {
@@ -708,20 +690,20 @@ function initResolveControl() {
     });
 }
 
-// Wires the order box and draw button; each callback returns the message to show (or a promise of it).
+// Wires the order selector and draw button; callbacks return the message to show.
 function initOrderControls(onSubmit, onDraw) {
-    const orderEl = document.getElementById('order');
+    const orderEl = document.getElementById('order-choice');
     const messageEl = document.getElementById('order-error');
 
     document.getElementById('submit-order').addEventListener('click', async () => {
-        const order = orderEl.value.trim();
+        const order = orderEl.value;
         if (!order) {
-            messageEl.textContent = 'Enter an order.';
+            messageEl.textContent = 'Select an order.';
             return;
         }
         try {
             messageEl.textContent = await onSubmit(order);
-            if (messageEl.textContent === 'Order submitted.') orderEl.value = '';
+            if (messageEl.textContent === 'Order submitted.' && orderEl.value === order) orderEl.value = '';
         } catch (e) {
             messageEl.textContent = e.message;
         }
@@ -758,22 +740,21 @@ function initSidebar() {
         <p>Negotiate with the other powers and compete for supply centers. The first power to reach the map's winning count wins. All orders for a phase resolve at the same time.</p>
         <p>Armies move on land; fleets move through water and coastal territories. A unit can hold, move, support another unit, or convoy an army. Support adds strength; equal opposing forces can bounce. Attacks can cut support.</p>
         <h3>Movement: Spring and Fall</h3>
-        <p>Enter one order for each unit. A unit without an order holds. Use the unit type (<code>A</code> for army, <code>F</code> for fleet), its territory abbreviation, and an action:</p>
+        <p>Select one order for each unit. A unit without an order holds. Filter the available orders by unit and type to narrow the list.</p>
         <ul>
-            <li>Hold: <code>A PAR H</code></li>
-            <li>Move: <code>A PAR - BUR</code>; to a split coast: <code>F MAO - SPA(nc)</code> or <code>F MAO - SPA(sc)</code></li>
-            <li>Support a hold: <code>A BUR S A PAR H</code></li>
-            <li>Support a move: <code>A MAR S A PAR - BUR</code></li>
-            <li>Convoy: <code>F NTH C A LON - BEL</code>, with a matching army move <code>A LON - BEL</code>. Each fleet in the route needs a convoy order. Add <code>via convoy</code> to the army move to force a convoy.</li>
+            <li>Hold keeps a unit in its current territory.</li>
+            <li>Move sends a unit to a neighboring territory or an army along a convoy route.</li>
+            <li>Support strengthens another unit's hold or move.</li>
+            <li>Convoy transports an army by sea. Each fleet in the route needs a matching convoy order and the army needs a matching move.</li>
         </ul>
         <p>Support must be to a territory the supporting unit can reach. Convoys use fleets at sea to move an army between coastal territories.</p>
         <h3>Retreats</h3>
-        <p>A dislodged unit can retreat using the move format, for example <code>A PAR - BUR</code>. Its destination must be legal and unoccupied; a unit without a valid retreat is disbanded.</p>
+        <p>A dislodged unit can retreat to a legal, unoccupied destination; a unit without a valid retreat is disbanded.</p>
         <h3>Adjustment</h3>
-        <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control, for example <code>Build A PAR</code> or <code>Build F STP(nc)</code>. Remove with <code>Remove A PAR</code>. The classic game starts with an adjustment for the initial builds.</p>
+        <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control. The classic game starts with an adjustment for the initial builds.</p>
         <h3>Order tips</h3>
-        <p>Use territory abbreviations shown on the map and single spaces between tokens. For a fleet moving, retreating, or building in a territory with multiple coasts, use <code>(nc)</code> or <code>(sc)</code> on the destination where needed. Do not add a coast suffix to the starting territory. Input is case-insensitive.</p>
-        <p>These are format examples, not necessarily legal orders in your current position. In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
+        <p>For a fleet moving, retreating, or building in a territory with multiple coasts, choose the appropriate coast when available. Available orders can still fail when resolved because all players' orders are simultaneous.</p>
+        <p>In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
 
     const tabs = [gameTab, helpTab];
     const panels = [gamePanel, helpPanel];
