@@ -22,6 +22,7 @@ function createPicker() {
             options: [],
             replaceChildren(option) { this.options = [option]; },
             add(option) { this.options.push(option); },
+            addEventListener(type, handler) { this[type] = handler; },
         };
     }
     const elements = {
@@ -29,6 +30,8 @@ function createPicker() {
         'order-type': select(),
         'order-choice': select(),
         'order-picker-status': {},
+        'map-order-status': {},
+        'clear-order-selection': { addEventListener(type, handler) { this[type] = handler; } },
     };
     const context = vm.createContext({ mapData, Option, svg: null, document: { getElementById: id => elements[id] } });
     vm.runInContext(pickerSource, context);
@@ -52,6 +55,114 @@ test('adjustment options group builds and removals by full territory name', () =
     elements['order-type'].value = 'Build';
     context.renderOrderChoices();
     assert.equal(elements['order-picker-status'].textContent, '3 of 4 available orders. Select one to submit.');
+});
+
+test('map selections filter the existing picker for moves and preserve ambiguous coasts', () => {
+    const { context, elements } = createPicker();
+    context.initOrderPicker();
+    context.setOrderPicker(['F MAO - SPA(nc)', 'F MAO - SPA(sc)', 'F MAO - POR', 'A PAR H']);
+    context.selectMapTerritory('MAO');
+    assert.equal(elements['order-unit'].value, 'F MAO');
+    context.selectMapTerritory('SPA');
+    assert.deepEqual(elements['order-choice'].options.map(o => o.value), [
+        '', 'F MAO - SPA(nc)', 'F MAO - SPA(sc)',
+    ]);
+    assert.equal(elements['order-choice'].value, '');
+    assert.match(elements['map-order-status'].textContent, /2 matching orders/);
+    elements['order-choice'].value = 'F MAO - SPA(sc)';
+    assert.equal(elements['order-choice'].value, 'F MAO - SPA(sc)');
+    context.selectMapTerritory('PAR');
+    assert.equal(elements['order-unit'].value, 'A PAR');
+    assert.equal(elements['order-choice'].value, '');
+    assert.deepEqual(elements['order-choice'].options.map(o => o.value), ['', 'A PAR H']);
+});
+
+test('map support and convoy selections narrow by unit and destination without guessing', () => {
+    const { context, elements } = createPicker();
+    context.initOrderPicker();
+    context.setOrderPicker([
+        'F NTH C A LON - BEL', 'F NTH C A LON - NWY', 'F NTH C A EDI - BEL',
+        'F NTH S A LON H', 'F NTH S A LON - BEL',
+    ]);
+    context.selectMapTerritory('NTH');
+    context.selectMapTerritory('LON');
+    assert.deepEqual(elements['order-choice'].options.map(o => o.value), [
+        '', 'F NTH C A LON - BEL', 'F NTH C A LON - NWY',
+        'F NTH S A LON H', 'F NTH S A LON - BEL',
+    ]);
+    context.selectMapTerritory('BEL');
+    assert.deepEqual(elements['order-choice'].options.map(o => o.value), [
+        '', 'F NTH C A LON - BEL', 'F NTH S A LON - BEL',
+    ]);
+    assert.equal(elements['order-choice'].value, '');
+    elements['order-type'].value = 'Convoy';
+    elements['order-type'].change();
+    context.selectMapTerritory('LON');
+    context.selectMapTerritory('NWY');
+    assert.equal(elements['order-choice'].value, 'F NTH C A LON - NWY');
+});
+
+test('map selection handles builds, retreats, refresh and clear', () => {
+    const { context, elements } = createPicker();
+    context.initOrderPicker();
+    context.setOrderPicker(['Build A STP', 'Build F STP(nc)', 'Build F STP(sc)']);
+    context.selectMapTerritory('STP');
+    assert.equal(elements['order-unit'].value, 'STP');
+    assert.equal(elements['order-choice'].options.length, 4);
+    context.setOrderPicker(['A PAR - PIC', 'A PAR - BUR']);
+    context.selectMapTerritory('PAR');
+    context.selectMapTerritory('PIC');
+    assert.equal(elements['order-choice'].value, 'A PAR - PIC');
+    context.selectMapTerritory('BUR');
+    assert.equal(elements['order-choice'].value, 'A PAR - BUR');
+    context.setOrderPicker(['A PAR - PIC', 'A PAR - BUR']);
+    assert.equal(elements['order-choice'].value, 'A PAR - BUR');
+    elements['clear-order-selection'].click();
+    assert.equal(elements['order-unit'].value, '');
+    assert.equal(elements['order-choice'].options.length, 3);
+    context.setOrderPicker([], 'Orders are revealed.');
+    context.selectMapTerritory('PAR');
+    assert.equal(elements['order-unit'].value, '');
+    assert.equal(elements['map-order-status'].textContent, 'Orders are revealed.');
+});
+
+test('map routes territory and unit clicks after every rebuild', () => {
+    const mapSource = source.slice(source.indexOf('function buildMap()'), source.indexOf('async function loadMap('));
+    const clicks = [];
+    const maps = [];
+    function element() {
+        return {
+            children: [],
+            attributes: {},
+            setAttribute(key, value) { this.attributes[key] = value; },
+            appendChild(child) { this.children.push(child); },
+            addEventListener(type, handler) { this[type] = handler; },
+        };
+    }
+    const container = {
+        set innerHTML(value) { this.children = []; },
+        appendChild(svg) { maps.push(svg); },
+    };
+    const context = vm.createContext({
+        SVG_NS: 'svg',
+        mapData: { width: 10, height: 10, vertices: [[0, 0], [1, 0], [1, 1]],
+            territories: [{ abbr: 'PAR', name: 'Paris', polygons: [[0, 1, 2]], label_pos: [1, 1] }] },
+        smoothPolygons: polygons => polygons,
+        document: {
+            getElementById: id => id === 'map' ? container : {},
+            createElementNS: () => element(),
+        },
+        selectMapTerritory: abbr => clicks.push(abbr),
+    });
+    vm.runInContext(mapSource, context);
+    context.buildMap();
+    context.buildMap();
+    const svg = maps[1];
+    svg.click({ target: { closest: selector => selector === '.unit'
+        ? { dataset: { territory: 'PAR' } } : null } });
+    svg.click({ target: { closest: selector => selector === '.territory'
+        ? { id: 'terr-BUR' } : null } });
+    assert.deepEqual(clicks, ['PAR', 'BUR']);
 });
 
 test('movement and retreat options show the unit and full territory name', () => {
