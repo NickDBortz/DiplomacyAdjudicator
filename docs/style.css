@@ -277,7 +277,8 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     filter: brightness(1.2);
 }
 .unit.dislodged-preview circle { stroke-dasharray: 3 2; }
-.unit.dislodged-preview { pointer-events: none; }
+#map line, #map polygon { pointer-events: none; }
+.map-order-status { margin: 8px 0; color: #ddd; font-size: 13px; }
 
 .sidebar p {
     margin: 12px 16px 6px;
@@ -1252,103 +1253,4 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 @keyframes chat-toast-in {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: none; }
-}
-
-/* Map Order Picker Styles */
-.map-picker-highlight {
-    stroke: #FFD700 !important;
-    stroke-width: 3 !important;
-}
-
-.map-picker-highlight.target {
-    stroke: #FF6347 !important;
-}
-
-.map-picker-hint {
-    background: #2a2a2a;
-    border: 1px solid #4a90e2;
-    border-radius: 4px;
-    padding: 8px 12px;
-    margin: 8px 16px 8px;
-}
-
-.map-picker-hint p {
-    margin: 0;
-    font-size: 12px;
-    color: #4a90e2;
-}
-
-/* Improve territory interactivity for mobile */
-.territory {
-    transition: stroke 0.15s ease, stroke-width 0.15s ease;
-}
-
-.territory:active {
-    stroke: #FFD700 !important;
-    stroke-width: 2 !important;
-}
-
-/* Mobile responsive adjustments */
-@media (max-width: 768px) {
-    /* Increase territory click area on mobile */
-    .territory {
-        stroke-width: 1.5;
-    }
-    
-    /* Better touch targets for units */
-    .unit circle {
-        r: 12;
-    }
-    
-    .unit text {
-        font-size: 16px;
-    }
-    
-    /* Sidebar takes full width on mobile */
-    .sidebar {
-        width: 100vw;
-    }
-    
-    #main {
-        margin-right: 100vw;
-    }
-    
-    #main.shifted {
-        margin-right: 46px;
-    }
-    
-    .modal-content {
-        width: 90vw;
-    }
-    
-    .map-picker-hint p {
-        font-size: 11px;
-    }
-}
-
-/* Extra small devices */
-@media (max-width: 480px) {
-    .label {
-        font-size: 12px;
-    }
-    
-    .unit text {
-        font-size: 14px;
-    }
-    
-    .section-header {
-        font-size: 13px;
-        margin: 16px 12px 6px;
-        padding-bottom: 4px;
-    }
-    
-    .sidebar p {
-        margin: 10px 12px 4px;
-        font-size: 13px;
-    }
-    
-    .order-picker label {
-        font-size: 12px;
-        margin: 0 0 3px;
-    }
 }
