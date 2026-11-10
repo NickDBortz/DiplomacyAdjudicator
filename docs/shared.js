@@ -13,6 +13,22 @@ function setStatus(text) {
     document.getElementById('status').textContent = text;
 }
 
+// Transient popup for server events; leaves the phase banner (#status) untouched.
+let notifyTimer = null;
+function notify(text, sticky = false) {
+    let el = document.getElementById('notification');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'notification';
+        el.setAttribute('role', 'status');
+        document.body.appendChild(el);
+    }
+    clearTimeout(notifyTimer);
+    el.textContent = text;
+    el.classList.add('visible');
+    if (!sticky) notifyTimer = setTimeout(() => el.classList.remove('visible'), 4000);
+}
+
 const loadingPopup = document.getElementById('loading-popup');
 
 function showLoading() {
@@ -165,12 +181,12 @@ async function sendHostAction(button, payload, replyType) {
     try {
         const reply = await sendForReply(payload, replyType);
         if (!reply.ok) {
-            setStatus(reply.error);
+            notify(reply.error);
             if (button) button.disabled = false;
         }
         return reply;
     } catch (e) {
-        setStatus(e.message);
+        notify(e.message);
         if (button) button.disabled = false;
         return { ok: false, error: e.message };
     }
@@ -227,7 +243,7 @@ function watchLobby(lobbyId, userName, secretToken, onMessage = () => {}) {
             if (reconnecting) {
                 reconnecting = false;
                 mainDiv.classList.remove('disabled-div');
-                setStatus('Reconnected.');
+                notify('Reconnected.');
             }
             retryDelay = 1000;
             onMessage(msg);
@@ -240,18 +256,18 @@ function watchLobby(lobbyId, userName, secretToken, onMessage = () => {}) {
             if (msg.type !== 'lobby_update') return;
             renderPlayerList(msg.players, userName, msg.selected_powers, msg.connected_players);
             const status = lobbyEventMessage(msg, userName);
-            if (status) setStatus(status);
+            if (status) notify(status);
         }, code => {
             if (conn.leaving) return;
             if (SEAT_LOST_CLOSE_CODES.includes(code)) clearSession();
             mainDiv.classList.add('disabled-div');
             if (FINAL_CLOSE_CODES.includes(code)) {
                 renderPlayerList([], userName);
-                setStatus(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.');
+                notify(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.', true);
                 return;
             }
             reconnecting = true;
-            setStatus(`Connection lost. Reconnecting in ${Math.round(retryDelay / 1000)}s...`);
+            notify(`Connection lost. Reconnecting in ${Math.round(retryDelay / 1000)}s...`, true);
             retryTimer = setTimeout(open, retryDelay);
             retryDelay = Math.min(retryDelay * 2, 30000);
         });
@@ -633,7 +649,7 @@ function handleGameMessage(msg) {
             if (message) message.textContent = `Save download started: ${filename}`;
         }
     } else if (msg.type === 'error') {
-        setStatus(msg.message);
+        notify(msg.message);
     }
 }
 
