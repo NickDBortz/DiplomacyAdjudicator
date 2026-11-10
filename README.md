@@ -25,6 +25,7 @@ The front end in `docs/` is published to GitHub Pages and talks to the backend h
 - **Multiplayer**: host or join a game where each player controls one power.
 
 Use the sidebar's **Help** tab for a rules overview and order examples; switch back to **Game** to enter orders.
+In the Game tab, filter available orders by unit or build location and order type, then select an order to fill the entry box. You can still type an order manually. Available orders refresh as the game changes; an order can still fail when adjudicated because orders resolve simultaneously.
 
 The free Render instance sleeps when idle, so the first request after a break can take around 30 seconds.
 

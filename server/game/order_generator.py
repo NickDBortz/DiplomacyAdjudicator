@@ -23,11 +23,13 @@ class OrderGenerator:
             if units_to_build > 0:
                 for supply_center in power.get_supply_centers(self.game_state.territory_list):
                     territory = self.game_state.get_territory(supply_center)
-                    if territory.unit is None:
+                    if territory.unit is None and territory.home_owner == power:
                         if territory.is_coast:
                             if len(territory.north_coast) > 0:
                                 valid_orders.append(f'Build F {territory.abbr}({NORTH_COAST})')
                                 valid_orders.append(f'Build F {territory.abbr}({SOUTH_COAST})')
+                            else:
+                                valid_orders.append(f'Build F {territory.abbr}')
                         valid_orders.append(f'Build A {territory.abbr}')
             elif units_to_build < 0:
                 for unit in power.units:
@@ -126,7 +128,7 @@ class OrderGenerator:
                     valid_orders.append(f'{type_text} {start_territory_abbr} T')
 
             # Add advance order
-            for dest_territory in advances_of_unit[unit]:
+            for dest_territory in advances_of_unit.get(unit, []):
                 # Skip advances to this territory
                 if dest_territory == start_territory:
                     continue
@@ -145,11 +147,11 @@ class OrderGenerator:
                 convoyable_territories = self._get_valid_convoy_territories_from(unit)
                 for dest_territory in convoyable_territories:
                     dest_territory_abbr = dest_territory.abbr
-                    if dest_territory in advances_of_unit[unit]:
+                    if dest_territory in advances_of_unit.get(unit, []):
                         valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr} via convoy')
 
             # Add support order
-            for dest_territory in supports_of_unit[unit]:
+            for dest_territory in supports_of_unit.get(unit, []):
                 # For holds
                 if dest_territory in hold_in:
                     supported_unit = hold_in[dest_territory]
@@ -201,21 +203,28 @@ class OrderGenerator:
             start_territory = unit.dislodged_from
             start_territory_abbr = start_territory.abbr
 
-            for dest_territory in start_territory.adjacents:
-                unit.territory = unit.dislodged_from
-                if unit.can_traverse(dest_territory):
-                    if dest_territory.unit is None:
-                        if len(dest_territory.contesting) == 0 or len(dest_territory.contesting) == 1 and dest_territory.contesting[0].unit == unit:
-                            dest_territory_abbr = dest_territory.abbr
-                            if unit_type == FLEET:
-                                if isinstance(dest_territory, LandTerritory) and len(dest_territory.north_coast) > 0:
-                                    if unit.can_traverse(dest_territory, coast=NORTH_COAST):
-                                        valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}({NORTH_COAST})')
-                                    if unit.can_traverse(dest_territory, coast=SOUTH_COAST):
-                                        valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}({SOUTH_COAST})')
-                            if unit.can_traverse(dest_territory):
-                                valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}')
-                unit.territory = None
+            previous_territory = unit.territory
+            try:
+                unit.territory = start_territory
+                for dest_territory in start_territory.adjacents:
+                    if not unit.can_traverse(dest_territory):
+                        continue
+                    if dest_territory.unit is not None:
+                        continue
+                    if dest_territory.contesting and not (
+                        len(dest_territory.contesting) == 1 and dest_territory.contesting[0].unit == unit
+                    ):
+                        continue
+                    dest_territory_abbr = dest_territory.abbr
+                    if unit_type == FLEET and isinstance(dest_territory, LandTerritory) and dest_territory.north_coast:
+                        if unit.can_traverse(dest_territory, coast=NORTH_COAST):
+                            valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}({NORTH_COAST})')
+                        if unit.can_traverse(dest_territory, coast=SOUTH_COAST):
+                            valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}({SOUTH_COAST})')
+                    if unit.can_traverse(dest_territory):
+                        valid_orders.append(f'{unit_type_text} {start_territory_abbr} - {dest_territory_abbr}')
+            finally:
+                unit.territory = previous_territory
 
         return valid_orders
 

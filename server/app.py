@@ -510,6 +510,9 @@ def _view(lobby, power, user_name):
     state['vacant_powers'] = _vacant_powers(lobby)
     state['accepting_joins'] = lobby.get('accepting_joins', False)
     state['join_requests'] = _open_join_requests(lobby)
+    game = _lobby_games[lobby['id']]
+    player = game.game_state.get_player(power) if power else None
+    state['valid_orders'] = [] if revealed else web_api.get_valid_orders(game, player)
     return state
 
 def _game_views(lobby):
@@ -1119,6 +1122,13 @@ def create_game():
 @app.get('/games/{game_id}')
 def get_state(game_id: str):
     return web_api.get_state(_get(game_id))
+
+@app.get('/games/{game_id}/valid-orders')
+def get_valid_orders(game_id: str, power: str):
+    with _lock:
+        game = _get(game_id)
+        _check_power(game, power)
+        return {'valid_orders': web_api.get_valid_orders(game, game.game_state.get_player(power))}
 
 @app.post('/games/{game_id}/orders')
 def submit_order(game_id: str, req: OrderRequest):

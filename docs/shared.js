@@ -345,6 +345,13 @@ function applyGameState(state) {
     updateGameRole();
     renderGameInfo();
     renderOrderExamples();
+    if (!Array.isArray(state.valid_orders)) {
+        setOrderPicker([], 'Available orders were not provided by the server.');
+    } else {
+        setOrderPicker(state.valid_orders, state.orders_revealed
+            ? 'Orders are revealed; wait for the host to resolve them.'
+            : 'No available orders for this power.');
+    }
 }
 
 function renderOrderExamples() {
@@ -359,6 +366,60 @@ function renderOrderExamples() {
         else
             el.textContent = '';
     }
+}
+
+let availableOrders = [];
+
+function orderDetails(text) {
+    const parts = text.split(' ');
+    const adjustment = parts[0] === 'Build' || parts[0] === 'Remove';
+    const unit = adjustment ? `${parts[0]} ${parts[1]} ${parts[2].replace(/\([^)]*\)$/, '')}`
+        : `${parts[0]} ${parts[1]}`;
+    const action = adjustment ? parts[0] : parts[2].split('(')[0];
+    const types = { H: 'Hold', '-': 'Move', S: 'Support', C: 'Convoy', T: 'Transform',
+        Build: 'Build', Remove: 'Remove' };
+    return { text, unit, type: types[action] || action };
+}
+
+function replaceOptions(select, placeholder, values) {
+    const previous = select.value;
+    select.replaceChildren(new Option(placeholder, ''));
+    for (const value of values) select.add(new Option(value, value));
+    select.value = values.includes(previous) ? previous : '';
+}
+
+function setOrderPicker(orders, emptyMessage = 'No available orders for this power.') {
+    const unitSelect = document.getElementById('order-unit');
+    if (!unitSelect) return;
+    availableOrders = orders.map(orderDetails);
+    const typeSelect = document.getElementById('order-type');
+    replaceOptions(unitSelect, 'All units and locations', [...new Set(availableOrders.map(o => o.unit))].sort());
+    replaceOptions(typeSelect, 'All order types', [...new Set(availableOrders.map(o => o.type))].sort());
+    unitSelect.disabled = availableOrders.length === 0;
+    typeSelect.disabled = availableOrders.length === 0;
+    renderOrderChoices(emptyMessage);
+}
+
+function renderOrderChoices(emptyMessage = 'No available orders for this power.') {
+    const unit = document.getElementById('order-unit').value;
+    const type = document.getElementById('order-type').value;
+    const matching = availableOrders.filter(o => (!unit || o.unit === unit) && (!type || o.type === type));
+    const select = document.getElementById('order-choice');
+    replaceOptions(select, matching.length ? 'Select an order' : 'No matching orders', matching.map(o => o.text));
+    select.disabled = matching.length === 0;
+    document.getElementById('order-picker-status').textContent = availableOrders.length
+        ? `${matching.length} of ${availableOrders.length} available orders. Selecting one fills the order box.`
+        : emptyMessage;
+}
+
+function initOrderPicker() {
+    const unit = document.getElementById('order-unit');
+    if (!unit) return;
+    unit.addEventListener('change', () => renderOrderChoices());
+    document.getElementById('order-type').addEventListener('change', () => renderOrderChoices());
+    document.getElementById('order-choice').addEventListener('change', event => {
+        if (event.target.value) document.getElementById('order').value = event.target.value;
+    });
 }
 
 function downloadGameSave(saveData) {
@@ -673,6 +734,7 @@ function initSidebar() {
         const collapsed = sidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('shifted', collapsed);
     });
+    initOrderPicker();
 
     const gameTab = document.getElementById('game-tab');
     const helpTab = document.getElementById('help-tab');
