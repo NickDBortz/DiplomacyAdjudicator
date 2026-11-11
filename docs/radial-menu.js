@@ -86,7 +86,7 @@ class RadialMenu {
       const orderDetails = parseOrderDetails(order.text || order);
       console.log('[RadialMenu] Checking order:', { order, orderDetails });
       if (orderDetails.unit === unitStr) {
-        availableTypes.add(orderDetails.type);
+        availableTypes.add(orderDetails.type === 'Move' ? 'Advance' : orderDetails.type);
       }
     }
 
@@ -677,7 +677,7 @@ let radialMenu = null;
  * Initialize the radial menu system
  */
 function initRadialMenu(svgElement) {
-  if (!radialMenu) {
+  if (!radialMenu || radialMenu.svg !== svgElement) {
     radialMenu = new RadialMenu();
     radialMenu.initialize(svgElement);
   }
@@ -735,11 +735,10 @@ function handleMapClickWithRadialMenu(event, availableOrders, state, power, phas
 
     if (unitData && unitData.owner === power) {
       const rect = unit.getBoundingClientRect();
-      const svgRect = svg.getBoundingClientRect();
-      const position = {
-        x: (rect.left - svgRect.left + rect.width / 2),
-        y: (rect.top - svgRect.top + rect.height / 2)
-      };
+      const point = svg.createSVGPoint();
+      point.x = rect.left + rect.width / 2;
+      point.y = rect.top + rect.height / 2;
+      const position = point.matrixTransform(svg.getScreenCTM().inverse());
 
       console.log('[RadialMenu] Position calculated:', position);
 
