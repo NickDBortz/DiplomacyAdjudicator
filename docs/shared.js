@@ -1074,7 +1074,7 @@ function buildMap() {
             const power = powerSelect ? powerSelect.value : (state ? state.player_power : '');
             
             // Use radial menu for Spring/Fall phases, original logic for Adjustment
-            if ((phase === 'Spring' || phase === 'Fall') && typeof radialMenu !== 'undefined' && radialMenu) {
+            if ((phase === 'Spring' || phase === 'Fall' || phase.startsWith('Spring') || phase.startsWith('Fall')) && typeof radialMenu !== 'undefined' && radialMenu) {
                 handleMapClickWithRadialMenu(event, availableOrders, state, power, phase);
             } else if ((phase && phase.includes('Retreat')) && typeof radialMenu !== 'undefined' && radialMenu) {
                 handleMapClickWithRadialMenu(event, availableOrders, state, power, phase);

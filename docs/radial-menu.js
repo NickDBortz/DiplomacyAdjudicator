@@ -66,6 +66,8 @@ class RadialMenu {
    * Show radial menu for a unit click
    */
   showForUnit(unit, territory, position, availableOrders, state, power) {
+    console.log('[RadialMenu] showForUnit called', { unit, territory, position });
+    
     this.state = state;
     this.selectedPower = power;
     this.currentUnit = unit;
@@ -75,14 +77,18 @@ class RadialMenu {
 
     // Determine which order types are available for this unit
     const unitStr = `${unit.type} ${territory}`;
+    console.log('[RadialMenu] Looking for orders matching unitStr:', unitStr);
+    
     const availableTypes = new Set();
     for (const order of availableOrders) {
       const orderDetails = parseOrderDetails(order.text || order);
+      console.log('[RadialMenu] Checking order:', { order, orderDetails });
       if (orderDetails.unit === unitStr) {
         availableTypes.add(orderDetails.type);
       }
     }
 
+    console.log('[RadialMenu] Available types found:', Array.from(availableTypes));
     this.renderMenu(availableTypes);
   }
 
@@ -117,6 +123,8 @@ class RadialMenu {
    * Render the radial menu with available options
    */
   renderMenu(availableTypes) {
+    console.log('[RadialMenu] Rendering menu with available types:', Array.from(availableTypes));
+    
     this.menuGroup.innerHTML = '';
 
     const items = [
@@ -136,6 +144,7 @@ class RadialMenu {
       const y = this.position.y + Math.sin(angle) * this.config.radius;
 
       const isAvailable = availableTypes.has(item.type);
+      console.log(`[RadialMenu] Creating item ${item.type} at (${x}, ${y}), available=${isAvailable}`);
       this.createMenuItem(item, x, y, isAvailable, i);
     }
 
@@ -149,6 +158,8 @@ class RadialMenu {
     center.setAttribute('stroke-width', 2);
     center.setAttribute('class', 'radial-menu-center');
     this.menuGroup.appendChild(center);
+    
+    console.log('[RadialMenu] Menu rendered, group children count:', this.menuGroup.children.length);
   }
 
   /**
@@ -678,8 +689,18 @@ function handleMapClickWithRadialMenu(event, availableOrders, state, power, phas
   const unit = event.target.closest('.unit');
   const territory = event.target.closest('.territory');
 
+  // Debug logging
+  console.log('[RadialMenu] Click detected', {
+    phase,
+    hasUnit: !!unit,
+    hasTerritory: !!territory,
+    unitTerritory: unit?.dataset.territory,
+    power,
+    availableOrdersCount: availableOrders.length
+  });
+
   // For adjustment phase, use original logic
-  if (phase === 'Adjustment') {
+  if (phase.includes('Adjustment')) {
     selectMapTerritory(territory ? territory.id.slice(5) : unit.dataset.territory);
     return;
   }
@@ -702,9 +723,13 @@ function handleMapClickWithRadialMenu(event, availableOrders, state, power, phas
 
   // For Spring/Fall, show radial menu
   if (unit && unit.dataset.territory) {
+    console.log('[RadialMenu] Showing menu for unit', unit.dataset.territory);
+    
     const unitData = state.units.find(u => u.territory === unit.dataset.territory &&
                                              u.owner === unit.dataset.owner &&
                                              u.type === unit.dataset.type);
+
+    console.log('[RadialMenu] Unit data found:', unitData);
 
     if (unitData && unitData.owner === power) {
       const rect = unit.getBoundingClientRect();
@@ -714,12 +739,20 @@ function handleMapClickWithRadialMenu(event, availableOrders, state, power, phas
         y: (rect.top - svgRect.top + rect.height / 2)
       };
 
+      console.log('[RadialMenu] Position calculated:', position);
+
       if (!radialMenu) {
+        console.log('[RadialMenu] Initializing menu');
         initRadialMenu(svg);
       }
 
+      console.log('[RadialMenu] Showing menu for unit');
       radialMenu.showForUnit(unitData, unit.dataset.territory, position, availableOrders, state, power);
+    } else {
+      console.log('[RadialMenu] Unit not owned by player or unit data not found');
     }
+  } else {
+    console.log('[RadialMenu] Click was not on a unit');
   }
 }
 
