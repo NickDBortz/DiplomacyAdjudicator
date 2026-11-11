@@ -611,6 +611,12 @@ function selectMapTerritory(abbr) {
             choiceSelect.value = matches[0].text;
             updateOrderHighlights();
             setPickerStatus(`Order selected: ${matches[0].text}. Submit to confirm.`);
+            
+            // Auto-submit in Adjustment phase
+            const state = window.diplomacy.state;
+            if (state && (state.phase === 'Spring Adjustment' || state.phase === 'Fall Adjustment')) {
+                submitMapOrder();
+            }
         } else {
             setPickerStatus(`${matches.length} matching orders. Select an order or tap the next territory.`);
         }
@@ -1068,9 +1074,9 @@ function buildMap() {
             const power = powerSelect ? powerSelect.value : (state ? state.player_power : '');
             
             // Use radial menu for Spring/Fall phases, original logic for Adjustment
-            if ((phase === 'Spring' || phase === 'Fall') && radialMenu) {
+            if ((phase === 'Spring' || phase === 'Fall') && typeof radialMenu !== 'undefined' && radialMenu) {
                 handleMapClickWithRadialMenu(event, availableOrders, state, power, phase);
-            } else if ((phase && phase.includes('Retreat')) && radialMenu) {
+            } else if ((phase && phase.includes('Retreat')) && typeof radialMenu !== 'undefined' && radialMenu) {
                 handleMapClickWithRadialMenu(event, availableOrders, state, power, phase);
             } else {
                 // Original logic for adjustment phase and when menu not loaded
