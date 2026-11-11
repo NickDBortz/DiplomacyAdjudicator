@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radial Menu Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+        #console-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Radial Menu Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>Step 1: Check Prerequisites</h2>
+        <button onclick="testPrerequisites()">Run Prerequisites Check</button>
+        <div id="prereq-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 2: Load Game</h2>
+        <p>This will load the game in an iframe. Make sure backend is running!</p>
+        <button onclick="loadGame()">Load Game</button>
+        <div id="game-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 3: Simulate Unit Click</h2>
+        <p>After game loads, click a unit on the map OR click this button to simulate click:</p>
+        <button onclick="simulateUnitClick()">Simulate Unit Click</button>
+        <div id="click-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <button onclick="clearConsoleOutput()">Clear</button>
+        <div id="console-output"></div>
+    </div>
+
+    <script>
+        // Capture all console output
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function appendToConsole(message, type = 'log') {
+            const output = document.getElementById('console-output');
+            const color = type === 'error' ? '#ff6b6b' : type === 'warn' ? '#ffd93d' : '#00ff00';
+            const line = `<div style="color: ${color}">${escapeHtml(message)}</div>`;
+            output.innerHTML += line;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
+            appendToConsole(message, 'log');
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
+            appendToConsole(message, 'error');
+            originalError.apply(console, args);
+        };
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function clearConsoleOutput() {
+            document.getElementById('console-output').innerHTML = '';
+        }
+        
+        // Test 1: Prerequisites
+        function testPrerequisites() {
+            console.log('=== CHECKING PREREQUISITES ===');
+            const status = document.getElementById('prereq-status');
+            let html = '';
+            let allPass = true;
+            
+            // Check 1: Backend URL accessible
+            try {
+                fetch('http://localhost:8001/health')
+                    .then(r => {
+                        if (r.ok) {
+                            console.log('✓ Backend server is accessible');
+                            html += '<div class="status pass">✓ Backend server running on localhost:8001</div>';
+                        } else {
+                            console.error('✗ Backend returned non-200 status');
+                            html += '<div class="status fail">✗ Backend returned status ' + r.status + '</div>';
+                            allPass = false;
+                        }
+                        status.innerHTML = html;
+                    })
+                    .catch(e => {
+                        console.error('✗ Cannot reach backend:', e.message);
+                        html += '<div class="status fail">✗ Cannot reach backend server. Make sure backend is running: <code>python server.py</code></div>';
+                        allPass = false;
+                        status.innerHTML = html;
+                    });
+            } catch (e) {
+                console.error('✗ Error checking backend:', e.message);
+                html += '<div class="status fail">✗ Error: ' + e.message + '</div>';
+                status.innerHTML = html;
+                allPass = false;
+            }
+        }
+        
+        // Test 2: Load game
+        let gameLoaded = false;
+        function loadGame() {
+            console.log('=== LOADING GAME ===');
+            const status = document.getElementById('game-status');
+            
+            const gameUrl = 'http://localhost:8001/docs/singleplayer.html';
+            console.log('Loading from:', gameUrl);
+            
+            // Create iframe
+            let iframe = document.getElementById('game-iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'game-iframe';
+                iframe.style.width = '100%';
+                iframe.style.height = '600px';
+                iframe.style.border = '2px solid #ccc';
+                status.appendChild(iframe);
+            }
+            
+            iframe.onload = function() {
+                console.log('✓ Game loaded in iframe');
+                gameLoaded = true;
+                status.innerHTML = '<div class="status pass">✓ Game loaded. Now try clicking on a unit in Spring/Fall phase.</div>';
+                
+                // Wait a moment for game to initialize
+                setTimeout(() => {
+                    try {
+                        const gameWindow = iframe.contentWindow;
+                        console.log('✓ Can access game window');
+                        console.log('Game state:', gameWindow.window?.diplomacy?.state?.phase);
+                        console.log('Units available:', gameWindow.window?.diplomacy?.state?.units?.length || 0);
+                    } catch (e) {
+                        console.error('✗ Cannot access game iframe:', e.message);
+                    }
+                }, 2000);
+            };
+            
+            iframe.onerror = function(e) {
+                console.error('✗ Failed to load game iframe:', e);
+                status.innerHTML = '<div class="status fail">✗ Failed to load game iframe. Check browser console for details.</div>';
+            };
+            
+            iframe.src = gameUrl;
+            status.innerHTML = '<div class="status info">Loading...</div>';
+        }
+        
+        // Test 3: Simulate click
+        function simulateUnitClick() {
+            console.log('=== SIMULATING UNIT CLICK ===');
+            const status = document.getElementById('click-status');
+            
+            if (!gameLoaded) {
+                console.error('✗ Game not loaded yet');
+                status.innerHTML = '<div class="status fail">✗ Game not loaded. Load game first (Step 2).</div>';
+                return;
+            }
+            
+            try {
+                const iframe = document.getElementById('game-iframe');
+                const gameWindow = iframe.contentWindow;
+                
+                // Check if radial menu available
+                if (typeof gameWindow.radialMenu === 'undefined') {
+                    console.error('✗ radialMenu not defined in game');
+                    status.innerHTML = '<div class="status fail">✗ RadialMenu not initialized in game window</div>';
+                    return;
+                }
+                
+                console.log('✓ radialMenu is defined');
+                
+                // Get first unit from game state
+                const state = gameWindow.window?.diplomacy?.state;
+                if (!state) {
+                    console.error('✗ No game state');
+                    status.innerHTML = '<div class="status fail">✗ Game state not available</div>';
+                    return;
+                }
+                
+                console.log('Current phase:', state.phase);
+                
+                if (state.phase !== 'Spring' && state.phase !== 'Fall') {
+                    console.warn('⚠ Not in Spring/Fall phase. Menu only works in Spring or Fall.');
+                    status.innerHTML = '<div class="status info">⚠ Game is in ' + state.phase + ' phase. Menu only works in Spring or Fall phase.</div>';
+                    return;
+                }
+                
+                // Get player's first unit
+                const playerPower = state.player_power;
+                const unit = state.units.find(u => u.owner === playerPower);
+                
+                if (!unit) {
+                    console.error('✗ No units owned by player');
+                    status.innerHTML = '<div class="status fail">✗ No units owned by player ' + playerPower + '</div>';
+                    return;
+                }
+                
+                console.log('✓ Found unit:', unit.type + ' at ' + unit.territory);
+                
+                // Try to show menu manually
+                console.log('Attempting to show radial menu...');
+                const position = { x: 500, y: 400 };
+                gameWindow.radialMenu.showForUnit(
+                    unit,
+                    unit.territory,
+                    position,
+                    gameWindow.availableOrders || [],
+                    state,
+                    playerPower
+                );
+                
+                console.log('✓ Menu show command sent');
+                status.innerHTML = '<div class="status pass">✓ Manual menu click simulated. Check game window for menu appearance.</div>';
+                
+            } catch (e) {
+                console.error('✗ Error simulating click:', e.message);
+                status.innerHTML = '<div class="status fail">✗ Error: ' + e.message + '</div>';
+            }
+        }
+        
+        // Auto-run prerequisites on load
+        window.addEventListener('load', () => {
+            console.log('Test page loaded. Click "Run Prerequisites Check" to begin.');
+        });
+    </script>
+</body>
+</html>

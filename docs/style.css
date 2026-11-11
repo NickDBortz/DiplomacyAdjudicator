@@ -1371,3 +1371,38 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     color: #ffd700;
     font-weight: bold;
 }
+
+/* Radial Menu Styles */
+#radial-menu {
+    pointer-events: auto;
+}
+
+.radial-menu-group {
+    pointer-events: auto;
+}
+
+.radial-menu-item {
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+}
+
+.radial-menu-item.available {
+    pointer-events: auto;
+}
+
+.radial-menu-item.disabled {
+    pointer-events: none;
+    opacity: 0.4;
+}
+
+.radial-menu-bg {
+    transition: r 0.15s ease-out, stroke-width 0.15s ease-out;
+}
+
+.radial-menu-center {
+    transition: r 0.2s ease-out, fill 0.2s ease-out;
+}
+
+.radial-menu-item:hover .radial-menu-bg {
+    filter: brightness(1.2);
+}

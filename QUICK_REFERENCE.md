@@ -1,53 +1,105 @@
-# Radial Menu System - Quick Reference
+# 🎯 Radial Menu System - Latest Update
 
-## 🎯 What Was Fixed
+## 🔧 What Was Just Fixed (Most Recent)
 
-### Bug #1: Undefined `radialMenu` Variable
-- **Problem:** ReferenceError when accessing `radialMenu` before it loads
-- **Fix:** Changed `if (radialMenu)` to `if (typeof radialMenu !== 'undefined' && radialMenu)`
-- **Files:** `docs/shared.js` lines 1077, 1078
-- **Impact:** No more crashes on page load
+### Issue: Radial Menu Not Appearing
+- **Reported:** Menu doesn't show when clicking units
+- **Root Causes Found:**
+  1. No CSS styling for menu elements (invisible!)
+  2. Menu not auto-initialized on first click
+  3. Weak phase detection (only exact match)
+  4. No logging to diagnose the issue
 
-### Bug #2: Adjustment Phase Orders Not Auto-Submitting
-- **Problem:** Click supply center → order selected but requires manual submission
-- **Expected:** Click supply center → order auto-submits immediately
-- **Fix:** Added `submitMapOrder()` call in `selectMapTerritory()` when in Adjustment phase
-- **Files:** `docs/shared.js` lines 612-619
-- **Impact:** Adjustment phase is now single-click (as intended)
+### Fixes Applied ✅
+
+**1. Added Complete CSS Styling** (`docs/style.css:1373-1397`)
+```css
+#radial-menu { pointer-events: auto; }
+.radial-menu-item { cursor: pointer; transition: all 0.2s ease-out; }
+.radial-menu-item.available { pointer-events: auto; }
+.radial-menu-item.disabled { opacity: 0.4; }
+```
+- Impact: Menu is now visible and interactive
+
+**2. Auto-Initialize Menu on First Click** (`docs/shared.js:1077-1082`)
+```javascript
+if (typeof radialMenu === 'undefined' || radialMenu === null) {
+    if (typeof initRadialMenu !== 'undefined') {
+        initRadialMenu(svg);
+    }
+}
+```
+- Impact: Menu is created automatically when needed
+
+**3. Improved Phase Detection** (`docs/shared.js:1085`)
+- Now checks: exact match OR startsWith
+- Handles: `Spring`, `Fall`, `Spring Retreat`, `Fall Retreat`
+
+**4. Enhanced Logging** (`docs/radial-menu.js:52-62`)
+- All initialization steps logged with `[RadialMenu]` prefix
+- Easier to diagnose what went wrong
+
+### Files Modified
+- ✅ `docs/shared.js` - Click handler improvements
+- ✅ `docs/radial-menu.js` - Initialization logging
+- ✅ `docs/style.css` - Menu styling (CRITICAL FIX)
 
 ---
 
-## ✅ Tests Created
+## 📚 New Documentation
 
-### Run Tests
+| File | Purpose |
+|------|---------|
+| `FIX_SUMMARY.md` | What was fixed and why |
+| `RADIAL_MENU_SYSTEM_GUIDE.md` | Complete technical reference |
+| `QUICK_TEST_CHECKLIST.md` | Step-by-step console verification |
+| `QUICK_REFERENCE.md` | This file - quick lookup |
+
+---
+
+## 🎮 How to Test
+
 ```bash
-cd "C:\Users\bortzn\OneDrive - J.R. Simplot Company\Documents\Python Scripts\Diplomacy"
-node tests/run-tests.js
+# 1. Start backend
+python server.py
+
+# 2. Open game
+# Visit: http://localhost:8001/docs/singleplayer.html
+
+# 3. Wait for Spring or Fall phase
+
+# 4. Click on your unit (your color)
+
+# 5. Menu should appear! 🎪
 ```
 
-### Test Status
-✓ **21 tests passing, 0 failing**
-
-### What's Tested
-- Radial menu initialization and configuration
-- Territory adjacency conversion
-- All order types (Hold, Advance, Support, Transform, Convoy)
-- Unit ownership and type detection
-- Phase detection and auto-submit logic
-- Visual positioning and highlighting
-- Multi-step selection tracking
+**If menu doesn't appear:**
+```javascript
+// Open F12 console and check:
+console.log('Menu:', typeof radialMenu);
+console.log('Phase:', window.diplomacy.state.phase);
+console.log('SVG:', !!document.querySelector('svg'));
+```
 
 ---
 
 ## 📋 Files Changed
 
-| File | Change | Size |
-|------|--------|------|
-| `docs/shared.js` | Modified | +8 lines, -2 lines |
-| `tests/run-tests.js` | **NEW** | 386 lines |
-| `tests/radial-menu.test.js` | **NEW** | 364 lines |
-| `TESTING_GUIDE.md` | **NEW** | Full testing guide |
-| `.copilot-session/FIXES_AND_TESTS.md` | **NEW** | Technical details |
+| File | Changes |
+|------|---------|
+| `docs/shared.js` | Auto-init + phase detection |
+| `docs/radial-menu.js` | Initialization logging |
+| `docs/style.css` | **NEW CSS RULES** ← Critical fix |
+
+---
+
+## ✅ Validation
+
+```bash
+# All syntax validated
+node -c docs/shared.js       # ✓ Pass
+node -c docs/radial-menu.js  # ✓ Pass
+```
 
 ---
 

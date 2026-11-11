@@ -55,11 +55,13 @@ class RadialMenu {
   }
 
   initialize(svgElement) {
+    console.log('[RadialMenu] Initializing with SVG element:', !!svgElement);
     this.svg = svgElement;
     this.menuGroup = document.createElementNS(SVG_NS, 'g');
     this.menuGroup.setAttribute('id', 'radial-menu');
     this.menuGroup.setAttribute('class', 'radial-menu-group');
     this.svg.appendChild(this.menuGroup);
+    console.log('[RadialMenu] Initialization complete, menuGroup appended to SVG');
   }
 
   /**

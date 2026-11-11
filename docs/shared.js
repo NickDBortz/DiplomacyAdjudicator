@@ -1073,6 +1073,13 @@ function buildMap() {
             const powerSelect = document.getElementById('greatpower');
             const power = powerSelect ? powerSelect.value : (state ? state.player_power : '');
             
+            // Initialize radial menu on first click if needed
+            if (typeof radialMenu === 'undefined' || radialMenu === null) {
+                if (typeof initRadialMenu !== 'undefined') {
+                    initRadialMenu(svg);
+                }
+            }
+            
             // Use radial menu for Spring/Fall phases, original logic for Adjustment
             if ((phase === 'Spring' || phase === 'Fall' || phase.startsWith('Spring') || phase.startsWith('Fall')) && typeof radialMenu !== 'undefined' && radialMenu) {
                 handleMapClickWithRadialMenu(event, availableOrders, state, power, phase);
