@@ -60,6 +60,16 @@ test('adjustment options group builds and removals by full territory name', () =
     assert.equal(elements['order-picker-status'].textContent, '3 of 4 available orders. Select one to submit.');
 });
 
+test('a unique adjustment order is selected but not submitted', () => {
+    const { context, elements } = createPicker();
+    context.window.diplomacy.state = { phase: 'Adjustment' };
+    context.setOrderPicker(['Build A PAR']);
+    context.selectMapTerritory('PAR');
+    assert.equal(elements['order-unit'].value, 'PAR');
+    assert.equal(elements['order-choice'].value, 'Build A PAR');
+    assert.match(elements['map-order-status'].textContent, /Submit to confirm/);
+});
+
 test('map selections filter the existing picker for moves and preserve ambiguous coasts', () => {
     const { context, elements } = createPicker();
     context.initOrderPicker();

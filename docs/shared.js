@@ -432,6 +432,7 @@ function setOrderPicker(orders, emptyMessage = 'No available orders for this pow
     if (!unitSelect) return;
     if (orders.length !== availableOrders.length || orders.some((text, i) => text !== availableOrders[i].text)) {
         mapOrderTargets = [];
+        if (typeof radialMenu !== 'undefined' && radialMenu) radialMenu.cancel();
     }
     availableOrders = orders.map(orderDetails);
     const typeSelect = document.getElementById('order-type');
@@ -459,6 +460,7 @@ function renderOrderChoices(emptyMessage = 'No available orders for this power.'
 }
 
 function resetOrderFilters() {
+    if (typeof radialMenu !== 'undefined' && radialMenu) radialMenu.cancel();
     mapOrderTargets = [];
     for (const id of ['order-unit', 'order-type', 'order-choice']) {
         const select = document.getElementById(id);
@@ -469,6 +471,29 @@ function resetOrderFilters() {
 function clearOrderSelection() {
     resetOrderFilters();
     renderOrderChoices();
+}
+
+function setMapOrderSelection(unit, type, targets = [], preferredOrder = '') {
+    const unitSelect = document.getElementById('order-unit');
+    const typeSelect = document.getElementById('order-type');
+    const choiceSelect = document.getElementById('order-choice');
+    unitSelect.value = unit;
+    typeSelect.value = type;
+    choiceSelect.value = '';
+    mapOrderTargets = [...targets];
+    renderOrderChoices();
+    const matches = availableOrders.filter(order => order.unit === unit && order.type === type &&
+        matchingOrderTargets(order));
+    const complete = matches.filter(order => orderMapTargets(order).length === targets.length);
+    const selected = preferredOrder
+        ? complete.find(order => order.text === preferredOrder)
+        : complete.length === 1 && matches.length === 1 ? complete[0] : null;
+    if (selected) {
+        choiceSelect.value = selected.text;
+        updateOrderHighlights();
+        setPickerStatus(`Order selected: ${selected.text}. Submit to confirm.`);
+    }
+    return matches;
 }
 
 function orderHighlightData(unit, type, selected, orders, showTargets = false) {
@@ -574,9 +599,12 @@ function updateOrderHighlights() {
 function initOrderPicker() {
     const unit = document.getElementById('order-unit');
     if (!unit) return;
-    unit.addEventListener('change', () => { mapOrderTargets = []; renderOrderChoices(); });
-    document.getElementById('order-type').addEventListener('change', () => { mapOrderTargets = []; renderOrderChoices(); });
-    document.getElementById('order-choice').addEventListener('change', updateOrderHighlights);
+    const cancelMapSelection = () => {
+        if (typeof radialMenu !== 'undefined' && radialMenu) radialMenu.cancel();
+    };
+    unit.addEventListener('change', () => { cancelMapSelection(); mapOrderTargets = []; renderOrderChoices(); });
+    document.getElementById('order-type').addEventListener('change', () => { cancelMapSelection(); mapOrderTargets = []; renderOrderChoices(); });
+    document.getElementById('order-choice').addEventListener('change', () => { cancelMapSelection(); updateOrderHighlights(); });
     document.getElementById('clear-order-selection').addEventListener('click', clearOrderSelection);
 }
 
@@ -611,12 +639,6 @@ function selectMapTerritory(abbr) {
             choiceSelect.value = matches[0].text;
             updateOrderHighlights();
             setPickerStatus(`Order selected: ${matches[0].text}. Submit to confirm.`);
-            
-            // Auto-submit in Adjustment phase
-            const state = window.diplomacy.state;
-            if (state && (state.phase === 'Spring Adjustment' || state.phase === 'Fall Adjustment')) {
-                submitMapOrder();
-            }
         } else {
             setPickerStatus(`${matches.length} matching orders. Select an order or tap the next territory.`);
         }
@@ -630,7 +652,15 @@ function selectMapTerritory(abbr) {
         if (!availableOrders.some(order => order.unit === unitSelect.value &&
             (!typeSelect.value || order.type === typeSelect.value))) typeSelect.value = '';
         renderOrderChoices();
-        setPickerStatus(`Selected ${sourceOptions[0].text}. Select an order or tap a related territory.`);
+        const sourceOrders = availableOrders.filter(order => order.unit === unitSelect.value &&
+            (!typeSelect.value || order.type === typeSelect.value));
+        if (sourceOrders.length === 1 && ['Build', 'Remove'].includes(sourceOrders[0].type)) {
+            choiceSelect.value = sourceOrders[0].text;
+            updateOrderHighlights();
+            setPickerStatus(`Order selected: ${sourceOrders[0].text}. Submit to confirm.`);
+        } else {
+            setPickerStatus(`Selected ${sourceOptions[0].text}. Select an order or tap a related territory.`);
+        }
     } else if (sourceOptions.length > 1) {
         setPickerStatus('Multiple units are available here. Select one from the unit dropdown.');
     } else {
@@ -980,6 +1010,7 @@ function initSidebar() {
         <h3>Adjustment</h3>
         <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control. The classic game starts with an adjustment for the initial builds.</p>
         <h3>Order tips</h3>
+        <p>Click a unit or its territory to select an order on the map. For support, select the supported unit; if hold support is available, it is selected, or you can select a highlighted destination to support a move. Review the selection and press Submit Order in the sidebar.</p>
         <p>For a fleet moving, retreating, or building in a territory with multiple coasts, choose the appropriate coast when available. Available orders can still fail when resolved because all players' orders are simultaneous.</p>
         <p>In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
 
