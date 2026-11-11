@@ -1062,10 +1062,23 @@ function buildMap() {
     svg.setAttribute('viewBox', `0 0 ${mapData.width} ${mapData.height}`);
     if (document.getElementById('order-unit')) {
         svg.addEventListener('click', event => {
-            const unit = event.target.closest('.unit');
-            const territory = event.target.closest('.territory');
-            if (unit && unit.dataset.territory) selectMapTerritory(unit.dataset.territory);
-            else if (territory) selectMapTerritory(territory.id.slice(5));
+            const state = window.diplomacy.state;
+            const phase = state ? state.phase : '';
+            const powerSelect = document.getElementById('greatpower');
+            const power = powerSelect ? powerSelect.value : (state ? state.player_power : '');
+            
+            // Use radial menu for Spring/Fall phases, original logic for Adjustment
+            if ((phase === 'Spring' || phase === 'Fall') && radialMenu) {
+                handleMapClickWithRadialMenu(event, availableOrders, state, power, phase);
+            } else if ((phase && phase.includes('Retreat')) && radialMenu) {
+                handleMapClickWithRadialMenu(event, availableOrders, state, power, phase);
+            } else {
+                // Original logic for adjustment phase and when menu not loaded
+                const unit = event.target.closest('.unit');
+                const territory = event.target.closest('.territory');
+                if (unit && unit.dataset.territory) selectMapTerritory(unit.dataset.territory);
+                else if (territory) selectMapTerritory(territory.id.slice(5));
+            }
         });
     }
     const bg = document.createElementNS(SVG_NS, 'rect');
@@ -1120,6 +1133,11 @@ function buildMap() {
     orderLayer.setAttribute('id', 'map-orders');
     svg.appendChild(orderLayer);
     container.appendChild(svg);
+    
+    // Initialize radial menu after map is built
+    if (typeof initRadialMenu === 'function') {
+        initRadialMenu(svg);
+    }
 }
 
 async function loadMap(mapId = 'classic_map') {
