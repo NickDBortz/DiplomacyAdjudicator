@@ -1273,17 +1273,16 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
 }
 
 /* Radial Menu Styling */
-.radial-menu-group {
-    z-index: 100;
-}
-
 .radial-menu-item {
     cursor: pointer;
-    transition: transform 0.1s ease-out;
 }
 
-.radial-menu-item.available:hover {
-    transform: scale(1.15);
+.radial-menu-visual {
+    transition: transform 0.15s ease-out;
+}
+
+.radial-menu-item.available:hover .radial-menu-visual {
+    transform: translate(var(--hover-x), var(--hover-y));
 }
 
 .radial-menu-item.disabled {
@@ -1291,13 +1290,8 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     opacity: 0.5;
 }
 
-.radial-menu-bg {
-    transition: r 0.1s ease-out, stroke-width 0.1s ease-out;
-}
-
 .radial-menu-center {
     cursor: default;
-    transition: r 0.2s ease-out;
 }
 
 /* Territory Highlighting */
@@ -1372,37 +1366,6 @@ body { font-family: sans-serif; margin: 0; background: #222; color: #eee; }
     font-weight: bold;
 }
 
-/* Radial Menu Styles */
-#radial-menu {
-    pointer-events: auto;
-}
-
-.radial-menu-group {
-    pointer-events: auto;
-}
-
-.radial-menu-item {
-    cursor: pointer;
-    transition: all 0.2s ease-out;
-}
-
-.radial-menu-item.available {
-    pointer-events: auto;
-}
-
-.radial-menu-item.disabled {
-    pointer-events: none;
-    opacity: 0.4;
-}
-
-.radial-menu-bg {
-    transition: r 0.15s ease-out, stroke-width 0.15s ease-out;
-}
-
-.radial-menu-center {
-    transition: r 0.2s ease-out, fill 0.2s ease-out;
-}
-
-.radial-menu-item:hover .radial-menu-bg {
+.radial-menu-item.available:hover .radial-menu-bg {
     filter: brightness(1.2);
 }

@@ -870,8 +870,12 @@ function sendForReply(payload, replyType) {
     });
 }
 
+async function submitMultiplayerOrder(order) {
+    return sendForReply({ type: 'submit_order', order, power: gameInfo.power }, 'order_result');
+}
+
 async function submitOrder(order) {
-    const r = await sendForReply({ type: 'submit_order', order, power: gameInfo.power }, 'order_result');
+    const r = await submitMultiplayerOrder(order);
     return r.ok ? 'Order submitted.' : `Order rejected: ${r.error}`;
 }
 

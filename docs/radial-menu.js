@@ -107,7 +107,9 @@ class RadialMenu {
     }
 
     try {
-      const result = await window.diplomacy.order(order, power);
+      const result = typeof window.diplomacy.order === 'function'
+        ? await window.diplomacy.order(order, power)
+        : await submitMultiplayerOrder(order);
       if (result.ok) {
         setPickerStatus(`Order submitted: ${order}`);
         return true;
@@ -147,7 +149,7 @@ class RadialMenu {
 
       const isAvailable = availableTypes.has(item.type);
       console.log(`[RadialMenu] Creating item ${item.type} at (${x}, ${y}), available=${isAvailable}`);
-      this.createMenuItem(item, x, y, isAvailable, i);
+      this.createMenuItem(item, x, y, isAvailable, angle);
     }
 
     // Center circle
@@ -167,17 +169,29 @@ class RadialMenu {
   /**
    * Create individual menu item
    */
-  createMenuItem(item, x, y, isAvailable, index) {
+  createMenuItem(item, x, y, isAvailable, angle) {
     const group = document.createElementNS(SVG_NS, 'g');
     group.setAttribute('class', `radial-menu-item ${isAvailable ? 'available' : 'disabled'}`);
     group.setAttribute('data-type', item.type);
+    group.style.setProperty('--hover-x', `${Math.cos(angle) * 8}px`);
+    group.style.setProperty('--hover-y', `${Math.sin(angle) * 8}px`);
 
     if (!isAvailable) {
       group.style.opacity = 0.5;
       group.style.pointerEvents = 'none';
     }
 
-    // Background circle
+    const hitArea = document.createElementNS(SVG_NS, 'circle');
+    hitArea.setAttribute('cx', x);
+    hitArea.setAttribute('cy', y);
+    hitArea.setAttribute('r', 34);
+    hitArea.setAttribute('fill', 'transparent');
+    group.appendChild(hitArea);
+
+    const visual = document.createElementNS(SVG_NS, 'g');
+    visual.setAttribute('class', 'radial-menu-visual');
+    visual.setAttribute('pointer-events', 'none');
+
     const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('cx', x);
     circle.setAttribute('cy', y);
@@ -186,7 +200,7 @@ class RadialMenu {
     circle.setAttribute('stroke', '#fff');
     circle.setAttribute('stroke-width', 2);
     circle.setAttribute('class', 'radial-menu-bg');
-    group.appendChild(circle);
+    visual.appendChild(circle);
 
     // Icon/Label
     const text = document.createElementNS(SVG_NS, 'text');
@@ -196,10 +210,15 @@ class RadialMenu {
     text.setAttribute('dominant-baseline', 'middle');
     text.setAttribute('fill', '#fff');
     text.setAttribute('font-weight', 'bold');
-    text.setAttribute('font-size', '16');
+    text.setAttribute('font-size', '11');
+    if (item.type.length > 6) {
+      text.setAttribute('textLength', 42);
+      text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+    }
     text.setAttribute('pointer-events', 'none');
     text.textContent = item.type;
-    group.appendChild(text);
+    visual.appendChild(text);
+    group.appendChild(visual);
 
     // Click handler
     if (isAvailable) {
@@ -208,15 +227,6 @@ class RadialMenu {
         this.handleMenuItemClick(item.type);
       });
 
-      group.addEventListener('mouseenter', () => {
-        circle.setAttribute('stroke-width', 4);
-        circle.setAttribute('r', 28);
-      });
-
-      group.addEventListener('mouseleave', () => {
-        circle.setAttribute('stroke-width', 2);
-        circle.setAttribute('r', 25);
-      });
     }
 
     this.menuGroup.appendChild(group);

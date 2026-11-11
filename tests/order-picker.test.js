@@ -33,7 +33,10 @@ function createPicker() {
         'map-order-status': {},
         'clear-order-selection': { addEventListener(type, handler) { this[type] = handler; } },
     };
-    const context = vm.createContext({ mapData, Option, svg: null, document: { getElementById: id => elements[id] } });
+    const context = vm.createContext({
+        mapData, Option, svg: null, window: { diplomacy: { state: null } },
+        document: { getElementById: id => elements[id] },
+    });
     vm.runInContext(pickerSource, context);
     return { context, elements };
 }
@@ -152,6 +155,7 @@ test('map routes territory and unit clicks after every rebuild', () => {
             getElementById: id => id === 'map' ? container : {},
             createElementNS: () => element(),
         },
+        window: { diplomacy: { state: null } },
         selectMapTerritory: abbr => clicks.push(abbr),
     });
     vm.runInContext(mapSource, context);
