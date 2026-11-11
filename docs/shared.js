@@ -334,9 +334,11 @@ function renderGameInfo() {
 function updateGameRole() {
     const spectator = gameInfo.power === 'Spectator';
     const actions = document.getElementById('player-actions');
+    const mapControls = document.getElementById('map-order-controls');
     const spectatorMessage = document.getElementById('spectator-message');
     const hostControls = document.getElementById('host-controls');
     if (actions) actions.classList.toggle('hidden', spectator || gameInfo.state?.orders_revealed);
+    if (mapControls) mapControls.classList.toggle('hidden', spectator || gameInfo.state?.orders_revealed);
     if (spectatorMessage) {
         spectatorMessage.classList.toggle('hidden', !spectator);
         spectatorMessage.textContent = gameInfo.state?.player_eliminated
@@ -474,6 +476,7 @@ function clearOrderSelection() {
 }
 
 function setMapOrderSelection(unit, type, targets = [], preferredOrder = '') {
+    setOrderMessage('');
     const unitSelect = document.getElementById('order-unit');
     const typeSelect = document.getElementById('order-type');
     const choiceSelect = document.getElementById('order-choice');
@@ -540,7 +543,46 @@ function orderHighlightData(unit, type, selected, orders, showTargets = false) {
     return { sources, targets, actors, related };
 }
 
+function updateMapOrderControls() {
+    const selected = document.getElementById('map-selected-order');
+    const buildOptions = document.getElementById('map-build-options');
+    const buildLabel = document.getElementById('map-build-label');
+    const buildChoices = document.getElementById('map-build-choices');
+    if (!selected || !buildOptions || !buildLabel || !buildChoices) return;
+
+    const unit = document.getElementById('order-unit').value;
+    const type = document.getElementById('order-type').value;
+    const choice = document.getElementById('order-choice').value;
+    selected.textContent = choice ? `Selected order: ${choice}` : 'No order selected.';
+
+    const builds = unit && (!type || type === 'Build')
+        ? availableOrders.filter(order => order.unit === unit && order.type === 'Build')
+        : [];
+    buildOptions.hidden = builds.length < 2;
+    if (builds.length > 1) buildLabel.textContent = `Choose a unit to build in ${unitFilterLabel(unit)}:`;
+    const key = JSON.stringify(builds.map(order => order.text));
+    if (buildChoices.dataset.orders !== key) {
+        buildChoices.replaceChildren();
+        for (const order of builds) {
+            const parts = order.text.split(' ');
+            const coast = parts[2].match(/\(([^)]+)\)$/);
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'map-build-choice';
+            button.dataset.order = order.text;
+            button.textContent = (parts[1] === 'A' ? 'Army' : 'Fleet') + (coast ? ` (${coast[1]})` : '');
+            button.addEventListener('click', () => setMapOrderSelection(unit, 'Build', [], order.text));
+            buildChoices.appendChild(button);
+        }
+        buildChoices.dataset.orders = key;
+    }
+    for (const button of buildChoices.querySelectorAll('button')) {
+        button.setAttribute('aria-pressed', String(button.dataset.order === choice));
+    }
+}
+
 function updateOrderHighlights() {
+    updateMapOrderControls();
     if (!svg || !window.diplomacy.state) return;
     const unitSelect = document.getElementById('order-unit');
     const typeSelect = document.getElementById('order-type');
@@ -602,15 +644,16 @@ function initOrderPicker() {
     const cancelMapSelection = () => {
         if (typeof radialMenu !== 'undefined' && radialMenu) radialMenu.cancel();
     };
-    unit.addEventListener('change', () => { cancelMapSelection(); mapOrderTargets = []; renderOrderChoices(); });
-    document.getElementById('order-type').addEventListener('change', () => { cancelMapSelection(); mapOrderTargets = []; renderOrderChoices(); });
-    document.getElementById('order-choice').addEventListener('change', () => { cancelMapSelection(); updateOrderHighlights(); });
-    document.getElementById('clear-order-selection').addEventListener('click', clearOrderSelection);
+    unit.addEventListener('change', () => { setOrderMessage(''); cancelMapSelection(); mapOrderTargets = []; renderOrderChoices(); });
+    document.getElementById('order-type').addEventListener('change', () => { setOrderMessage(''); cancelMapSelection(); mapOrderTargets = []; renderOrderChoices(); });
+    document.getElementById('order-choice').addEventListener('change', () => { setOrderMessage(''); cancelMapSelection(); updateOrderHighlights(); });
+    document.getElementById('clear-order-selection').addEventListener('click', () => { setOrderMessage(''); clearOrderSelection(); });
 }
 
 function selectMapTerritory(abbr) {
     const unitSelect = document.getElementById('order-unit');
     if (!unitSelect || !availableOrders.length) return;
+    setOrderMessage('');
     const typeSelect = document.getElementById('order-type');
     const choiceSelect = document.getElementById('order-choice');
     const selectedUnit = unitSelect.value;
@@ -658,6 +701,8 @@ function selectMapTerritory(abbr) {
             choiceSelect.value = sourceOrders[0].text;
             updateOrderHighlights();
             setPickerStatus(`Order selected: ${sourceOrders[0].text}. Submit to confirm.`);
+        } else if (sourceOrders.length > 1 && sourceOrders.every(order => order.type === 'Build')) {
+            setPickerStatus('Choose a unit to build.');
         } else {
             setPickerStatus(`Selected ${sourceOptions[0].text}. Select an order or tap a related territory.`);
         }
@@ -947,22 +992,48 @@ function initResolveControl() {
     });
 }
 
+function setOrderMessage(message) {
+    const sidebarResult = document.getElementById('order-error');
+    if (sidebarResult) sidebarResult.textContent = message;
+    const mapResult = document.getElementById('map-order-result');
+    if (mapResult) mapResult.textContent = message;
+}
+
+function bindOrderSubmission(handler) {
+    const buttons = ['submit-order', 'map-submit-order']
+        .map(id => document.getElementById(id)).filter(Boolean);
+    let submitting = false;
+    const submit = async () => {
+        if (submitting) return;
+        submitting = true;
+        buttons.forEach(button => { button.disabled = true; });
+        try {
+            await handler();
+        } finally {
+            submitting = false;
+            buttons.forEach(button => { button.disabled = false; });
+        }
+    };
+    buttons.forEach(button => button.addEventListener('click', submit));
+}
+
 // Wires the order selector and draw button; callbacks return the message to show.
 function initOrderControls(onSubmit, onDraw) {
     const orderEl = document.getElementById('order-choice');
     const messageEl = document.getElementById('order-error');
 
-    document.getElementById('submit-order').addEventListener('click', async () => {
+    bindOrderSubmission(async () => {
         const order = orderEl.value;
         if (!order) {
-            messageEl.textContent = 'Select an order.';
+            setOrderMessage('Select an order.');
             return;
         }
         try {
-            messageEl.textContent = await onSubmit(order);
-            if (messageEl.textContent === 'Order submitted.') clearOrderSelection();
+            const message = await onSubmit(order);
+            setOrderMessage(message);
+            if (message === 'Order submitted.') clearOrderSelection();
         } catch (e) {
-            messageEl.textContent = e.message;
+            setOrderMessage(e.message);
         }
     });
 
@@ -1010,7 +1081,7 @@ function initSidebar() {
         <h3>Adjustment</h3>
         <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control. The classic game starts with an adjustment for the initial builds.</p>
         <h3>Order tips</h3>
-        <p>Click a unit or its territory to select an order on the map. For support, select the supported unit; if hold support is available, it is selected, or you can select a highlighted destination to support a move. Review the selection and press Submit Order in the sidebar.</p>
+        <p>Click a unit or its territory to select an order on the map. For support, select the supported unit; if hold support is available, it is selected, or you can select a highlighted destination to support a move. For a build, choose an available army or fleet (and coast, if needed). Review and submit the order in the main view or sidebar.</p>
         <p>For a fleet moving, retreating, or building in a territory with multiple coasts, choose the appropriate coast when available. Available orders can still fail when resolved because all players' orders are simultaneous.</p>
         <p>In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
 

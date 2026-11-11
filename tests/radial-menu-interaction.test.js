@@ -94,6 +94,7 @@ function createGame(orderTexts) {
         document: { createElementNS: () => new Element(), getElementById: id => elements[id] || null },
         window: { diplomacy: { state, order: () => { submissions++; } } },
         submitMultiplayerOrder: () => { submissions++; },
+        setOrderMessage: () => {},
     });
     vm.runInContext(pickerSource, context);
     vm.runInContext(radialSource, context);

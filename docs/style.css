@@ -284,6 +284,44 @@ body {
     z-index: 2000;
 }
 #notification.visible { opacity: 1; transform: translate(-50%, 0); }
+.map-order-controls {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    background: #101b2a;
+    border: 1px solid #30445b;
+    border-radius: 8px;
+}
+.map-order-submit,
+.map-build-options,
+.map-build-choices {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.map-build-options[hidden] { display: none; }
+.map-build-options { margin-bottom: 12px; }
+.map-order-submit { justify-content: space-between; }
+.map-order-submit .btn {
+    width: auto;
+    margin: 0;
+}
+.map-build-choice {
+    padding: 8px 12px;
+    color: #eef5fc;
+    background: #24394e;
+    border: 1px solid #526b85;
+    border-radius: 7px;
+    cursor: pointer;
+}
+.map-build-choice:hover { background: #35516b; }
+.map-build-choice[aria-pressed="true"] {
+    background: #2869b1;
+    border-color: #88c5ff;
+}
+.map-build-choice:focus-visible { outline: 2px solid #88c5ff; outline-offset: 2px; }
+#map-order-result { margin: 10px 0 0; color: #e6eef7; }
+#map-order-result:empty { display: none; }
 #map svg { width: 100%; max-height: 90vh; display: block; }
 .territory { stroke: #000; stroke-width: 1; }
 .territory:hover { stroke: #fff; stroke-width: 2; }
