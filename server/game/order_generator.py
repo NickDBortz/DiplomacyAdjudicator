@@ -147,7 +147,9 @@ class OrderGenerator:
                 convoyable_territories = self._get_valid_convoy_territories_from(unit)
                 for dest_territory in convoyable_territories:
                     dest_territory_abbr = dest_territory.abbr
-                    if dest_territory in advances_of_unit.get(unit, []):
+                    # Only add "via convoy" for territories that are adjacent (where it's an alternative)
+                    # Non-adjacent territories already have the plain order above, so don't add the redundant "via convoy" version
+                    if dest_territory in start_territory.adjacents and dest_territory in advances_of_unit.get(unit, []):
                         valid_orders.append(f'{type_text} {start_territory_abbr} - {dest_territory_abbr} via convoy')
 
             # Add support order

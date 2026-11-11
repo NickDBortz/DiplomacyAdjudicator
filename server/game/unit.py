@@ -87,7 +87,23 @@ class Unit:
                             return True
                         return False
                     return True
-                return False
+                else:
+                    # Source territory is not directly in destination's north/south coasts
+                    # Check if we can reach the destination through water adjacents
+                    if coast == NORTH_COAST:
+                        for water_adj in territory.north_coast:
+                            if isinstance(water_adj, WaterTerritory) and water_adj in self.territory.adjacents:
+                                return True
+                    elif coast == SOUTH_COAST:
+                        for water_adj in territory.south_coast:
+                            if isinstance(water_adj, WaterTerritory) and water_adj in self.territory.adjacents:
+                                return True
+                    elif coast is None:
+                        # No coast specified, check both north and south through water
+                        for water_adj in territory.north_coast + territory.south_coast:
+                            if isinstance(water_adj, WaterTerritory) and water_adj in self.territory.adjacents:
+                                return True
+                    return False
             else:
                 for t in self.territory.adjacents:
                     if isinstance(t, WaterTerritory) and territory in t.adjacents:

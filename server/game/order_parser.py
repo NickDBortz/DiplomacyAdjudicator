@@ -28,6 +28,31 @@ class OrderParser:
                 if order_string == order.lower().strip():
                     found = True
                     break
+            # If the order includes "via convoy" for a non-adjacent territory, allow it
+            # (since non-adjacent territories can only be reached via convoy anyway)
+            if ' via convoy' in order_string and re.match(r'^a \w\w\w - \w\w\w( via convoy)?$', order_string):
+                plain_order = order_string.replace(' via convoy', '')
+                if plain_order == order.lower().strip():
+                    # Check if destination is non-adjacent (only reachable via convoy)
+                    try:
+                        parts = plain_order.split(' - ')
+                        if len(parts) == 2:
+                            start_abbr = parts[0].split()[-1]
+                            dest_abbr = parts[1].strip()
+                            start_territory = self.game_state.get_territory(start_abbr)
+                            dest_territory = self.game_state.get_territory(dest_abbr)
+                            if start_territory and dest_territory:
+                                # Only strip "via convoy" if destination is NOT adjacent
+                                if dest_territory not in start_territory.adjacents:
+                                    found = True
+                                    order_string = plain_order
+                                    break
+                                # If destination IS adjacent, only accept if "via convoy" version was generated
+                                elif order_string == order.lower().strip():
+                                    found = True
+                                    break
+                    except:
+                        pass
         if not found:
             return False
 
