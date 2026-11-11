@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 import app as server
@@ -164,14 +165,67 @@ def test_fleet_can_traverse_coastal_territory_through_water():
     
     # Fleet at Marseilles should be able to move to Spain's south coast
     assert 'F MAR - SPA(sc)' in options
-    # And also the generic move order
-    assert 'F MAR - SPA' in options
+    assert 'F MAR - SPA' not in options
     
     # But NOT to Spain's north coast (which requires Gascony adjacency)
     assert 'F MAR - SPA(nc)' not in options
     
     # Verify the move can actually be submitted
     assert game.submit_order('F MAR - SPA(sc)', france)
+
+@pytest.mark.parametrize('phase', ['Spring', 'Spring Retreat'])
+@pytest.mark.parametrize(('origin', 'coasts'), [
+    ('MAR', ['sc']),
+    ('POR', ['nc', 'sc']),
+    ('LYO', ['sc']),
+    ('MAO', ['nc', 'sc']),
+])
+def test_fleet_move_options_only_include_reachable_specified_coasts(phase, origin, coasts):
+    game = new_game(phase)
+    unit = add_unit(game, 'France', origin, FLEET)
+    if phase == 'Spring Retreat':
+        unit.dislodge()
+        unit.territory.set_unit(None)
+        unit.territory = None
+    options = web_api.get_valid_orders(game, unit.owner)
+    assert {order for order in options if order.startswith(f'F {origin} - SPA')} == {
+        f'F {origin} - SPA({coast})' for coast in coasts
+    }
+
+
+@pytest.mark.parametrize('phase', ['Spring', 'Spring Retreat'])
+@pytest.mark.parametrize('origin', ['MAR', 'LYO'])
+def test_unspecified_fleet_move_keeps_automatic_unique_coast(phase, origin):
+    game = new_game(phase)
+    unit = add_unit(game, 'France', origin, FLEET)
+    if phase == 'Spring Retreat':
+        unit.dislodge()
+        unit.territory.set_unit(None)
+        unit.territory = None
+    assert game.submit_order(f'F {origin} - SPA', unit.owner)
+    game.adjudicator.resolve_orders()
+    assert unit.territory.abbr == 'SPA'
+    assert unit.territory.unit_coast == 'sc'
+
+
+@pytest.mark.parametrize('coast', ['nc', 'sc'])
+def test_fleet_from_portugal_moves_to_chosen_coast(coast):
+    game = new_game('Spring')
+    unit = add_unit(game, 'France', 'POR', FLEET)
+    assert game.submit_order(f'F POR - SPA({coast})', unit.owner)
+    game.adjudicator.resolve_orders()
+    assert unit.territory.abbr == 'SPA'
+    assert unit.territory.unit_coast == coast
+    assert unit.can_traverse(game.game_state.get_territory('LYO')) == (coast == 'sc')
+
+def test_fleet_cannot_submit_unreachable_coast_from_water():
+    game = new_game('Spring')
+    unit = add_unit(game, 'France', 'LYO', FLEET)
+    assert not game.submit_order('F LYO - SPA(nc)', unit.owner)
+    assert game.submit_order('F LYO - SPA(sc)', unit.owner)
+    game.adjudicator.resolve_orders()
+    assert unit.territory.abbr == 'SPA'
+    assert unit.territory.unit_coast == 'sc'
 
 
 def test_fleet_coast_traversal_validates_water_adjacency():

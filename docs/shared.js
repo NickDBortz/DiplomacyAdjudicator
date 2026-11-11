@@ -402,6 +402,14 @@ function matchingOrderTargets(order) {
     return mapOrderTargets.every((target, index) => targets[index] === target);
 }
 
+function coastMoveChoices(unit, type, targets) {
+    if (!unit.startsWith('F ') || type !== 'Move' || targets.length !== 1) return [];
+    const matches = availableOrders.filter(order => order.unit === unit && order.type === type &&
+        orderMapTargets(order)[0] === targets[0]);
+    return matches.length > 1 && matches.every(order => /^F \S+ - \S+\((nc|sc)\)$/i.test(order.text))
+        ? matches : [];
+}
+
 function orderDetails(text) {
     const parts = text.split(' ');
     const adjustment = parts[0] === 'Build' || parts[0] === 'Remove';
@@ -558,20 +566,30 @@ function updateMapOrderControls() {
     const builds = unit && (!type || type === 'Build')
         ? availableOrders.filter(order => order.unit === unit && order.type === 'Build')
         : [];
-    buildOptions.hidden = builds.length < 2;
-    if (builds.length > 1) buildLabel.textContent = `Choose a unit to build in ${unitFilterLabel(unit)}:`;
-    const key = JSON.stringify(builds.map(order => order.text));
+    const coastMoves = coastMoveChoices(unit, type, mapOrderTargets);
+    const options = coastMoves.length ? coastMoves : builds;
+    const optionType = coastMoves.length ? 'Move' : 'Build';
+    const targets = optionType === 'Move' ? [...mapOrderTargets] : [];
+    buildOptions.hidden = options.length < 2;
+    if (options.length > 1) {
+        buildLabel.textContent = optionType === 'Move'
+            ? `Choose a coast for ${unitFilterLabel(targets[0])}:`
+            : `Choose a unit to build in ${unitFilterLabel(unit)}:`;
+    }
+    const key = JSON.stringify(options.map(order => order.text));
     if (buildChoices.dataset.orders !== key) {
         buildChoices.replaceChildren();
-        for (const order of builds) {
+        for (const order of options) {
             const parts = order.text.split(' ');
-            const coast = parts[2].match(/\(([^)]+)\)$/);
+            const coast = parts[optionType === 'Move' ? 3 : 2].match(/\(([^)]+)\)$/);
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'map-build-choice';
             button.dataset.order = order.text;
-            button.textContent = (parts[1] === 'A' ? 'Army' : 'Fleet') + (coast ? ` (${coast[1]})` : '');
-            button.addEventListener('click', () => setMapOrderSelection(unit, 'Build', [], order.text));
+            button.textContent = optionType === 'Move'
+                ? (coast[1].toLowerCase() === 'nc' ? 'North coast' : 'South coast')
+                : (parts[1] === 'A' ? 'Army' : 'Fleet') + (coast ? ` (${coast[1]})` : '');
+            button.addEventListener('click', () => setMapOrderSelection(unit, optionType, targets, order.text));
             buildChoices.appendChild(button);
         }
         buildChoices.dataset.orders = key;
@@ -682,6 +700,8 @@ function selectMapTerritory(abbr) {
             choiceSelect.value = matches[0].text;
             updateOrderHighlights();
             setPickerStatus(`Order selected: ${matches[0].text}. Submit to confirm.`);
+        } else if (coastMoveChoices(selectedUnit, typeSelect.value, nextTargets).length) {
+            setPickerStatus('Choose a coast for the destination.');
         } else {
             setPickerStatus(`${matches.length} matching orders. Select an order or tap the next territory.`);
         }
@@ -1082,7 +1102,7 @@ function initSidebar() {
         <p>Build or remove units to match your supply-center count. Build only in an empty home supply center you control. The classic game starts with an adjustment for the initial builds.</p>
         <h3>Order tips</h3>
         <p>Click a unit or its territory to select an order on the map. For support, select the supported unit; if hold support is available, it is selected, or you can select a highlighted destination to support a move. For a build, choose an available army or fleet (and coast, if needed). Review and submit the order in the main view or sidebar.</p>
-        <p>For a fleet moving, retreating, or building in a territory with multiple coasts, choose the appropriate coast when available. Available orders can still fail when resolved because all players' orders are simultaneous.</p>
+        <p>For a fleet moving, retreating, or building in a territory with multiple coasts, choose the appropriate coast in the main view when prompted. Available orders can still fail when resolved because all players' orders are simultaneous.</p>
         <p>In multiplayer, the host renders orders before resolving them. Players can also vote for a draw.</p>`;
 
     const tabs = [gameTab, helpTab];

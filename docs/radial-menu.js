@@ -239,7 +239,9 @@ class RadialMenu {
         return;
       }
       const matches = setMapOrderSelection(unit, 'Move', [abbr]);
-      if (matches.length > 1) setPickerStatus('Choose the desired retreat in the sidebar, then submit it.');
+      if (matches.length > 1) setPickerStatus(coastMoveChoices(unit, 'Move', [abbr]).length
+        ? 'Choose a coast for the destination.'
+        : 'Choose the desired retreat in the sidebar, then submit it.');
       this.cancel();
       return;
     }
@@ -249,7 +251,9 @@ class RadialMenu {
         return;
       }
       const matches = setMapOrderSelection(unit, 'Move', [abbr]);
-      if (matches.length > 1) setPickerStatus('Choose the desired move in the sidebar, then submit it.');
+      if (matches.length > 1) setPickerStatus(coastMoveChoices(unit, 'Move', [abbr]).length
+        ? 'Choose a coast for the destination.'
+        : 'Choose the desired move in the sidebar, then submit it.');
       this.cancel();
       return;
     }

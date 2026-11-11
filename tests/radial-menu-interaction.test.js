@@ -26,6 +26,7 @@ function createGame(orderTexts) {
         setAttribute(name, value) { this.attributes[name] = value; }
         appendChild(child) { this.children.push(child); }
         insertBefore(child) { this.children.unshift(child); }
+        querySelectorAll() { return this.children; }
         addEventListener(type, handler) { this[type] = handler; }
         replaceChildren(...children) { this.children = children; }
         set innerHTML(value) { this.children = []; }
@@ -45,6 +46,8 @@ function createGame(orderTexts) {
         { type: 'A', territory: 'PAR', owner: 'France' },
         { type: 'F', territory: 'BRE', owner: 'France' },
         { type: 'A', territory: 'BUR', owner: 'Germany' },
+        { type: 'F', territory: 'POR', owner: 'France' },
+        { type: 'F', territory: 'MAR', owner: 'France' },
     ];
     const markers = units.map(unit => {
         const marker = new Element();
@@ -52,7 +55,7 @@ function createGame(orderTexts) {
         marker.getBoundingClientRect = () => ({ left: 140, top: 245, width: 20, height: 10 });
         return marker;
     });
-    const territories = ['PAR', 'BRE', 'BUR', 'PIC', 'LON', 'GAS'].map(abbr => {
+    const territories = ['PAR', 'BRE', 'BUR', 'PIC', 'LON', 'GAS', 'POR', 'MAR', 'SPA'].map(abbr => {
         const element = new Element();
         element.id = `terr-${abbr}`;
         return element;
@@ -64,6 +67,10 @@ function createGame(orderTexts) {
         'order-choice': select(),
         'order-picker-status': new Element(),
         'map-order-status': new Element(),
+        'map-selected-order': new Element(),
+        'map-build-options': new Element(),
+        'map-build-label': new Element(),
+        'map-build-choices': new Element(),
         'clear-order-selection': new Element(),
     });
     const preview = new Element();
@@ -87,11 +94,14 @@ function createGame(orderTexts) {
         { abbr: 'PIC', name: 'Picardy', adjacents: ['Paris'] },
         { abbr: 'LON', name: 'London', adjacents: [] },
         { abbr: 'GAS', name: 'Gascony', adjacents: [] },
+        { abbr: 'POR', name: 'Portugal', adjacents: ['Spain'] },
+        { abbr: 'MAR', name: 'Marseilles', adjacents: ['Spain'] },
+        { abbr: 'SPA', name: 'Spain', adjacents: ['Portugal', 'Marseilles'] },
     ] };
     let submissions = 0;
     const context = vm.createContext({
         SVG_NS: 'svg', Option, mapData, svg, unitPosition: () => [0, 0],
-        document: { createElementNS: () => new Element(), getElementById: id => elements[id] || null },
+        document: { createElementNS: () => new Element(), createElement: () => new Element(), getElementById: id => elements[id] || null },
         window: { diplomacy: { state, order: () => { submissions++; } } },
         submitMultiplayerOrder: () => { submissions++; },
         setOrderMessage: () => {},
@@ -203,6 +213,50 @@ test('ambiguous destination coasts remain available in the picker', () => {
     assert.deepEqual(game.elements['order-choice'].options.map(option => option.value),
         ['', 'F BRE - GAS(nc)', 'F BRE - GAS(sc)']);
     assert.equal(game.submissions(), 0);
+});
+
+test('fleet advances offer coast choices on the map without submitting', () => {
+    const game = createGame(['F POR H', 'F POR - SPA(nc)', 'F POR - SPA(sc)', 'F POR - GAS']);
+    game.clickMap('POR');
+    game.choose('Advance');
+    assert.equal(game.elements['map-build-options'].hidden, true);
+    game.clickMap('SPA');
+    assert.equal(game.elements['map-build-options'].hidden, false);
+    assert.equal(game.elements['map-build-label'].textContent, 'Choose a coast for Spain:');
+    const choices = game.elements['map-build-choices'].children;
+    assert.deepEqual(choices.map(button => button.textContent), ['North coast', 'South coast']);
+    assert.equal(game.elements['order-choice'].value, '');
+    choices[1].click();
+    assert.equal(game.elements['order-choice'].value, 'F POR - SPA(sc)');
+    assert.equal(game.elements['map-selected-order'].textContent, 'Selected order: F POR - SPA(sc)');
+    assert.equal(choices[1].attributes['aria-pressed'], 'true');
+    choices[0].click();
+    assert.equal(game.elements['order-choice'].value, 'F POR - SPA(nc)');
+    game.elements['order-choice'].value = 'F POR - SPA(sc)';
+    game.elements['order-choice'].change();
+    assert.equal(choices[1].attributes['aria-pressed'], 'true');
+    assert.equal(game.submissions(), 0);
+    game.elements['clear-order-selection'].click();
+    assert.equal(game.elements['map-build-options'].hidden, true);
+});
+
+test('fleet retreats offer the same coast choices and single-coast moves select directly', () => {
+    const retreat = createGame(['F POR - SPA(nc)', 'F POR - SPA(sc)']);
+    retreat.state.phase = 'Spring Retreat';
+    retreat.state.units = [{ type: 'F', territory: null, dislodged: true, dislodged_from: 'POR', owner: 'France' }];
+    retreat.clickMap('POR');
+    retreat.clickMap('SPA');
+    assert.equal(retreat.elements['map-build-options'].hidden, false);
+    retreat.elements['map-build-choices'].children[0].click();
+    assert.equal(retreat.elements['order-choice'].value, 'F POR - SPA(nc)');
+    assert.equal(retreat.submissions(), 0);
+
+    const movement = createGame(['F MAR H', 'F MAR - SPA(sc)']);
+    movement.clickMap('MAR');
+    movement.choose('Advance');
+    movement.clickMap('SPA');
+    assert.equal(movement.elements['order-choice'].value, 'F MAR - SPA(sc)');
+    assert.equal(movement.elements['map-build-options'].hidden, true);
 });
 
 test('transform selects a unique order and leaves ambiguous coasts for the picker', () => {
