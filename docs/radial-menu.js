@@ -2,11 +2,11 @@ const RADIAL_MENU_CONFIG = {
   radius: 80,
   innerRadius: 30,
   colors: {
-    Hold: '#4CAF50',
-    Advance: '#2196F3',
-    Support: '#FF9800',
-    Transform: '#9C27B0',
-    Convoy: '#F44336',
+    Hold: '#72d6a0',
+    Advance: '#73b9ff',
+    Support: '#ffc16e',
+    Transform: '#cda4ff',
+    Convoy: '#ff9292',
   },
 };
 
@@ -54,8 +54,8 @@ class RadialMenu {
     center.setAttribute('cx', position.x);
     center.setAttribute('cy', position.y);
     center.setAttribute('r', RADIAL_MENU_CONFIG.innerRadius);
-    center.setAttribute('fill', '#555');
-    center.setAttribute('stroke', '#fff');
+    center.setAttribute('fill', 'transparent');
+    center.setAttribute('stroke', '#b6d5f3');
     center.setAttribute('stroke-width', 2);
     center.setAttribute('class', 'radial-menu-center');
     this.menuGroup.appendChild(center);
@@ -83,21 +83,28 @@ class RadialMenu {
     circle.setAttribute('cx', x);
     circle.setAttribute('cy', y);
     circle.setAttribute('r', 25);
-    circle.setAttribute('fill', RADIAL_MENU_CONFIG.colors[type]);
-    circle.setAttribute('stroke', '#fff');
+    circle.setAttribute('fill', '#18293d');
+    circle.setAttribute('stroke', RADIAL_MENU_CONFIG.colors[type]);
     circle.setAttribute('stroke-width', 2);
     circle.setAttribute('class', 'radial-menu-bg');
     visual.appendChild(circle);
+    const accent = document.createElementNS(SVG_NS, 'circle');
+    accent.setAttribute('cx', x);
+    accent.setAttribute('cy', y - 11);
+    accent.setAttribute('r', 3);
+    accent.setAttribute('fill', RADIAL_MENU_CONFIG.colors[type]);
+    accent.setAttribute('class', 'radial-menu-accent');
+    visual.appendChild(accent);
     const text = document.createElementNS(SVG_NS, 'text');
     text.setAttribute('x', x);
-    text.setAttribute('y', y);
+    text.setAttribute('y', y + 4);
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'middle');
     text.setAttribute('fill', '#fff');
     text.setAttribute('font-weight', 'bold');
     text.setAttribute('font-size', '11');
     if (type.length > 6) {
-      text.setAttribute('textLength', 42);
+      text.setAttribute('textLength', 38);
       text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
     }
     text.textContent = type;
