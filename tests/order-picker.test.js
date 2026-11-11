@@ -25,15 +25,40 @@ function createPicker() {
             addEventListener(type, handler) { this[type] = handler; },
         };
     }
+    function button() {
+        return {
+            dataset: {}, attributes: {},
+            addEventListener(type, handler) { this[type] = handler; },
+            setAttribute(name, value) { this.attributes[name] = value; },
+        };
+    }
     const elements = {
         'order-unit': select(),
         'order-type': select(),
         'order-choice': select(),
         'order-picker-status': {},
         'map-order-status': {},
+        'map-selected-order': {},
+        'map-build-options': {},
+        'map-build-label': {},
+        'map-build-choices': {
+            dataset: {}, children: [],
+            replaceChildren() { this.children = []; },
+            appendChild(child) { this.children.push(child); },
+            querySelectorAll() { return this.children; },
+        },
+        'order-error': {},
+        'map-order-result': {},
         'clear-order-selection': { addEventListener(type, handler) { this[type] = handler; } },
     };
-    const context = vm.createContext({ mapData, Option, svg: null, document: { getElementById: id => elements[id] } });
+    const context = vm.createContext({
+        mapData, Option, svg: null, window: { diplomacy: { state: null } },
+        document: { getElementById: id => elements[id], createElement: button },
+        setOrderMessage(message) {
+            elements['order-error'].textContent = message;
+            elements['map-order-result'].textContent = message;
+        },
+    });
     vm.runInContext(pickerSource, context);
     return { context, elements };
 }
@@ -55,6 +80,60 @@ test('adjustment options group builds and removals by full territory name', () =
     elements['order-type'].value = 'Build';
     context.renderOrderChoices();
     assert.equal(elements['order-picker-status'].textContent, '3 of 4 available orders. Select one to submit.');
+});
+
+test('a unique adjustment order is selected but not submitted', () => {
+    const { context, elements } = createPicker();
+    context.window.diplomacy.state = { phase: 'Adjustment' };
+    context.setOrderPicker(['Build A PAR']);
+    context.selectMapTerritory('PAR');
+    assert.equal(elements['order-unit'].value, 'PAR');
+    assert.equal(elements['order-choice'].value, 'Build A PAR');
+    assert.equal(elements['map-build-options'].hidden, true);
+    assert.equal(elements['map-selected-order'].textContent, 'Selected order: Build A PAR');
+    assert.match(elements['map-order-status'].textContent, /Submit to confirm/);
+});
+
+test('map build choices select legal army and fleet coasts and stay in sync with the picker', () => {
+    const { context, elements } = createPicker();
+    context.initOrderPicker();
+    context.setOrderPicker(['Build A STP', 'Build F STP(nc)', 'Build F STP(sc)', 'Build A PAR']);
+    context.selectMapTerritory('STP');
+    const choices = elements['map-build-choices'];
+    assert.equal(elements['map-build-options'].hidden, false);
+    assert.equal(elements['map-build-label'].textContent, 'Choose a unit to build in St Petersburg:');
+    assert.equal(elements['order-choice'].value, '');
+    assert.deepEqual(choices.children.map(button => button.textContent), ['Army', 'Fleet (nc)', 'Fleet (sc)']);
+    const fleet = choices.children[2];
+    fleet.click();
+    assert.equal(elements['order-type'].value, 'Build');
+    assert.equal(elements['order-choice'].value, 'Build F STP(sc)');
+    assert.equal(elements['map-selected-order'].textContent, 'Selected order: Build F STP(sc)');
+    assert.equal(fleet.attributes['aria-pressed'], 'true');
+    choices.children[0].click();
+    assert.equal(elements['order-choice'].value, 'Build A STP');
+    assert.equal(fleet.attributes['aria-pressed'], 'false');
+    elements['order-choice'].value = 'Build F STP(nc)';
+    elements['order-choice'].change();
+    assert.equal(choices.children[1].attributes['aria-pressed'], 'true');
+    context.selectMapTerritory('PAR');
+    assert.equal(elements['order-choice'].value, 'Build A PAR');
+    assert.equal(elements['map-build-options'].hidden, true);
+    context.setOrderPicker([]);
+    assert.equal(elements['map-selected-order'].textContent, 'No order selected.');
+    assert.equal(elements['map-build-options'].hidden, true);
+});
+
+test('build choices only offer legal fleet coasts and do not appear for removals', () => {
+    const { context, elements } = createPicker();
+    context.setOrderPicker(['Build F STP(nc)', 'Build F STP(sc)', 'Remove A PAR']);
+    context.selectMapTerritory('STP');
+    assert.deepEqual(elements['map-build-choices'].children.map(button => button.textContent), ['Fleet (nc)', 'Fleet (sc)']);
+    elements['map-build-choices'].children[0].click();
+    assert.equal(elements['order-choice'].value, 'Build F STP(nc)');
+    context.selectMapTerritory('PAR');
+    assert.equal(elements['map-build-options'].hidden, true);
+    assert.equal(elements['order-choice'].value, 'Remove A PAR');
 });
 
 test('map selections filter the existing picker for moves and preserve ambiguous coasts', () => {
@@ -152,6 +231,7 @@ test('map routes territory and unit clicks after every rebuild', () => {
             getElementById: id => id === 'map' ? container : {},
             createElementNS: () => element(),
         },
+        window: { diplomacy: { state: null } },
         selectMapTerritory: abbr => clicks.push(abbr),
     });
     vm.runInContext(mapSource, context);
@@ -186,21 +266,23 @@ test('movement and retreat options show the unit and full territory name', () =>
     assert.equal(elements['order-choice'].options.length, 3);
 });
 
-test('multiplayer submits the selected order and rejects an empty selection', async () => {
+test('multiplayer submits from either view and reports errors in both', async () => {
     function button() {
         return { addEventListener(type, handler) { this[type] = handler; } };
     }
     const elements = {
         'order-choice': { value: '' },
         'order-error': { textContent: '' },
+        'map-order-result': { textContent: '' },
         'submit-order': button(),
+        'map-submit-order': button(),
         draw: button(),
     };
     const context = vm.createContext({
         document: { getElementById: id => elements[id] },
         clearOrderSelection() { elements['order-choice'].value = ''; },
     });
-    const controlsSource = source.slice(source.indexOf('function initOrderControls('), source.indexOf('function initSidebar('));
+    const controlsSource = source.slice(source.indexOf('function setOrderMessage('), source.indexOf('function initSidebar('));
     vm.runInContext(controlsSource, context);
     const submitted = [];
     context.initOrderControls(async order => {
@@ -208,15 +290,114 @@ test('multiplayer submits the selected order and rejects an empty selection', as
         return 'Order submitted.';
     }, () => '');
 
-    await elements['submit-order'].click();
+    await elements['map-submit-order'].click();
     assert.equal(elements['order-error'].textContent, 'Select an order.');
+    assert.equal(elements['map-order-result'].textContent, 'Select an order.');
     assert.deepEqual(submitted, []);
 
     elements['order-choice'].value = 'Build F BRE';
-    await elements['submit-order'].click();
+    await elements['map-submit-order'].click();
     assert.deepEqual(submitted, ['Build F BRE']);
     assert.equal(elements['order-choice'].value, '');
     assert.equal(elements['order-error'].textContent, 'Order submitted.');
+    assert.equal(elements['map-order-result'].textContent, 'Order submitted.');
+
+    elements['order-choice'].value = 'A PAR H';
+    await elements['submit-order'].click();
+    assert.deepEqual(submitted, ['Build F BRE', 'A PAR H']);
+});
+
+test('both submit buttons share the in-flight lock and surface a rejected order', async () => {
+    const button = () => ({ addEventListener(type, handler) { this[type] = handler; } });
+    const elements = {
+        'order-choice': { value: 'A PAR H' },
+        'order-error': {},
+        'map-order-result': {},
+        'submit-order': button(),
+        'map-submit-order': button(),
+        draw: button(),
+    };
+    const context = vm.createContext({
+        document: { getElementById: id => elements[id] },
+        clearOrderSelection() { throw new Error('Rejected order should remain selected'); },
+    });
+    vm.runInContext(source.slice(source.indexOf('function setOrderMessage('), source.indexOf('function initSidebar(')), context);
+    let finish;
+    let count = 0;
+    context.initOrderControls(() => {
+        count++;
+        return new Promise(resolve => { finish = resolve; });
+    }, () => '');
+    const pending = elements['map-submit-order'].click();
+    assert.equal(elements['submit-order'].disabled, true);
+    await elements['submit-order'].click();
+    assert.equal(count, 1);
+    finish('Order rejected: invalid order');
+    await pending;
+    assert.equal(elements['submit-order'].disabled, false);
+    assert.equal(elements['map-submit-order'].disabled, false);
+    assert.equal(elements['map-order-result'].textContent, 'Order rejected: invalid order');
+    assert.equal(elements['order-error'].textContent, 'Order rejected: invalid order');
+    assert.equal(elements['order-choice'].value, 'A PAR H');
+});
+
+test('singleplayer submits from both views and reports server failures', async () => {
+    const button = () => ({ addEventListener(type, handler) { this[type] = handler; } });
+    const elements = {
+        'greatpower': { value: 'France' },
+        'order-choice': { value: 'Build F BRE' },
+        'order-error': {},
+        'map-order-result': {},
+        'submit-order': button(),
+        'map-submit-order': button(),
+    };
+    const calls = [];
+    const context = vm.createContext({
+        document: { getElementById: id => elements[id] },
+        window: { diplomacy: { order: async (order, power) => {
+            calls.push([order, power]);
+            return calls.length === 1 ? { ok: true } : { ok: false, error: 'invalid' };
+        } } },
+        queuedOrders: {},
+        setGreatPowerInfo() {},
+    });
+    vm.runInContext(source.slice(source.indexOf('function setOrderMessage('), source.indexOf('// Wires the order selector')), context);
+    const localSource = fs.readFileSync(path.join(root, 'docs', 'singleplayer.js'), 'utf8');
+    vm.runInContext(localSource.slice(localSource.indexOf('async function submitSingleplayerOrder()'),
+        localSource.indexOf("document.getElementById('resolve')")), context);
+    await elements['map-submit-order'].click();
+    assert.deepEqual(calls, [['Build F BRE', 'France']]);
+    assert.equal(elements['map-order-result'].textContent, 'Order submitted successfully!');
+    await elements['submit-order'].click();
+    assert.equal(elements['order-error'].textContent, 'Error submitting order for France: invalid');
+    assert.equal(elements['map-order-result'].textContent, 'Error submitting order for France: invalid');
+});
+
+test('multiplayer map controls follow spectator and revealed-order visibility', () => {
+    const element = () => ({
+        hidden: false,
+        classList: { toggle(name, hidden) { this.hidden = hidden; } },
+    });
+    const elements = {
+        'player-actions': element(),
+        'map-order-controls': element(),
+        'spectator-message': element(),
+        'host-controls': element(),
+    };
+    const context = vm.createContext({
+        document: { getElementById: id => elements[id] },
+        gameInfo: { power: 'France', state: { orders_revealed: false }, host: 'player', userName: 'player' },
+    });
+    vm.runInContext(source.slice(source.indexOf('function updateGameRole()'), source.indexOf('// The server sends every unit')), context);
+    context.updateGameRole();
+    assert.equal(elements['map-order-controls'].classList.hidden, false);
+    context.gameInfo.state.orders_revealed = true;
+    context.updateGameRole();
+    assert.equal(elements['map-order-controls'].classList.hidden, true);
+    context.gameInfo.state.orders_revealed = false;
+    context.gameInfo.power = 'Spectator';
+    context.updateGameRole();
+    assert.equal(elements['map-order-controls'].classList.hidden, true);
 });
 
 test('highlights follow filters and narrow to the selected support or convoy', () => {

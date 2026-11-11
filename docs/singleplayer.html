@@ -58,8 +58,19 @@
   </div>
   <div id="main">
     <div id="status">Loading…</div>
-    <p class="map-order-status">Select a power, then click or tap a unit or build location and its destination or related unit. Open the sidebar to review and submit.</p>
+    <p class="map-order-status">Select a power, then click a unit or its territory to choose an order. Review and submit it here or in the sidebar.</p>
     <p id="map-order-status" class="map-order-status" aria-live="polite"></p>
+    <div id="map-order-controls" class="map-order-controls">
+      <div id="map-build-options" class="map-build-options" role="group" aria-labelledby="map-build-label" hidden>
+        <span id="map-build-label">Choose a unit to build:</span>
+        <div id="map-build-choices" class="map-build-choices"></div>
+      </div>
+      <div class="map-order-submit">
+        <span id="map-selected-order">No order selected.</span>
+        <button type="button" id="map-submit-order" class="btn">Submit Order</button>
+      </div>
+      <p id="map-order-result" role="status"></p>
+    </div>
     <div id="map"></div>
   </div>
 
@@ -86,6 +97,7 @@
     </div>
   </div>
   <script src="shared.js"></script>
+  <script src="radial-menu.js"></script>
   <script src="singleplayer.js"></script>
 </body>
 </html>

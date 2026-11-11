@@ -58,6 +58,13 @@ class OrderParser:
 
         order = self._parse_order_string(order_string)
         if order is not None:
+            # Preserve shorthand input while recording its uniquely reachable coast.
+            if (isinstance(order, AdvanceOrder) and order.unit.type == FLEET and order.coast is None
+                    and order.dest_territory.north_coast):
+                reachable = [coast for coast in (NORTH_COAST, SOUTH_COAST)
+                             if order.unit.can_traverse(order.dest_territory, coast)]
+                if len(reachable) == 1:
+                    order.coast = reachable[0]
             if self.adjudicator.queue_order(order, owner):
                 order.unit.set_order(order)
                 return True

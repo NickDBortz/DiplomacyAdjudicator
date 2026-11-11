@@ -15,7 +15,6 @@ let queuedOrders = {};
 let orderRequestId = 0;
 
 const infoElement = document.getElementById('info');
-const orderErrorElement = document.getElementById('order-error');
 
 Object.assign(window.diplomacy, {
   async newGame() {
@@ -89,7 +88,7 @@ function populateGreatPowerSelect() {
 }
 
 function setGreatPowerInfo() {
-  orderErrorElement.textContent = '';
+  setOrderMessage('');
   infoElement.textContent = '';
   if (greatPower) {
     const state = window.diplomacy.state;
@@ -167,12 +166,12 @@ function resetLocalUi() {
   setOrderPicker([], 'Select a power to see available orders.');
 }
 
-document.getElementById('submit-order').addEventListener('click', async () => {
+async function submitSingleplayerOrder() {
   const order = document.getElementById('order-choice').value;
   const power = document.getElementById('greatpower').value;
 
   if (!power || !order) {
-    orderErrorElement.textContent = 'Select a power and an order.';
+    setOrderMessage('Select a power and an order.');
     return;
   }
   try {
@@ -181,14 +180,16 @@ document.getElementById('submit-order').addEventListener('click', async () => {
       if (!queuedOrders[power]) queuedOrders[power] = [];
       queuedOrders[power].push(order);
       setGreatPowerInfo();
-      orderErrorElement.textContent = 'Order submitted successfully!';
+      setOrderMessage('Order submitted successfully!');
     } else {
-      orderErrorElement.textContent = `Error submitting order for ${power}: ${ok['error']}`;
+      setOrderMessage(`Error submitting order for ${power}: ${ok['error']}`);
     }
   } catch (e) {
-    orderErrorElement.textContent = `Error submitting order for ${power}: ${e.message}`;
+    setOrderMessage(`Error submitting order for ${power}: ${e.message}`);
   }
-});
+}
+
+bindOrderSubmission(submitSingleplayerOrder);
 
 document.getElementById('resolve').addEventListener('click', () => {
   confirmAction('Resolve Orders', 'Are you sure you want to resolve all orders?', async () => {

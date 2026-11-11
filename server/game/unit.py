@@ -60,7 +60,12 @@ class Unit:
     def can_traverse(self, territory, coast=None, for_support=False):
         if self.type == ARMY:
             return isinstance(territory, LandTerritory)
-        if (for_support or isinstance(self.territory, WaterTerritory)) and isinstance(territory, LandTerritory) and territory.is_coast:
+        if for_support and isinstance(territory, LandTerritory) and territory.is_coast:
+            return True
+        if isinstance(self.territory, WaterTerritory) and isinstance(territory, LandTerritory) and territory.is_coast:
+            if coast is not None and territory.north_coast:
+                return (coast == NORTH_COAST and self.territory in territory.north_coast or
+                        coast == SOUTH_COAST and self.territory in territory.south_coast)
             return True
 
         occupied_coast = self.territory.unit_coast

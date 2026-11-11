@@ -43,11 +43,20 @@ def get_valid_orders(game, player):
                        for attack in order.unit.dislodged_from.contesting):
                     continue
             seen.add(text)
-            result.append(text)
+            result.append((text, order))
     finally:
         for unit, territory in positions:
             unit.territory = territory
-    return result
+    # Keep parser-accepted shorthand out of the picker when explicit choices exist.
+    specified_coasts = {
+        (order.unit, order.dest_territory) for _, order in result
+        if order.type == ADVANCE and order.unit.type == FLEET and order.coast is not None
+    }
+    return [
+        text for text, order in result
+        if not (order.type == ADVANCE and order.unit.type == FLEET and order.coast is None
+                and (order.unit, order.dest_territory) in specified_coasts)
+    ]
 
 
 def new_game(map_path='data/maps/classic_map.json', start_phase=None):
