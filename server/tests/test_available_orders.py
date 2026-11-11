@@ -248,3 +248,34 @@ def test_support_orders_respect_coast_constraints():
             # This is a support order, verify it's valid
             parsed = game.order_parser._parse_order_string(order.lower())
             assert parsed.is_valid, f"Generated support order '{order}' failed to parse"
+
+
+def test_no_duplicate_convoy_orders():
+    """Test that armies don't generate 'via convoy' orders for non-adjacent territories since they're redundant.
+    
+    For non-adjacent territories, only the plain advance order is generated (since it can only be executed via convoy).
+    For adjacent territories that can also be reached via convoy, both orders are generated as alternatives.
+    """
+    game = new_game('Spring')
+    
+    # Set up an army and fleets to create a convoy route
+    army = add_unit(game, 'France', 'PAR', ARMY)
+    fleet1 = add_unit(game, 'France', 'BRE', FLEET)
+    fleet2 = add_unit(game, 'France', 'MAO', FLEET)
+    france = army.owner
+    
+    options = web_api.get_valid_orders(game, france)
+    
+    # Filter orders for the army at PAR
+    par_orders = [o for o in options if o.startswith('A PAR')]
+    
+    # Check that non-adjacent convoyable territories only have plain orders, not "via convoy"
+    for order in par_orders:
+        if ' via convoy' in order:
+            # This is a convoy order - it should only exist for adjacent territories
+            dest_part = order.replace('A PAR - ', '').replace(' via convoy', '').strip()
+            dest_terr = game.game_state.get_territory(dest_part)
+            
+            # The territory must be adjacent for the "via convoy" variant to exist
+            assert dest_terr in army.territory.adjacents, \
+                f"'via convoy' order '{order}' generated for non-adjacent territory {dest_part}"
