@@ -71,6 +71,18 @@ def test_public_press_allows_public_chat_but_disables_private_chat():
     assert [message['text'] for message in server._chat_history(lobby, 'Alice')] == ['Public', 'Hello']
 
 
+def test_private_chat_reports_when_diplomacy_timer_is_inactive():
+    lobby = make_lobby('normal')
+    lobby['diplomacy_timer'] = {'active': False}
+
+    reply, recipients, payload = send(lobby, 'private')
+
+    assert not reply['ok']
+    assert reply['error'] == 'Private messages are only available during an active Diplomacy timer.'
+    assert recipients is None
+    assert payload is None
+
+
 def test_host_ruleset_selection_is_broadcast_and_non_host_cannot_change_it(monkeypatch):
     class Socket:
         def __init__(self):

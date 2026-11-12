@@ -16,6 +16,7 @@ const chatState = {
     players: [],
     powers: {},
     started: false,
+    timerActive: false,
     ruleset: 'normal',
     el: null,
 };
@@ -39,7 +40,7 @@ function holdsPower(name) {
 }
 
 function canPrivateChat() {
-    return chatState.started && holdsPower(chatState.userName);
+    return chatState.started && chatState.timerActive && holdsPower(chatState.userName);
 }
 
 function unreadCount(conversation) {
@@ -208,7 +209,9 @@ function renderChat() {
     const partner = conversationPartner(chatState.active);
     el.title.textContent = partner ? `Private: ${partner}` : (chatState.started ? 'Chat with everyone' : 'Lobby chat');
     let blocked = '';
-    if (partner && !canPrivateChat()) blocked = 'Only players who control a power can send private messages.';
+    if (partner && !chatState.started) blocked = 'Private messages are only available during a game.';
+    else if (partner && !holdsPower(chatState.userName)) blocked = 'Only players who control a power can send private messages.';
+    else if (partner && !chatState.timerActive) blocked = 'Private messages are only available during an active Diplomacy timer.';
     else if (partner && !chatState.players.includes(partner)) blocked = `${partner} has left the game.`;
     else if (partner && !holdsPower(partner)) blocked = `${partner} no longer controls a power.`;
     el.note.textContent = blocked;
@@ -320,10 +323,12 @@ function chatReceive(msg) {
         chatState.powers = msg.selected_powers || chatState.powers;
         chatState.started = Boolean(msg.started);
         chatState.ruleset = msg.ruleset || 'normal';
+        if ('timer' in msg) chatState.timerActive = Boolean(msg.timer && msg.timer.active);
     } else if (msg.type === 'game_state') {
         chatState.players = msg.state.lobby_players || chatState.players;
         chatState.powers = msg.state.selected_powers || chatState.powers;
         chatState.started = true;
+        chatState.timerActive = Boolean(msg.state.diplomacy_timer && msg.state.diplomacy_timer.active);
     } else {
         return;
     }

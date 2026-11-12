@@ -923,8 +923,10 @@ def _send_chat(lobby, user_name, msg):
         to = msg.get('to')
         if not lobby['started']:
             return fail('Private messages are only available during a game.')
-        if not _can_private_chat(lobby, user_name):
+        if _power_of(lobby, user_name) is None:
             return fail('Only players who control a power can send private messages.')
+        if not _can_private_chat(lobby, user_name):
+            return fail('Private messages are only available during an active Diplomacy timer.')
         if not isinstance(to, str) or to == user_name or not any(p['user_name'] == to for p in lobby['players']):
             return fail('That player is not in this game.')
         if not _can_private_chat(lobby, to):
