@@ -53,6 +53,25 @@
       <details id="host-controls" class="host-controls hidden">
         <summary class="host-controls-toggle">Host Controls</summary>
         <button id="download-save" class="btn btn-secondary">Download Save</button>
+        
+        <div id="diplomacy-timer-section" class="hidden">
+          <p class="section-header">Diplomacy Phase Timer</p>
+          <div id="timer-display" class="timer-display hidden">
+            <p id="timer-countdown" class="timer-countdown">00:00</p>
+            <ul id="timer-player-status" class="timer-player-status"></ul>
+            <div class="timer-controls">
+              <button id="timer-extend" class="btn btn-secondary">Extend Timer</button>
+              <button id="timer-end-early" class="btn btn-secondary">End Timer</button>
+            </div>
+          </div>
+          <div id="timer-start" class="timer-start">
+            <label for="timer-duration">Duration (5 min to 24 hours):</label>
+            <input id="timer-duration" type="number" min="300" max="86400" value="1800" step="60">
+            <small id="timer-duration-display">30 minutes</small>
+            <button id="timer-start-btn" class="btn">Start Timer</button>
+          </div>
+        </div>
+        
         <button id="resolve" class="btn">Render Orders</button>
         <p class="host-note">Only the host can render and resolve orders.</p>
         <div id="host-tools" class="host-tools">

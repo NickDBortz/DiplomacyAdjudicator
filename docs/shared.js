@@ -374,6 +374,20 @@ function applyGameState(state) {
             ? 'Orders are revealed; wait for the host to resolve them.'
             : 'No available orders for this power.');
     }
+    
+    // Update timer display
+    if (state.diplomacy_timer) {
+        updateTimerDisplay(state.diplomacy_timer);
+        if (state.diplomacy_timer.active) {
+            startTimerUpdate();
+        } else {
+            stopTimerUpdate();
+        }
+    } else {
+        stopTimerUpdate();
+        const timerSection = document.getElementById('diplomacy-timer-section');
+        if (timerSection) timerSection.classList.add('hidden');
+    }
 }
 
 let availableOrders = [];
@@ -918,6 +932,154 @@ function initHostTools() {
         const reply = await sendHostAction(assign, { type: 'assign_power', user_name: userName, power }, 'assign_power_result');
         if (reply.ok) assign.disabled = false;
     });
+    
+    // Timer controls
+    initTimerControls();
+}
+
+function formatSeconds(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatDuration(seconds) {
+    if (seconds < 60) return `${seconds} seconds`;
+    if (seconds < 3600) return `${Math.round(seconds / 60)} minutes`;
+    return `${(seconds / 3600).toFixed(1)} hours`;
+}
+
+function initTimerControls() {
+    const timerSection = document.getElementById('diplomacy-timer-section');
+    if (!timerSection) return;
+    
+    const durationInput = document.getElementById('timer-duration');
+    const durationDisplay = document.getElementById('timer-duration-display');
+    const startBtn = document.getElementById('timer-start-btn');
+    const extendBtn = document.getElementById('timer-extend');
+    const endBtn = document.getElementById('timer-end-early');
+    
+    if (durationInput && durationDisplay) {
+        durationInput.addEventListener('input', () => {
+            durationDisplay.textContent = formatDuration(parseInt(durationInput.value) || 0);
+        });
+    }
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
+            const duration = parseInt(durationInput.value);
+            if (!duration || duration < 300 || duration > 86400) {
+                alert('Duration must be between 5 minutes (300 seconds) and 24 hours (86400 seconds)');
+                return;
+            }
+            const reply = await sendHostAction(startBtn, { 
+                type: 'start_diplomacy_timer', 
+                duration: duration 
+            }, 'diplomacy_timer_result');
+            if (reply.ok) startBtn.disabled = false;
+        });
+    }
+    
+    if (extendBtn) {
+        extendBtn.addEventListener('click', async () => {
+            const additional = prompt('Add how many minutes?', '10');
+            if (!additional) return;
+            const additionalSeconds = parseInt(additional) * 60;
+            if (additionalSeconds <= 0 || additionalSeconds > 86400) {
+                alert('Extension must be between 1 second and 24 hours');
+                return;
+            }
+            const reply = await sendHostAction(extendBtn, { 
+                type: 'extend_diplomacy_timer', 
+                additional: additionalSeconds 
+            }, 'diplomacy_timer_result');
+            if (reply.ok) extendBtn.disabled = false;
+        });
+    }
+    
+    if (endBtn) {
+        endBtn.addEventListener('click', async () => {
+            if (!confirm('End the Diplomacy phase timer?')) return;
+            const reply = await sendHostAction(endBtn, { 
+                type: 'end_diplomacy_timer' 
+            }, 'diplomacy_timer_result');
+            if (reply.ok) endBtn.disabled = false;
+        });
+    }
+    
+    const playerDoneBtn = document.getElementById('player-done-btn');
+    if (playerDoneBtn) {
+        playerDoneBtn.addEventListener('click', async () => {
+            const isCurrentlyReady = playerDoneBtn.classList.contains('ready');
+            const reply = await sendForReply({
+                type: 'mark_player_done',
+                ready: !isCurrentlyReady
+            }, 'player_done_result');
+            if (reply.ok) {
+                playerDoneBtn.classList.toggle('ready');
+                playerDoneBtn.textContent = isCurrentlyReady ? 'Mark as Done' : 'Mark as Not Done';
+            }
+        });
+    }
+}
+
+function updateTimerDisplay(timer) {
+    const timerSection = document.getElementById('diplomacy-timer-section');
+    const timerDisplay = document.getElementById('timer-display');
+    const timerStart = document.getElementById('timer-start');
+    const countdown = document.getElementById('timer-countdown');
+    const playerStatus = document.getElementById('timer-player-status');
+    
+    if (!timerSection) return;
+    
+    if (!timer || !timer.active) {
+        timerSection.classList.add('hidden');
+        return;
+    }
+    
+    timerSection.classList.remove('hidden');
+    timerDisplay.classList.remove('hidden');
+    timerStart.classList.add('hidden');
+    
+    // Update countdown
+    const now = Date.now() / 1000;
+    const elapsed = now - timer.start_time;
+    const remaining = Math.max(0, timer.duration - elapsed);
+    countdown.textContent = formatSeconds(Math.ceil(remaining));
+    
+    // Update player ready status (only for host view)
+    if (playerStatus && gameInfo.host === gameInfo.userName) {
+        playerStatus.innerHTML = '';
+        const powers = window.diplomacy.state?.selected_powers || {};
+        const readyMap = timer.player_ready || {};
+        
+        for (const [playerName, power] of Object.entries(powers)) {
+            if (power === 'Spectator') continue;
+            const li = document.createElement('li');
+            li.className = 'player-ready-item' + (readyMap[playerName] ? ' ready' : ' not-ready');
+            const status = readyMap[playerName] ? '✓' : '○';
+            li.textContent = `${playerName}: ${status}`;
+            playerStatus.appendChild(li);
+        }
+    }
+}
+
+function startTimerUpdate() {
+    if (window.diplomacy.timerInterval) {
+        clearInterval(window.diplomacy.timerInterval);
+    }
+    window.diplomacy.timerInterval = setInterval(() => {
+        if (window.diplomacy.state?.diplomacy_timer) {
+            updateTimerDisplay(window.diplomacy.state.diplomacy_timer);
+        }
+    }, 100);
+}
+
+function stopTimerUpdate() {
+    if (window.diplomacy.timerInterval) {
+        clearInterval(window.diplomacy.timerInterval);
+        window.diplomacy.timerInterval = null;
+    }
 }
 
 // Tells the server this is a deliberate exit so it can hand over the host and close the lobby right away.
@@ -994,9 +1156,26 @@ function initResolveControl() {
         });
     }
 
-    const send = async (type, replyType) => {
+    const send = async (type, replyType, override = false) => {
         try {
-            const r = await sendForReply({ type }, replyType);
+            const payload = { type };
+            if (type === 'resolve' && override) {
+                payload.override = true;
+            }
+            const r = await sendForReply(payload, replyType);
+            
+            // Handle not ready warning
+            if (!r.ok && r.requires_override && type === 'resolve') {
+                const notReadyList = r.not_ready_players.join(', ');
+                showModal('Resolve Orders - Not All Players Done',
+                    `The following players are not done: ${notReadyList}\n\nDo you want to resolve anyway?`,
+                    () => {
+                        hideModal();
+                        send('resolve', 'resolve_result', true);
+                    });
+                return;
+            }
+            
             messageEl.textContent = !r.ok ? r.error : r.save_data ? 'Game save downloaded.' : '';
         } catch (e) {
             messageEl.textContent = e.message;
@@ -1153,6 +1332,15 @@ function confirmAction(title, message, callback) {
         close();
         callback();
     };
+}
+
+function showModal(title, message, onConfirm) {
+    confirmAction(title, message, onConfirm);
+}
+
+function hideModal() {
+    const modal = document.getElementById('confirm-modal');
+    modal.classList.add('hidden');
 }
 
 function smoothPolygons(polygons) {

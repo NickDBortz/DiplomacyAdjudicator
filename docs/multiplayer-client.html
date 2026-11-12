@@ -48,6 +48,15 @@
         <p class="section-header">Orders</p>
         <ul id="order-list" class="submitted-orders"></ul>
         <p id="spectator-message" class="menu-message hidden">You are spectating. Orders appear after the host renders them.</p>
+        
+        <div id="diplomacy-timer-section" class="hidden">
+          <p class="section-header">Diplomacy Phase Timer</p>
+          <div id="timer-display" class="timer-display hidden">
+            <p id="timer-countdown" class="timer-countdown">00:00</p>
+            <ul id="timer-player-status" class="timer-player-status"></ul>
+            <button id="player-done-btn" class="btn">Mark as Done</button>
+          </div>
+        </div>
       </div>
 
       <details id="host-controls" class="host-controls hidden">
