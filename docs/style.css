@@ -1533,22 +1533,71 @@ body {
     padding: 8px;
 }
 
-.timer-start label {
-    display: block;
-    margin-bottom: 4px;
+.timer-duration-label {
+    margin: 0 0 8px;
     font-size: 12px;
     color: #b6c8da;
 }
 
-.timer-start input {
+.timer-dials {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.timer-dial {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+}
+
+.timer-dial label {
+    margin-bottom: 3px;
+    color: #b6c8da;
+    font-size: 11px;
+}
+
+.timer-dial input {
     width: 100%;
-    padding: 6px;
-    margin-bottom: 4px;
+    padding: 6px 2px;
     background: #0a1219;
     border: 1px solid #2d4560;
-    color: #b6c8da;
+    color: #e2edf8;
     border-radius: 3px;
     box-sizing: border-box;
+    text-align: center;
+    font: bold 20px monospace;
+    appearance: textfield;
+    touch-action: none;
+    cursor: ns-resize;
+}
+
+.timer-dial input::-webkit-inner-spin-button,
+.timer-dial input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.timer-dial-arrow {
+    border: 0;
+    padding: 4px;
+    background: transparent;
+    color: #9dc9ff;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.timer-dial-arrow:hover {
+    color: #fff;
+}
+
+.timer-dial-arrow:focus-visible,
+.timer-dial input:focus-visible {
+    outline: 2px solid #88c5ff;
+    outline-offset: 2px;
 }
 
 .timer-start small {

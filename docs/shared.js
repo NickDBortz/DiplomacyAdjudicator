@@ -935,33 +935,63 @@ function formatSeconds(seconds) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-function formatDuration(seconds) {
-    if (seconds < 60) return `${seconds} seconds`;
-    if (seconds < 3600) return `${Math.round(seconds / 60)} minutes`;
-    return `${(seconds / 3600).toFixed(1)} hours`;
+function initTimerDial(dial) {
+    const input = dial.querySelector('input');
+    const min = Number(input.min);
+    const max = Number(input.max);
+    const setValue = value => {
+        input.value = String(Math.max(min, Math.min(max, value))).padStart(2, '0');
+    };
+    const currentValue = () => {
+        const value = Number(input.value);
+        return input.value !== '' && Number.isInteger(value) ? Math.max(min, Math.min(max, value)) : min;
+    };
+
+    setValue(currentValue());
+    for (const button of dial.querySelectorAll('[data-step]')) {
+        button.addEventListener('click', () => setValue(currentValue() + Number(button.dataset.step)));
+    }
+    input.addEventListener('blur', () => {
+        if (input.value !== '' && input.validity.valid) setValue(Number(input.value));
+    });
+
+    let drag = null;
+    input.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        drag = { id: event.pointerId, y: event.clientY, value: currentValue(), moved: false };
+        input.setPointerCapture(event.pointerId);
+    });
+    input.addEventListener('pointermove', event => {
+        if (!drag || event.pointerId !== drag.id) return;
+        const steps = Math.trunc((drag.y - event.clientY) / 12);
+        if (steps) drag.moved = true;
+        if (drag.moved) setValue(drag.value + steps);
+    });
+    input.addEventListener('lostpointercapture', () => { drag = null; });
 }
 
 function initTimerControls() {
     const timerSection = document.getElementById('diplomacy-timer-section');
     if (!timerSection) return;
     
-    const durationInput = document.getElementById('timer-duration');
-    const durationDisplay = document.getElementById('timer-duration-display');
+    const timerStart = document.getElementById('timer-start');
     const startBtn = document.getElementById('timer-start-btn');
     const extendBtn = document.getElementById('timer-extend');
     const endBtn = document.getElementById('timer-end-early');
     
-    if (durationInput && durationDisplay) {
-        durationInput.addEventListener('input', () => {
-            durationDisplay.textContent = formatDuration(parseInt(durationInput.value) || 0);
-        });
-    }
+    if (timerStart) timerStart.querySelectorAll('.timer-dial').forEach(initTimerDial);
     
     if (startBtn) {
         startBtn.addEventListener('click', async () => {
-            const duration = parseInt(durationInput.value);
-            if (!duration || duration < 300 || duration > 86400) {
-                alert('Duration must be between 5 minutes (300 seconds) and 24 hours (86400 seconds)');
+            const inputs = ['timer-hours', 'timer-minutes', 'timer-seconds'].map(id => document.getElementById(id));
+            const values = inputs.map(input => Number(input.value));
+            if (inputs.some((input, index) => input.value === '' || !Number.isInteger(values[index]) || !input.validity.valid)) {
+                alert('Enter valid whole numbers for hours, minutes, and seconds.');
+                return;
+            }
+            const duration = values[0] * 3600 + values[1] * 60 + values[2];
+            if (duration < 300 || duration > 86400) {
+                alert('Duration must be between 5 minutes and 24 hours.');
                 return;
             }
             const reply = await sendHostAction(startBtn, { 

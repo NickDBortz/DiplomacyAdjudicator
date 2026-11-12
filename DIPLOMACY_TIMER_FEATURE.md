@@ -7,6 +7,7 @@ This feature adds a real-time timer system for the Diplomacy negotiation phase. 
 
 ### 1. Timer Management (Backend - Python/FastAPI)
 - **Start Timer**: Host initiates a Diplomacy phase timer with a duration (300-86400 seconds)
+- The duration selector defaults to 15 minutes. Adjust the hour, minute, and second dials by dragging, using the arrows, or typing.
 - **Extend Timer**: Host can add time to an active timer
 - **End Timer**: Host can terminate the timer early
 - **Timer State**: Synced server time ensures all clients see the same countdown
@@ -84,7 +85,7 @@ This feature adds a real-time timer system for the Diplomacy negotiation phase. 
    - `startTimerUpdate()` - starts 100ms interval updates
    - `stopTimerUpdate()` - stops timer updates
    - `formatSeconds()` - converts seconds to MM:SS
-   - `formatDuration()` - human-readable duration (5 min, 1.5 hours, etc.)
+   - `initTimerDial()` - configures duration dial controls
 
 2. **UI Elements**:
    - Dedicated `#diplomacy-timer-section` in sidebar
@@ -94,7 +95,7 @@ This feature adds a real-time timer system for the Diplomacy negotiation phase. 
 
 3. **HTML Changes**:
    - Added timer section to both `multiplayer-host.html` and `multiplayer-client.html`
-   - Duration input with range validation (300-86400 seconds)
+   - Hour, minute, and second dials with total-duration validation (300-86400 seconds)
    - Modal reuses existing confirm-modal for override warning
 
 4. **CSS Styling** (`style.css`):

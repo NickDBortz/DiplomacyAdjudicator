@@ -65,9 +65,28 @@
             </div>
           </div>
           <div id="timer-start" class="timer-start">
-            <label for="timer-duration">Duration (5 min to 24 hours):</label>
-            <input id="timer-duration" type="number" min="300" max="86400" value="1800" step="60">
-            <small id="timer-duration-display">30 minutes</small>
+            <p class="timer-duration-label">Duration (5 minutes to 24 hours)</p>
+            <div class="timer-dials" role="group" aria-label="Timer duration">
+              <div class="timer-dial">
+                <label for="timer-hours">Hours</label>
+                <button type="button" class="timer-dial-arrow" data-step="1" aria-label="Increase hours">&#9650;</button>
+                <input id="timer-hours" type="number" min="0" max="24" step="1" value="0" inputmode="numeric">
+                <button type="button" class="timer-dial-arrow" data-step="-1" aria-label="Decrease hours">&#9660;</button>
+              </div>
+              <div class="timer-dial">
+                <label for="timer-minutes">Minutes</label>
+                <button type="button" class="timer-dial-arrow" data-step="1" aria-label="Increase minutes">&#9650;</button>
+                <input id="timer-minutes" type="number" min="0" max="59" step="1" value="15" inputmode="numeric">
+                <button type="button" class="timer-dial-arrow" data-step="-1" aria-label="Decrease minutes">&#9660;</button>
+              </div>
+              <div class="timer-dial">
+                <label for="timer-seconds">Seconds</label>
+                <button type="button" class="timer-dial-arrow" data-step="1" aria-label="Increase seconds">&#9650;</button>
+                <input id="timer-seconds" type="number" min="0" max="59" step="1" value="0" inputmode="numeric">
+                <button type="button" class="timer-dial-arrow" data-step="-1" aria-label="Decrease seconds">&#9660;</button>
+              </div>
+            </div>
+            <small>Drag a number up or down, use the arrows, or type a value.</small>
             <button id="timer-start-btn" class="btn">Start Timer</button>
           </div>
         </div>
