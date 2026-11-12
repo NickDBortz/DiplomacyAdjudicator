@@ -5,6 +5,7 @@ const secretToken = sessionStorage.getItem('secretToken');
 
 const powerSelect = document.getElementById('power-select');
 const mapSelect = document.getElementById('map-select');
+const rulesetControls = document.getElementById('ruleset-controls');
 const startBtn = document.getElementById('start-game');
 const waitEl = document.getElementById('lobby-wait');
 const savedGameFile = document.getElementById('saved-game-file');
@@ -60,7 +61,11 @@ function applySnapshot(snapshot) {
     gameInfo.host = snapshot.host;
     const isHost = snapshot.host === playerName;
     mapSelect.disabled = !isHost;
+    rulesetControls.disabled = !isHost || snapshot.started;
     powerSelect.disabled = Boolean(snapshot.prepared_save);
+    for (const radio of rulesetControls.querySelectorAll('input[name="ruleset"]')) {
+        radio.checked = radio.value === (snapshot.ruleset || 'normal');
+    }
     startBtn.classList.toggle('hidden', !isHost);
     document.getElementById('host-load-controls').classList.toggle('hidden', !isHost);
     const allReady = snapshot.players.every(p => snapshot.selected_powers[p]);
@@ -94,6 +99,12 @@ powerSelect.addEventListener('change', () => {
 
 mapSelect.addEventListener('change', () => {
     ws.send(JSON.stringify({ type: 'set_map', settings: { map: mapSelect.value } }));
+});
+
+rulesetControls.addEventListener('change', event => {
+    if (event.target.name === 'ruleset') {
+        ws.send(JSON.stringify({ type: 'set_ruleset', ruleset: event.target.value }));
+    }
 });
 
 startBtn.addEventListener('click', () => {

@@ -26,6 +26,21 @@
 
         <p class="section-header">Settings</p>
         <select id="map-select" disabled></select>
+        <fieldset id="ruleset-controls" class="ruleset-controls">
+          <legend>Chat rules</legend>
+          <label class="ruleset-option">
+            <input type="radio" name="ruleset" value="normal" checked>
+            <span><strong>Normal Mode</strong><small>Chat works as usual, including private messages during the Diplomacy timer.</small></span>
+          </label>
+          <label class="ruleset-option">
+            <input type="radio" name="ruleset" value="gunboard">
+            <span><strong>Gunboard rules</strong><small>Chat is completely disabled. Recommended for 2-4 players.</small></span>
+          </label>
+          <label class="ruleset-option">
+            <input type="radio" name="ruleset" value="public_press">
+            <span><strong>Public Press rules</strong><small>Public chat is open, but private chat is disabled. Recommended for 4-5 players.</small></span>
+          </label>
+        </fieldset>
         <p id="lobby-wait" class="menu-message hidden">Waiting for the host to start the game.</p>
 
         <div id="host-load-controls" class="host-controls hidden">

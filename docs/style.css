@@ -367,6 +367,45 @@ body {
     padding-bottom: 6px;
 }
 
+.ruleset-controls {
+    display: grid;
+    gap: 8px;
+    margin: 0 16px 16px;
+    padding: 10px;
+    color: #c4d2e0;
+    border: 1px solid #30445b;
+    border-radius: 6px;
+}
+
+.ruleset-controls legend {
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.ruleset-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.ruleset-option input {
+    margin: 3px 0 0;
+    accent-color: #4a90e2;
+}
+
+.ruleset-option span {
+    display: grid;
+    gap: 2px;
+}
+
+.ruleset-option small {
+    color: #a9bfd3;
+    line-height: 1.35;
+}
+
 .sidebar select {
     width: calc(100% - 32px);
     margin: 0 16px 16px;
@@ -1048,6 +1087,10 @@ body {
     align-items: flex-start;
     gap: 8px;
     max-width: calc(100vw - 32px);
+}
+
+.chat.hidden {
+    display: none;
 }
 
 .chat-toggle {

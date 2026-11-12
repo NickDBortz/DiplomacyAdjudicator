@@ -39,6 +39,7 @@ CHAT_MAX_LENGTH = 500
 CHAT_HISTORY_LIMIT = 200  # per conversation; older messages are dropped
 CHAT_RATE_COUNT = 5  # at most this many messages per CHAT_RATE_SECONDS from one player
 CHAT_RATE_SECONDS = 5
+CHAT_RULESETS = {'normal', 'gunboard', 'public_press'}
 
 app = FastAPI(title='Diplomacy Adjudicator')
 app.add_middleware(
@@ -90,6 +91,7 @@ def _get_client_safe_lobby(lobby):
         'host': lobby['host'],
         'started': lobby['started'],
         'settings': lobby['settings'],
+        'ruleset': lobby.get('ruleset', 'normal'),
         'players': [{'user_name': player['user_name'], 'selected_power': player['selected_power']} for player in lobby['players']]
     }
 
@@ -150,6 +152,7 @@ def _snapshot(lobby):
         'connected_players': sorted(_connected_names(lobby)),
         'host': lobby['host'],
         'started': lobby['started'],
+        'ruleset': lobby.get('ruleset', 'normal'),
         'settings': lobby['settings'],
         'prepared_save': lobby.get('prepared_save'),
         'vacant_powers': _vacant_powers(lobby),
@@ -191,6 +194,7 @@ def open_lobby(lobby_request: LobbyRequest):
             'hash': hash,
             'host': user_name,
             'started': False,
+            'ruleset': 'normal',
             'settings': {'map': DEFAULT_MAP},
             'players': [{'user_name': user_name, 'selected_power': None, 'secret_token': secret_token}],
             'accepting_joins': False,
@@ -868,12 +872,16 @@ def _can_private_chat(lobby, user_name):
     return timer is not None and timer.get('active', False)
 
 def _chat_history(lobby, user_name):
-    """The lobby channel plus this player's own private conversations, oldest first."""
+    """The channels allowed by this lobby's ruleset, oldest first."""
     chat = _chat(lobby)
+    ruleset = lobby.get('ruleset', 'normal')
+    if ruleset == 'gunboard':
+        return []
     messages = list(chat['lobby'])
-    for pair, conversation in chat['private'].items():
-        if user_name in pair:
-            messages.extend(conversation)
+    if ruleset == 'normal':
+        for pair, conversation in chat['private'].items():
+            if user_name in pair:
+                messages.extend(conversation)
     return sorted(messages, key=lambda m: m['id'])
 
 def _forget_chat(lobby, user_name):
@@ -887,6 +895,10 @@ def _send_chat(lobby, user_name, msg):
     """Returns (reply, recipients, payload); recipients is None when the message goes to the whole lobby."""
     def fail(error):
         return {'type': 'chat_result', 'ok': False, 'error': error}, None, None
+
+    ruleset = lobby.get('ruleset', 'normal')
+    if ruleset == 'gunboard':
+        return fail('Chat is disabled in Gunboard rules.')
 
     text = msg.get('text')
     if not isinstance(text, str) or not text.strip():
@@ -906,6 +918,8 @@ def _send_chat(lobby, user_name, msg):
         recipients = None
         conversation = chat['lobby']
     elif channel == 'private':
+        if ruleset == 'public_press':
+            return fail('Private chat is disabled in Public Press rules.')
         to = msg.get('to')
         if not lobby['started']:
             return fail('Private messages are only available during a game.')
@@ -957,7 +971,7 @@ async def _handle_message(lobby_id, user_name, raw):
     except ValueError:
         return
     kind = msg.get('type') if isinstance(msg, dict) else None
-    if kind not in ('set_map', 'set_power', 'start_game', 'load_saved_game', 'chat_send', *GAME_REPLY_TYPES, *HOST_ACTIONS):
+    if kind not in ('set_map', 'set_ruleset', 'set_power', 'start_game', 'load_saved_game', 'chat_send', *GAME_REPLY_TYPES, *HOST_ACTIONS):
         return
 
     reply = None
@@ -1010,6 +1024,13 @@ async def _handle_message(lobby_id, user_name, raw):
             for player in lobby['players']:
                 player['selected_power'] = None
             payload = {'type': 'lobby_update', 'event': 'map_change', 'user_name': user_name, **_snapshot(lobby)}
+        elif kind == 'set_ruleset':
+            ruleset = msg.get('ruleset')
+            if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
+                reply = {'type': 'error', 'message': 'Unknown chat rules.'}
+            else:
+                lobby['ruleset'] = ruleset
+                payload = {'type': 'lobby_update', 'event': 'ruleset_change', **_snapshot(lobby)}
         elif kind == 'load_saved_game':
             try:
                 prepared = _restore_lobby_game(lobby, msg.get('save_data'))
