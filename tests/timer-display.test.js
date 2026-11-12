@@ -19,7 +19,8 @@ function createScreen(host) {
             },
             textContent: '',
             innerHTML: '',
-            appendChild() {},
+            children: [],
+            appendChild(child) { this.children.push(child); },
         };
     }
     const elements = {
@@ -75,20 +76,21 @@ test('both game pages place timer banners above the map and sidebar content', ()
 
 test('host can see start form before a timer and after it ends', () => {
     const { context, elements, gameInfo, tick } = createScreen(true);
-    context.applyGameState({ valid_orders: [] });
+    context.applyGameState({ valid_orders: [], selected_powers: { Alice: 'France', Bob: 'England' } });
     assert.equal(hidden(elements, 'diplomacy-timer-section'), false);
     assert.equal(hidden(elements, 'timer-start'), false);
     assert.equal(hidden(elements, 'timer-display'), true);
     assert.equal(hidden(elements, 'main-timer-banner'), true);
     assert.equal(hidden(elements, 'sidebar-timer-banner'), true);
 
-    const timer = { active: true, start_time: Date.now() / 1000, duration: 1800, player_ready: {} };
+    const timer = { active: true, start_time: Date.now() / 1000, duration: 1800, player_ready: { Alice: true, Bob: false } };
     context.handleGameMessage({ type: 'lobby_update', host: 'Alice', timer });
     assert.equal(gameInfo.state.diplomacy_timer, timer);
     assert.equal(hidden(elements, 'timer-start'), true);
     assert.equal(hidden(elements, 'timer-display'), false);
     assert.equal(hidden(elements, 'main-timer-banner'), false);
     assert.equal(hidden(elements, 'sidebar-timer-banner'), false);
+    assert.deepEqual(elements['timer-player-status'].children.map(item => item.textContent), ['Bob: ○']);
     tick();
     assert.match(elements['timer-countdown'].textContent, /^30:00$|^29:59$/);
     assert.equal(elements['sidebar-timer-countdown'].textContent, elements['timer-countdown'].textContent);

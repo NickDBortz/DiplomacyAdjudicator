@@ -1081,7 +1081,7 @@ function updateTimerDisplay(timer) {
         const readyMap = timer.player_ready || {};
         
         for (const [playerName, power] of Object.entries(powers)) {
-            if (power === 'Spectator') continue;
+            if (playerName === gameInfo.host || power === 'Spectator') continue;
             const li = document.createElement('li');
             li.className = 'player-ready-item' + (readyMap[playerName] ? ' ready' : ' not-ready');
             const status = readyMap[playerName] ? '✓' : '○';
