@@ -16,6 +16,8 @@ const chatState = {
     players: [],
     powers: {},
     started: false,
+    timerActive: false,
+    ruleset: 'normal',
     el: null,
 };
 
@@ -38,7 +40,12 @@ function holdsPower(name) {
 }
 
 function canPrivateChat() {
-    return chatState.started && holdsPower(chatState.userName);
+    return chatState.started && chatState.timerActive && holdsPower(chatState.userName);
+}
+
+function privateChatPartners() {
+    if (chatState.ruleset !== 'normal' || !canPrivateChat()) return [];
+    return chatState.players.filter(p => p !== chatState.userName && holdsPower(p));
 }
 
 function unreadCount(conversation) {
@@ -52,6 +59,7 @@ function totalUnread() {
 }
 
 function chatConversations() {
+    if (chatState.ruleset !== 'normal') return [LOBBY_CONVERSATION];
     const privates = new Set(chatState.opened);
     for (const m of chatState.messages) {
         if (m.channel === 'private') privates.add(conversationOf(m));
@@ -165,6 +173,9 @@ function selectConversation(conversation) {
 function renderChat() {
     const el = chatState.el;
     if (!el) return;
+    const disabled = chatState.ruleset === 'gunboard';
+    el.root.classList.toggle('hidden', disabled);
+    if (disabled) return;
     const conversations = chatConversations();
     if (!conversations.includes(chatState.active)) chatState.active = LOBBY_CONVERSATION;
 
@@ -193,8 +204,7 @@ function renderChat() {
     }
 
     // Private messages are part of the game: only players who control a power can start or answer them.
-    const partners = canPrivateChat()
-        ? chatState.players.filter(p => p !== chatState.userName && holdsPower(p)) : [];
+    const partners = privateChatPartners();
     el.newPrivate.classList.toggle('hidden', partners.length === 0);
     el.newPrivate.innerHTML = '';
     el.newPrivate.appendChild(new Option('Private message…', ''));
@@ -203,7 +213,9 @@ function renderChat() {
     const partner = conversationPartner(chatState.active);
     el.title.textContent = partner ? `Private: ${partner}` : (chatState.started ? 'Chat with everyone' : 'Lobby chat');
     let blocked = '';
-    if (partner && !canPrivateChat()) blocked = 'Only players who control a power can send private messages.';
+    if (partner && !chatState.started) blocked = 'Private messages are only available during a game.';
+    else if (partner && !holdsPower(chatState.userName)) blocked = 'Only players who control a power can send private messages.';
+    else if (partner && !chatState.timerActive) blocked = 'Private messages are only available during an active Diplomacy timer.';
     else if (partner && !chatState.players.includes(partner)) blocked = `${partner} has left the game.`;
     else if (partner && !holdsPower(partner)) blocked = `${partner} no longer controls a power.`;
     el.note.textContent = blocked;
@@ -314,10 +326,19 @@ function chatReceive(msg) {
         chatState.players = msg.players || chatState.players;
         chatState.powers = msg.selected_powers || chatState.powers;
         chatState.started = Boolean(msg.started);
+        if ('ruleset' in msg) chatState.ruleset = msg.ruleset;
+        if ('timer' in msg) chatState.timerActive = Boolean(msg.timer && msg.timer.active);
+    } else if (msg.type === 'game_started') {
+        chatState.players = msg.players || chatState.players;
+        chatState.powers = msg.selected_powers || chatState.powers;
+        chatState.started = true;
+        if ('ruleset' in msg) chatState.ruleset = msg.ruleset;
     } else if (msg.type === 'game_state') {
         chatState.players = msg.state.lobby_players || chatState.players;
         chatState.powers = msg.state.selected_powers || chatState.powers;
         chatState.started = true;
+        if ('ruleset' in msg.state) chatState.ruleset = msg.state.ruleset;
+        chatState.timerActive = Boolean(msg.state.diplomacy_timer && msg.state.diplomacy_timer.active);
     } else {
         return;
     }

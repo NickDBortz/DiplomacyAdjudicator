@@ -1,0 +1,107 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const vm = require('node:vm');
+
+const source = fs.readFileSync(path.join(__dirname, '..', 'docs', 'chat.js'), 'utf8');
+const lobbySource = fs.readFileSync(path.join(__dirname, '..', 'docs', 'lobby.js'), 'utf8');
+
+function createEligibilityContext() {
+    const context = vm.createContext({
+        LOBBY_CONVERSATION: 'lobby',
+        sessionStorage: {},
+        renderChat() {},
+    });
+    vm.runInContext(source.slice(source.indexOf('const chatState ='), source.indexOf('function unreadCount(')), context);
+    return context;
+}
+
+test('private chat eligibility requires a game, an active timer, and a power', () => {
+    const context = createEligibilityContext();
+    const canChat = values => vm.runInContext(`
+        Object.assign(chatState, ${JSON.stringify(values)});
+        canPrivateChat();
+    `, context);
+    const partners = values => vm.runInContext(`
+        Object.assign(chatState, ${JSON.stringify(values)});
+        privateChatPartners();
+    `, context);
+
+    assert.equal(canChat({ started: true, timerActive: false, userName: 'Alice', powers: { Alice: 'France' } }), false);
+    assert.equal(canChat({ started: true, timerActive: true, userName: 'Alice', powers: { Alice: 'France' } }), true);
+    assert.equal(canChat({ started: true, timerActive: true, userName: 'Alice', powers: { Alice: 'Spectator' } }), false);
+    assert.equal(partners({
+        started: true, timerActive: true, ruleset: 'public_press', userName: 'Alice',
+        powers: { Alice: 'France', Bob: 'England' }, players: ['Alice', 'Bob'],
+    }).length, 0);
+    assert.equal(partners({
+        started: true, timerActive: true, ruleset: 'normal', userName: 'Alice',
+        powers: { Alice: 'France', Bob: 'England' }, players: ['Alice', 'Bob'],
+    }).length, 1);
+});
+
+test('chat timer updates control private chat eligibility', () => {
+    const context = createEligibilityContext();
+    vm.runInContext(`
+        chatState.el = {};
+        chatState.userName = 'Alice';
+        chatState.powers = { Alice: 'France' };
+        chatState.started = true;
+    `, context);
+    const start = source.indexOf('function chatReceive(');
+    const end = source.indexOf('\nfunction initChat(', start);
+    vm.runInContext(source.slice(start, end), context);
+
+    vm.runInContext("chatReceive({ type: 'lobby_update', started: true, timer: { active: true } })", context);
+    assert.equal(vm.runInContext('canPrivateChat()', context), true);
+
+    vm.runInContext("chatReceive({ type: 'lobby_update', started: true, timer: { active: false } })", context);
+    assert.equal(vm.runInContext('canPrivateChat()', context), false);
+
+    vm.runInContext("chatReceive({ type: 'game_state', state: { diplomacy_timer: { active: true } } })", context);
+    assert.equal(vm.runInContext('canPrivateChat()', context), true);
+
+    vm.runInContext("chatReceive({ type: 'game_started', ruleset: 'public_press' })", context);
+    assert.equal(vm.runInContext("chatState.ruleset", context), 'public_press');
+    assert.equal(vm.runInContext('privateChatPartners().length', context), 0);
+});
+
+test('starting the game sends the selected chat ruleset to the server', () => {
+    const messages = [];
+    const context = vm.createContext({
+        rulesetControls: {
+            querySelector: () => ({ value: 'public_press' }),
+        },
+        ws: { send: message => messages.push(message) },
+    });
+    const start = lobbySource.indexOf('function startGame()');
+    const end = lobbySource.indexOf('\nstartBtn.addEventListener(', start);
+    vm.runInContext(lobbySource.slice(start, end), context);
+    vm.runInContext('startGame()', context);
+
+    assert.deepEqual(JSON.parse(messages[0]), { type: 'start_game', ruleset: 'public_press' });
+});
+
+test('lobby clients mirror the host-selected ruleset from server snapshots', () => {
+    const radios = ['normal', 'gunboard', 'public_press'].map(value => {
+        const classes = new Set();
+        return {
+            value,
+            checked: false,
+            closest: () => ({ classList: { toggle: (name, force) => force ? classes.add(name) : classes.delete(name) } }),
+            classes,
+        };
+    });
+    const context = vm.createContext({
+        rulesetControls: { querySelectorAll: () => radios },
+    });
+    const start = lobbySource.indexOf('function updateRulesetSelection(');
+    const end = lobbySource.indexOf('\nfunction applySnapshot(', start);
+    vm.runInContext(lobbySource.slice(start, end), context);
+
+    vm.runInContext("updateRulesetSelection('public_press')", context);
+
+    assert.deepEqual(radios.filter(radio => radio.checked).map(radio => radio.value), ['public_press']);
+    assert.deepEqual(radios.filter(radio => radio.classes.has('selected')).map(radio => radio.value), ['public_press']);
+});
