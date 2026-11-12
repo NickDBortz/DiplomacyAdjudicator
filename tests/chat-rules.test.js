@@ -82,3 +82,26 @@ test('starting the game sends the selected chat ruleset to the server', () => {
 
     assert.deepEqual(JSON.parse(messages[0]), { type: 'start_game', ruleset: 'public_press' });
 });
+
+test('lobby clients mirror the host-selected ruleset from server snapshots', () => {
+    const radios = ['normal', 'gunboard', 'public_press'].map(value => {
+        const classes = new Set();
+        return {
+            value,
+            checked: false,
+            closest: () => ({ classList: { toggle: (name, force) => force ? classes.add(name) : classes.delete(name) } }),
+            classes,
+        };
+    });
+    const context = vm.createContext({
+        rulesetControls: { querySelectorAll: () => radios },
+    });
+    const start = lobbySource.indexOf('function updateRulesetSelection(');
+    const end = lobbySource.indexOf('\nfunction applySnapshot(', start);
+    vm.runInContext(lobbySource.slice(start, end), context);
+
+    vm.runInContext("updateRulesetSelection('public_press')", context);
+
+    assert.deepEqual(radios.filter(radio => radio.checked).map(radio => radio.value), ['public_press']);
+    assert.deepEqual(radios.filter(radio => radio.classes.has('selected')).map(radio => radio.value), ['public_press']);
+});

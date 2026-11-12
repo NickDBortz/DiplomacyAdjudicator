@@ -56,6 +56,14 @@ async function showPreview(mapId) {
     if (lastSnapshot) renderPlayerList(lastSnapshot.players, playerName, lastSnapshot.selected_powers, lastSnapshot.connected_players);
 }
 
+function updateRulesetSelection(ruleset) {
+    const selectedRuleset = ruleset || 'normal';
+    for (const radio of rulesetControls.querySelectorAll('input[name="ruleset"]')) {
+        radio.checked = radio.value === selectedRuleset;
+        radio.closest('.ruleset-option').classList.toggle('selected', radio.checked);
+    }
+}
+
 function applySnapshot(snapshot) {
     lastSnapshot = snapshot;
     gameInfo.host = snapshot.host;
@@ -63,9 +71,7 @@ function applySnapshot(snapshot) {
     mapSelect.disabled = !isHost;
     rulesetControls.disabled = !isHost || snapshot.started;
     powerSelect.disabled = Boolean(snapshot.prepared_save);
-    for (const radio of rulesetControls.querySelectorAll('input[name="ruleset"]')) {
-        radio.checked = radio.value === (snapshot.ruleset || 'normal');
-    }
+    updateRulesetSelection(snapshot.ruleset);
     startBtn.classList.toggle('hidden', !isHost);
     document.getElementById('host-load-controls').classList.toggle('hidden', !isHost);
     const allReady = snapshot.players.every(p => snapshot.selected_powers[p]);

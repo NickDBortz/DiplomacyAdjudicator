@@ -387,8 +387,14 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 8px;
+    padding: 5px;
     cursor: pointer;
     font-size: 13px;
+}
+
+.ruleset-option.selected {
+    background: #223b55;
+    border-radius: 4px;
 }
 
 .ruleset-option input {
