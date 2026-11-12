@@ -375,19 +375,7 @@ function applyGameState(state) {
             : 'No available orders for this power.');
     }
     
-    // Update timer display
-    if (state.diplomacy_timer) {
-        updateTimerDisplay(state.diplomacy_timer);
-        if (state.diplomacy_timer.active) {
-            startTimerUpdate();
-        } else {
-            stopTimerUpdate();
-        }
-    } else {
-        stopTimerUpdate();
-        const timerSection = document.getElementById('diplomacy-timer-section');
-        if (timerSection) timerSection.classList.add('hidden');
-    }
+    updateTimerState(state.diplomacy_timer);
 }
 
 let availableOrders = [];
@@ -824,6 +812,10 @@ function handleGameMessage(msg) {
         updateGameRole();
         renderGameInfo();
         renderHostTools(msg);
+        if ('timer' in msg) {
+            if (gameInfo.state) gameInfo.state.diplomacy_timer = msg.timer;
+            updateTimerState(msg.timer);
+        }
     } else if (msg.type === 'game_state') {
         applyGameState(msg.state);
     } else if (['order_result', 'order_delete_result', 'draw_result', 'reveal_result', 'resolve_result', 'kick_result'].includes(msg.type)) {
@@ -1032,14 +1024,11 @@ function updateTimerDisplay(timer) {
     
     if (!timerSection) return;
     
-    if (!timer || !timer.active) {
-        timerSection.classList.add('hidden');
-        return;
-    }
-    
-    timerSection.classList.remove('hidden');
-    timerDisplay.classList.remove('hidden');
-    timerStart.classList.add('hidden');
+    const active = Boolean(timer && timer.active);
+    timerSection.classList.toggle('hidden', !active && !timerStart);
+    timerDisplay.classList.toggle('hidden', !active);
+    if (timerStart) timerStart.classList.toggle('hidden', active);
+    if (!active) return;
     
     // Update countdown
     const now = Date.now() / 1000;
@@ -1061,6 +1050,15 @@ function updateTimerDisplay(timer) {
             li.textContent = `${playerName}: ${status}`;
             playerStatus.appendChild(li);
         }
+    }
+}
+
+function updateTimerState(timer) {
+    updateTimerDisplay(timer);
+    if (timer?.active) {
+        startTimerUpdate();
+    } else {
+        stopTimerUpdate();
     }
 }
 
