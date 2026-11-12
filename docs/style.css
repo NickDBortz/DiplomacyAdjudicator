@@ -1444,3 +1444,34 @@ body {
         transition: none;
     }
 }
+
+#menu.menu-with-disclaimer:not(.hidden) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(min-content, 1fr);
+    justify-items: center;
+    gap: 16px;
+    padding: 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+#menu.menu-with-disclaimer .menu-content {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.disclaimer {
+    max-width: 760px;
+    color: #ff9494;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.disclaimer h3 {
+    margin: 0 0 4px;
+}
+
+.disclaimer p {
+    margin: 0;
+}
