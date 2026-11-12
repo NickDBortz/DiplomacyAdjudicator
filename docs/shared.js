@@ -374,6 +374,8 @@ function applyGameState(state) {
             ? 'Orders are revealed; wait for the host to resolve them.'
             : 'No available orders for this power.');
     }
+    
+    updateTimerState(state.diplomacy_timer);
 }
 
 let availableOrders = [];
@@ -810,6 +812,10 @@ function handleGameMessage(msg) {
         updateGameRole();
         renderGameInfo();
         renderHostTools(msg);
+        if ('timer' in msg) {
+            if (gameInfo.state) gameInfo.state.diplomacy_timer = msg.timer;
+            updateTimerState(msg.timer);
+        }
     } else if (msg.type === 'game_state') {
         applyGameState(msg.state);
     } else if (['order_result', 'order_delete_result', 'draw_result', 'reveal_result', 'resolve_result', 'kick_result'].includes(msg.type)) {
@@ -918,6 +924,198 @@ function initHostTools() {
         const reply = await sendHostAction(assign, { type: 'assign_power', user_name: userName, power }, 'assign_power_result');
         if (reply.ok) assign.disabled = false;
     });
+    
+    // Timer controls
+    initTimerControls();
+}
+
+function formatSeconds(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function initTimerDial(dial) {
+    const input = dial.querySelector('input');
+    const min = Number(input.min);
+    const max = Number(input.max);
+    const setValue = value => {
+        input.value = String(Math.max(min, Math.min(max, value))).padStart(2, '0');
+    };
+    const currentValue = () => {
+        const value = Number(input.value);
+        return input.value !== '' && Number.isInteger(value) ? Math.max(min, Math.min(max, value)) : min;
+    };
+
+    setValue(currentValue());
+    for (const button of dial.querySelectorAll('[data-step]')) {
+        button.addEventListener('click', () => setValue(currentValue() + Number(button.dataset.step)));
+    }
+    input.addEventListener('blur', () => {
+        if (input.value !== '' && input.validity.valid) setValue(Number(input.value));
+    });
+
+    let drag = null;
+    input.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        drag = { id: event.pointerId, y: event.clientY, value: currentValue(), moved: false };
+        input.setPointerCapture(event.pointerId);
+    });
+    input.addEventListener('pointermove', event => {
+        if (!drag || event.pointerId !== drag.id) return;
+        const steps = Math.trunc((drag.y - event.clientY) / 12);
+        if (steps) drag.moved = true;
+        if (drag.moved) setValue(drag.value + steps);
+    });
+    input.addEventListener('lostpointercapture', () => { drag = null; });
+}
+
+function initTimerControls() {
+    const timerSection = document.getElementById('diplomacy-timer-section');
+    if (!timerSection) return;
+    
+    const timerStart = document.getElementById('timer-start');
+    const startBtn = document.getElementById('timer-start-btn');
+    const extendBtn = document.getElementById('timer-extend');
+    const endBtn = document.getElementById('timer-end-early');
+    
+    if (timerStart) timerStart.querySelectorAll('.timer-dial').forEach(initTimerDial);
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
+            const inputs = ['timer-hours', 'timer-minutes', 'timer-seconds'].map(id => document.getElementById(id));
+            const values = inputs.map(input => Number(input.value));
+            if (inputs.some((input, index) => input.value === '' || !Number.isInteger(values[index]) || !input.validity.valid)) {
+                alert('Enter valid whole numbers for hours, minutes, and seconds.');
+                return;
+            }
+            const duration = values[0] * 3600 + values[1] * 60 + values[2];
+            if (duration < 300 || duration > 86400) {
+                alert('Duration must be between 5 minutes and 24 hours.');
+                return;
+            }
+            const reply = await sendHostAction(startBtn, { 
+                type: 'start_diplomacy_timer', 
+                duration: duration 
+            }, 'diplomacy_timer_result');
+            if (reply.ok) startBtn.disabled = false;
+        });
+    }
+    
+    if (extendBtn) {
+        extendBtn.addEventListener('click', async () => {
+            const additional = prompt('Add how many minutes?', '10');
+            if (!additional) return;
+            const additionalSeconds = parseInt(additional) * 60;
+            if (additionalSeconds <= 0 || additionalSeconds > 86400) {
+                alert('Extension must be between 1 second and 24 hours');
+                return;
+            }
+            const reply = await sendHostAction(extendBtn, { 
+                type: 'extend_diplomacy_timer', 
+                additional: additionalSeconds 
+            }, 'diplomacy_timer_result');
+            if (reply.ok) extendBtn.disabled = false;
+        });
+    }
+    
+    if (endBtn) {
+        endBtn.addEventListener('click', async () => {
+            confirmAction('End Timer', 'End the Diplomacy phase timer?', async () => {
+                const reply = await sendHostAction(endBtn, {
+                    type: 'end_diplomacy_timer'
+                }, 'diplomacy_timer_result');
+                if (reply.ok) endBtn.disabled = false;
+            });
+        });
+    }
+    
+    const playerDoneBtn = document.getElementById('player-done-btn');
+    if (playerDoneBtn) {
+        playerDoneBtn.addEventListener('click', async () => {
+            const isCurrentlyReady = playerDoneBtn.classList.contains('ready');
+            const reply = await sendForReply({
+                type: 'mark_player_done',
+                ready: !isCurrentlyReady
+            }, 'player_done_result');
+            if (reply.ok) {
+                playerDoneBtn.classList.toggle('ready');
+                playerDoneBtn.textContent = isCurrentlyReady ? 'Mark as Done' : 'Mark as Not Done';
+            }
+        });
+    }
+}
+
+function updateTimerDisplay(timer) {
+    const timerSection = document.getElementById('diplomacy-timer-section');
+    const timerDisplay = document.getElementById('timer-display');
+    const timerStart = document.getElementById('timer-start');
+    const countdown = document.getElementById('timer-countdown');
+    const sidebarCountdown = document.getElementById('sidebar-timer-countdown');
+    const playerStatus = document.getElementById('timer-player-status');
+    
+    if (!timerSection) return;
+    
+    const active = Boolean(timer && timer.active);
+    for (const id of ['main-timer-banner', 'sidebar-timer-banner']) {
+        const banner = document.getElementById(id);
+        if (banner) banner.classList.toggle('hidden', !active);
+    }
+    timerSection.classList.toggle('hidden', !active && !timerStart);
+    timerDisplay.classList.toggle('hidden', !active);
+    if (timerStart) timerStart.classList.toggle('hidden', active);
+    if (!active) return;
+    
+    // Update countdown
+    const now = Date.now() / 1000;
+    const elapsed = now - timer.start_time;
+    const remaining = Math.max(0, timer.duration - elapsed);
+    const timeText = formatSeconds(Math.ceil(remaining));
+    if (countdown) countdown.textContent = timeText;
+    if (sidebarCountdown) sidebarCountdown.textContent = timeText;
+    
+    // Update player ready status (only for host view)
+    if (playerStatus && gameInfo.host === gameInfo.userName) {
+        playerStatus.innerHTML = '';
+        const powers = window.diplomacy.state?.selected_powers || {};
+        const readyMap = timer.player_ready || {};
+        
+        for (const [playerName, power] of Object.entries(powers)) {
+            if (playerName === gameInfo.host || power === 'Spectator') continue;
+            const li = document.createElement('li');
+            li.className = 'player-ready-item' + (readyMap[playerName] ? ' ready' : ' not-ready');
+            const status = readyMap[playerName] ? '✓' : '○';
+            li.textContent = `${playerName}: ${status}`;
+            playerStatus.appendChild(li);
+        }
+    }
+}
+
+function updateTimerState(timer) {
+    updateTimerDisplay(timer);
+    if (timer?.active) {
+        startTimerUpdate();
+    } else {
+        stopTimerUpdate();
+    }
+}
+
+function startTimerUpdate() {
+    if (window.diplomacy.timerInterval) {
+        clearInterval(window.diplomacy.timerInterval);
+    }
+    window.diplomacy.timerInterval = setInterval(() => {
+        if (window.diplomacy.state?.diplomacy_timer) {
+            updateTimerDisplay(window.diplomacy.state.diplomacy_timer);
+        }
+    }, 100);
+}
+
+function stopTimerUpdate() {
+    if (window.diplomacy.timerInterval) {
+        clearInterval(window.diplomacy.timerInterval);
+        window.diplomacy.timerInterval = null;
+    }
 }
 
 // Tells the server this is a deliberate exit so it can hand over the host and close the lobby right away.
@@ -994,9 +1192,26 @@ function initResolveControl() {
         });
     }
 
-    const send = async (type, replyType) => {
+    const send = async (type, replyType, override = false) => {
         try {
-            const r = await sendForReply({ type }, replyType);
+            const payload = { type };
+            if (type === 'resolve' && override) {
+                payload.override = true;
+            }
+            const r = await sendForReply(payload, replyType);
+            
+            // Handle not ready warning
+            if (!r.ok && r.requires_override && type === 'resolve') {
+                const notReadyList = r.not_ready_players.join(', ');
+                showModal('Resolve Orders - Not All Players Done',
+                    `The following players are not done: ${notReadyList}\n\nDo you want to resolve anyway?`,
+                    () => {
+                        hideModal();
+                        send('resolve', 'resolve_result', true);
+                    });
+                return;
+            }
+            
             messageEl.textContent = !r.ok ? r.error : r.save_data ? 'Game save downloaded.' : '';
         } catch (e) {
             messageEl.textContent = e.message;
@@ -1153,6 +1368,15 @@ function confirmAction(title, message, callback) {
         close();
         callback();
     };
+}
+
+function showModal(title, message, onConfirm) {
+    confirmAction(title, message, onConfirm);
+}
+
+function hideModal() {
+    const modal = document.getElementById('confirm-modal');
+    modal.classList.add('hidden');
 }
 
 function smoothPolygons(polygons) {

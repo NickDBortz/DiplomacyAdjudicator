@@ -510,6 +510,7 @@ def _view(lobby, power, user_name):
     state['vacant_powers'] = _vacant_powers(lobby)
     state['accepting_joins'] = lobby.get('accepting_joins', False)
     state['join_requests'] = _open_join_requests(lobby)
+    state['diplomacy_timer'] = lobby.get('diplomacy_timer')
     game = _lobby_games[lobby['id']]
     player = game.game_state.get_player(power) if power else None
     state['valid_orders'] = [] if revealed else web_api.get_valid_orders(game, player)
@@ -549,8 +550,34 @@ def _handle_game_message(lobby, user_name, kind, msg):
         else:
             if not lobby.get('orders_revealed'):
                 return fail('Render the orders first.')
+            
+            # Check if all players are ready (if timer is active)
+            timer = lobby.get('diplomacy_timer')
+            not_ready = []
+            if timer and timer.get('active'):
+                ready_map = timer.get('player_ready', {})
+                for player_info in lobby['players']:
+                    p_name = player_info['user_name']
+                    # Only check players who control a power
+                    if _power_of(lobby, p_name) is not None:
+                        if not ready_map.get(p_name, False):
+                            not_ready.append(p_name)
+            
+            override = bool(msg.get('override', False))
+            if not_ready and not override:
+                return {
+                    'type': reply_type,
+                    'ok': False,
+                    'error': f'Not all players are done: {", ".join(not_ready)}',
+                    'not_ready_players': not_ready,
+                    'requires_override': True,
+                }, None
+            
             game.adjudicator.resolve_orders()
             lobby['orders_revealed'] = False
+            # Clear the timer when resolving
+            if 'diplomacy_timer' in lobby:
+                lobby['diplomacy_timer']['active'] = False
             _update_eliminations(lobby)
             return {
                 'type': reply_type,
@@ -579,6 +606,10 @@ def _handle_game_message(lobby, user_name, kind, msg):
         game.game_state.remove_queued_order(order)
         if order.unit.order is order:
             order.unit.reset_order()
+        # Reset player's ready status when they modify orders
+        timer = lobby.get('diplomacy_timer')
+        if timer and timer.get('active'):
+            timer.setdefault('player_ready', {})[user_name] = False
         view = _view(lobby, power, user_name)
         return {'type': 'order_delete_result', 'ok': True, 'error': None, 'state': view}, _game_views(lobby)
 
@@ -594,6 +625,10 @@ def _handle_game_message(lobby, user_name, kind, msg):
             ok = False  # the parser can raise on malformed text
         if not ok:
             return fail('Invalid order.')
+        # Reset player's ready status when they modify orders
+        timer = lobby.get('diplomacy_timer')
+        if timer and timer.get('active'):
+            timer.setdefault('player_ready', {})[user_name] = False
         view = _view(lobby, power, user_name)
         return {'type': 'order_result', 'ok': True, 'error': None, 'orders': view['orders'], 'state': view}, _game_views(lobby)
 
@@ -737,20 +772,100 @@ def _answer_join(lobby, user_name, msg):
     payload = {'type': 'lobby_update', 'event': 'admitted', 'user_name': joiner, 'power': power, **_snapshot(lobby)}
     return _host_action_ok(reply_type, payload, closes=[(waiter, accepted, 1000)])
 
+def _start_diplomacy_timer(lobby, user_name, msg):
+    """Host starts a timer for the Diplomacy phase. Duration is in seconds (300 to 86400)."""
+    reply_type = 'diplomacy_timer_result'
+    if lobby['host'] != user_name:
+        return _host_action_fail(reply_type, 'Only the host can manage the timer.')
+    if lobby['id'] not in _lobby_games:
+        return _host_action_fail(reply_type, 'The game has not started.')
+    
+    duration = msg.get('duration')
+    if not isinstance(duration, (int, float)) or duration < 300 or duration > 86400:
+        return _host_action_fail(reply_type, 'Duration must be between 300 and 86400 seconds.')
+    
+    now = time.time()
+    lobby['diplomacy_timer'] = {
+        'active': True,
+        'start_time': now,
+        'duration': duration,
+        'player_ready': {}
+    }
+    payload = {'type': 'lobby_update', 'event': 'timer_started', 'timer': lobby['diplomacy_timer'], **_snapshot(lobby)}
+    return _host_action_ok(reply_type, payload)
+
+def _extend_diplomacy_timer(lobby, user_name, msg):
+    """Host extends the current timer by additional seconds."""
+    reply_type = 'diplomacy_timer_result'
+    if lobby['host'] != user_name:
+        return _host_action_fail(reply_type, 'Only the host can manage the timer.')
+    
+    timer = lobby.get('diplomacy_timer')
+    if timer is None or not timer.get('active'):
+        return _host_action_fail(reply_type, 'No active timer to extend.')
+    
+    additional = msg.get('additional')
+    if not isinstance(additional, (int, float)) or additional <= 0 or additional > 86400:
+        return _host_action_fail(reply_type, 'Extension must be between 1 and 86400 seconds.')
+    
+    timer['duration'] += additional
+    payload = {'type': 'lobby_update', 'event': 'timer_extended', 'timer': timer, **_snapshot(lobby)}
+    return _host_action_ok(reply_type, payload)
+
+def _end_diplomacy_timer(lobby, user_name, msg):
+    """Host ends the Diplomacy phase timer."""
+    reply_type = 'diplomacy_timer_result'
+    if lobby['host'] != user_name:
+        return _host_action_fail(reply_type, 'Only the host can manage the timer.')
+    
+    if 'diplomacy_timer' not in lobby:
+        return _host_action_fail(reply_type, 'No timer to end.')
+    
+    lobby['diplomacy_timer']['active'] = False
+    payload = {'type': 'lobby_update', 'event': 'timer_ended', 'timer': lobby.get('diplomacy_timer'), **_snapshot(lobby)}
+    return _host_action_ok(reply_type, payload)
+
+def _mark_player_done(lobby, user_name, msg):
+    """Player marks themselves as ready/done during Diplomacy phase."""
+    reply_type = 'player_done_result'
+    
+    timer = lobby.get('diplomacy_timer')
+    if timer is None or not timer.get('active'):
+        return _host_action_fail(reply_type, 'No active Diplomacy phase timer.')
+    
+    power = _power_of(lobby, user_name)
+    if power is None:
+        return _host_action_fail(reply_type, 'You have not been assigned a power.')
+    
+    ready_status = bool(msg.get('ready'))
+    if 'player_ready' not in timer:
+        timer['player_ready'] = {}
+    timer['player_ready'][user_name] = ready_status
+    
+    payload = {'type': 'lobby_update', 'event': 'player_ready_changed', 'timer': timer, **_snapshot(lobby)}
+    return _host_action_ok(reply_type, payload)
+
 HOST_ACTIONS = {
     'kick_player': _kick_player,
     'transfer_host': _transfer_host,
     'assign_power': _assign_power,
     'set_accepting_joins': _set_accepting_joins,
     'answer_join': _answer_join,
+    'start_diplomacy_timer': _start_diplomacy_timer,
+    'extend_diplomacy_timer': _extend_diplomacy_timer,
+    'end_diplomacy_timer': _end_diplomacy_timer,
+    'mark_player_done': _mark_player_done,
 }
 
 def _chat(lobby):
     return lobby.setdefault('chat', {'next_id': 1, 'lobby': deque(maxlen=CHAT_HISTORY_LIMIT), 'private': {}, 'recent': {}})
 
 def _can_private_chat(lobby, user_name):
-    """Private messages are part of the game, so only players who control a power can send or receive them."""
-    return lobby['started'] and _power_of(lobby, user_name) is not None
+    """Private messages are only allowed during the Diplomacy phase timer."""
+    if not lobby['started'] or _power_of(lobby, user_name) is None:
+        return False
+    timer = lobby.get('diplomacy_timer')
+    return timer is not None and timer.get('active', False)
 
 def _chat_history(lobby, user_name):
     """The lobby channel plus this player's own private conversations, oldest first."""
