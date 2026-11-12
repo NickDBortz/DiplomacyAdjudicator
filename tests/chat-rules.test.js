@@ -5,6 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'docs', 'chat.js'), 'utf8');
+const lobbySource = fs.readFileSync(path.join(__dirname, '..', 'docs', 'lobby.js'), 'utf8');
 
 function createEligibilityContext() {
     const context = vm.createContext({
@@ -22,10 +23,22 @@ test('private chat eligibility requires a game, an active timer, and a power', (
         Object.assign(chatState, ${JSON.stringify(values)});
         canPrivateChat();
     `, context);
+    const partners = values => vm.runInContext(`
+        Object.assign(chatState, ${JSON.stringify(values)});
+        privateChatPartners();
+    `, context);
 
     assert.equal(canChat({ started: true, timerActive: false, userName: 'Alice', powers: { Alice: 'France' } }), false);
     assert.equal(canChat({ started: true, timerActive: true, userName: 'Alice', powers: { Alice: 'France' } }), true);
     assert.equal(canChat({ started: true, timerActive: true, userName: 'Alice', powers: { Alice: 'Spectator' } }), false);
+    assert.equal(partners({
+        started: true, timerActive: true, ruleset: 'public_press', userName: 'Alice',
+        powers: { Alice: 'France', Bob: 'England' }, players: ['Alice', 'Bob'],
+    }).length, 0);
+    assert.equal(partners({
+        started: true, timerActive: true, ruleset: 'normal', userName: 'Alice',
+        powers: { Alice: 'France', Bob: 'England' }, players: ['Alice', 'Bob'],
+    }).length, 1);
 });
 
 test('chat timer updates control private chat eligibility', () => {
@@ -48,4 +61,24 @@ test('chat timer updates control private chat eligibility', () => {
 
     vm.runInContext("chatReceive({ type: 'game_state', state: { diplomacy_timer: { active: true } } })", context);
     assert.equal(vm.runInContext('canPrivateChat()', context), true);
+
+    vm.runInContext("chatReceive({ type: 'game_started', ruleset: 'public_press' })", context);
+    assert.equal(vm.runInContext("chatState.ruleset", context), 'public_press');
+    assert.equal(vm.runInContext('privateChatPartners().length', context), 0);
+});
+
+test('starting the game sends the selected chat ruleset to the server', () => {
+    const messages = [];
+    const context = vm.createContext({
+        rulesetControls: {
+            querySelector: () => ({ value: 'public_press' }),
+        },
+        ws: { send: message => messages.push(message) },
+    });
+    const start = lobbySource.indexOf('function startGame()');
+    const end = lobbySource.indexOf('\nstartBtn.addEventListener(', start);
+    vm.runInContext(lobbySource.slice(start, end), context);
+    vm.runInContext('startGame()', context);
+
+    assert.deepEqual(JSON.parse(messages[0]), { type: 'start_game', ruleset: 'public_press' });
 });

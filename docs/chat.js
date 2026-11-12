@@ -43,6 +43,11 @@ function canPrivateChat() {
     return chatState.started && chatState.timerActive && holdsPower(chatState.userName);
 }
 
+function privateChatPartners() {
+    if (chatState.ruleset !== 'normal' || !canPrivateChat()) return [];
+    return chatState.players.filter(p => p !== chatState.userName && holdsPower(p));
+}
+
 function unreadCount(conversation) {
     const lastRead = chatState.lastRead[conversation] || 0;
     return chatState.messages.filter(m => conversationOf(m) === conversation
@@ -199,8 +204,7 @@ function renderChat() {
     }
 
     // Private messages are part of the game: only players who control a power can start or answer them.
-    const partners = chatState.ruleset === 'normal' && canPrivateChat()
-        ? chatState.players.filter(p => p !== chatState.userName && holdsPower(p)) : [];
+    const partners = privateChatPartners();
     el.newPrivate.classList.toggle('hidden', partners.length === 0);
     el.newPrivate.innerHTML = '';
     el.newPrivate.appendChild(new Option('Private message…', ''));
@@ -322,12 +326,18 @@ function chatReceive(msg) {
         chatState.players = msg.players || chatState.players;
         chatState.powers = msg.selected_powers || chatState.powers;
         chatState.started = Boolean(msg.started);
-        chatState.ruleset = msg.ruleset || 'normal';
+        if ('ruleset' in msg) chatState.ruleset = msg.ruleset;
         if ('timer' in msg) chatState.timerActive = Boolean(msg.timer && msg.timer.active);
+    } else if (msg.type === 'game_started') {
+        chatState.players = msg.players || chatState.players;
+        chatState.powers = msg.selected_powers || chatState.powers;
+        chatState.started = true;
+        if ('ruleset' in msg) chatState.ruleset = msg.ruleset;
     } else if (msg.type === 'game_state') {
         chatState.players = msg.state.lobby_players || chatState.players;
         chatState.powers = msg.state.selected_powers || chatState.powers;
         chatState.started = true;
+        if ('ruleset' in msg.state) chatState.ruleset = msg.state.ruleset;
         chatState.timerActive = Boolean(msg.state.diplomacy_timer && msg.state.diplomacy_timer.active);
     } else {
         return;

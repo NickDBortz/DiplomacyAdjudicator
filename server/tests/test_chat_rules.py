@@ -7,7 +7,9 @@ import app as server
 def make_lobby(ruleset):
     return {
         'id': 'test-lobby',
+        'name': 'Game',
         'host': 'Alice',
+        'needs_password': False,
         'ruleset': ruleset,
         'started': True,
         'settings': {'map': 'classic_map'},
@@ -107,6 +109,38 @@ def test_host_ruleset_selection_is_broadcast_and_non_host_cannot_change_it(monke
     assert host_socket.messages[-1]['ruleset'] == 'public_press'
     assert player_socket.messages[-1]['ruleset'] == 'public_press'
 
+    joined = server.join_lobby(lobby['id'], server.JoinRequest(user_name='Charlie', lobby_password=''))
+    assert joined['lobby']['ruleset'] == 'public_press'
+
+    asyncio.run(server._handle_message(
+        lobby['id'], 'Bob', json.dumps({'type': 'set_power', 'settings': {'power': 'Spectator'}})))
+    assert host_socket.messages[-1]['ruleset'] == 'public_press'
+    assert player_socket.messages[-1]['ruleset'] == 'public_press'
+
     asyncio.run(server._handle_message(
         lobby['id'], 'Bob', json.dumps({'type': 'set_ruleset', 'ruleset': 'gunboard'})))
     assert lobby['ruleset'] == 'public_press'
+
+
+def test_selected_ruleset_is_included_in_start_game_and_game_started(monkeypatch):
+    class Socket:
+        def __init__(self):
+            self.messages = []
+
+        async def send_json(self, message):
+            self.messages.append(message)
+
+    lobby = make_lobby('normal')
+    lobby['started'] = False
+    player_socket = Socket()
+    monkeypatch.setattr(server, '_lobbies', {'Game': lobby})
+    monkeypatch.setattr(server, '_lobby_games', {})
+    monkeypatch.setitem(server._lobby_sockets, lobby['id'], {'Alice': player_socket})
+
+    asyncio.run(server._handle_message(
+        lobby['id'], 'Alice', json.dumps({'type': 'start_game', 'ruleset': 'public_press'})))
+
+    assert lobby['started']
+    assert lobby['ruleset'] == 'public_press'
+    assert player_socket.messages[-1]['type'] == 'game_started'
+    assert player_socket.messages[-1]['ruleset'] == 'public_press'

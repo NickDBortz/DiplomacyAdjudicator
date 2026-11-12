@@ -507,6 +507,7 @@ def _view(lobby, power, user_name):
     state['player_power'] = next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
     state['player_eliminated'] = user_name in lobby.get('eliminated', [])
     state['host'] = lobby['host']
+    state['ruleset'] = lobby.get('ruleset', 'normal')
     state['lobby_players'] = [p['user_name'] for p in lobby['players']]
     state['selected_powers'] = {p['user_name']: p['selected_power'] for p in lobby['players']}
     state['eliminated_players'] = list(lobby.get('eliminated', []))
@@ -1047,11 +1048,15 @@ async def _handle_message(lobby_id, user_name, raw):
                     **_snapshot(lobby),
                 }
         else:
-            if any(p['selected_power'] is None for p in lobby['players']):
+            ruleset = msg.get('ruleset', lobby.get('ruleset', 'normal'))
+            if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
+                reply = {'type': 'error', 'message': 'Unknown chat rules.'}
+            elif any(p['selected_power'] is None for p in lobby['players']):
                 reply = {'type': 'error', 'message': 'Every player must select a Great Power before starting.'}
             elif not any(p['selected_power'] != SPECTATOR_POWER for p in lobby['players']):
                 reply = {'type': 'error', 'message': 'At least one player must select a Great Power.'}
             else:
+                lobby['ruleset'] = ruleset
                 if _power_of(lobby, lobby['host']) is None:
                     lobby['host'] = next(p['user_name'] for p in lobby['players'] if p['selected_power'] != SPECTATOR_POWER)
                 game = _lobby_pending_games.pop(lobby['id'], None)

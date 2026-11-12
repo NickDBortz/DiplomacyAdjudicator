@@ -107,8 +107,16 @@ rulesetControls.addEventListener('change', event => {
     }
 });
 
+function startGame() {
+    const selectedRuleset = rulesetControls.querySelector('input[name="ruleset"]:checked');
+    ws.send(JSON.stringify({
+        type: 'start_game',
+        ruleset: selectedRuleset ? selectedRuleset.value : 'normal',
+    }));
+}
+
 startBtn.addEventListener('click', () => {
-    confirmAction('Start Game', 'Start the game? Ensure all players have selected the correct Great Power.', () => ws.send(JSON.stringify({ type: 'start_game' })));
+    confirmAction('Start Game', 'Start the game? Ensure all players have selected the correct Great Power.', startGame);
 });
 
 loadSavedGameBtn.addEventListener('click', async () => {
