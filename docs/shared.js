@@ -1050,11 +1050,16 @@ function updateTimerDisplay(timer) {
     const timerDisplay = document.getElementById('timer-display');
     const timerStart = document.getElementById('timer-start');
     const countdown = document.getElementById('timer-countdown');
+    const sidebarCountdown = document.getElementById('sidebar-timer-countdown');
     const playerStatus = document.getElementById('timer-player-status');
     
     if (!timerSection) return;
     
     const active = Boolean(timer && timer.active);
+    for (const id of ['main-timer-banner', 'sidebar-timer-banner']) {
+        const banner = document.getElementById(id);
+        if (banner) banner.classList.toggle('hidden', !active);
+    }
     timerSection.classList.toggle('hidden', !active && !timerStart);
     timerDisplay.classList.toggle('hidden', !active);
     if (timerStart) timerStart.classList.toggle('hidden', active);
@@ -1064,7 +1069,9 @@ function updateTimerDisplay(timer) {
     const now = Date.now() / 1000;
     const elapsed = now - timer.start_time;
     const remaining = Math.max(0, timer.duration - elapsed);
-    countdown.textContent = formatSeconds(Math.ceil(remaining));
+    const timeText = formatSeconds(Math.ceil(remaining));
+    if (countdown) countdown.textContent = timeText;
+    if (sidebarCountdown) sidebarCountdown.textContent = timeText;
     
     // Update player ready status (only for host view)
     if (playerStatus && gameInfo.host === gameInfo.userName) {

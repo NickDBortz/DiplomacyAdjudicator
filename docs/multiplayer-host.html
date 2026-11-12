@@ -23,6 +23,9 @@
       <div id="game-panel" class="sidebar-panel game-panel" role="tabpanel" aria-labelledby="game-tab">
       <div class="orders">
         <p class="section-header">Hosting</p>
+        <div id="sidebar-timer-banner" class="timer-banner hidden" role="timer" aria-label="Diplomacy phase time remaining">
+          Diplomacy time remaining: <span id="sidebar-timer-countdown" class="timer-countdown">00:00</span>
+        </div>
         <p id="info" class="info"></p>
         <p class="section-header">Players</p>
         <ul id="player-list" class="lobby-list"></ul>
@@ -57,7 +60,6 @@
         <div id="diplomacy-timer-section" class="hidden">
           <p class="section-header">Diplomacy Phase Timer</p>
           <div id="timer-display" class="timer-display hidden">
-            <p id="timer-countdown" class="timer-countdown">00:00</p>
             <ul id="timer-player-status" class="timer-player-status"></ul>
             <div class="timer-controls">
               <button id="timer-extend" class="btn btn-secondary">Extend Timer</button>
@@ -115,6 +117,9 @@
   </div>
   <div id="main">
     <div id="status">Loading…</div>
+    <div id="main-timer-banner" class="timer-banner hidden" role="timer" aria-label="Diplomacy phase time remaining">
+      Diplomacy time remaining: <span id="timer-countdown" class="timer-countdown">00:00</span>
+    </div>
     <p class="map-order-status">Click a unit or its territory to choose an order. Review and submit it here or in the sidebar.</p>
     <p id="map-order-status" class="map-order-status" aria-live="polite"></p>
     <div id="map-order-controls" class="map-order-controls hidden">

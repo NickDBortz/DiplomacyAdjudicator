@@ -11,6 +11,7 @@ This feature adds a real-time timer system for the Diplomacy negotiation phase. 
 - **Extend Timer**: Host can add time to an active timer
 - **End Timer**: Host can terminate the timer early
 - **Timer State**: Synced server time ensures all clients see the same countdown
+- The countdown appears above the map and near the top of each player's sidebar while the timer is active.
 
 **Backend Changes (server/app.py)**:
 - Added `_start_diplomacy_timer()` function for initiating timers
@@ -88,7 +89,7 @@ This feature adds a real-time timer system for the Diplomacy negotiation phase. 
    - `initTimerDial()` - configures duration dial controls
 
 2. **UI Elements**:
-   - Dedicated `#diplomacy-timer-section` in sidebar
+   - Countdown banners above the map and in the sidebar; timer controls remain in the sidebar
    - Host controls: start, extend, end buttons
    - Player status list with ready markers
    - Player done button for regular players
@@ -100,7 +101,7 @@ This feature adds a real-time timer system for the Diplomacy negotiation phase. 
 
 4. **CSS Styling** (`style.css`):
    - `.timer-display` - container styling
-   - `.timer-countdown` - large monospace countdown (32px, cyan color)
+   - `.timer-countdown` - prominent monospace countdown
    - `.player-ready-item` - status indicators (green for ready, red for not ready)
    - `.timer-controls` - button layout
    - Input and form styling for duration selection

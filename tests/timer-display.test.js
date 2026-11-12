@@ -26,6 +26,9 @@ function createScreen(host) {
         'diplomacy-timer-section': element(true),
         'timer-display': element(true),
         'timer-countdown': element(),
+        'sidebar-timer-countdown': element(),
+        'main-timer-banner': element(true),
+        'sidebar-timer-banner': element(true),
         'timer-player-status': element(),
         'resolve': element(),
     };
@@ -56,40 +59,68 @@ function hidden(elements, id) {
     return elements[id].classList.contains('hidden');
 }
 
+test('both game pages place timer banners above the map and sidebar content', () => {
+    for (const file of ['multiplayer-host.html', 'multiplayer-client.html']) {
+        const html = fs.readFileSync(path.join(__dirname, '..', 'docs', file), 'utf8');
+        const sidebarTimer = html.indexOf('id="sidebar-timer-banner"');
+        const hostControls = html.indexOf('id="host-controls"');
+        const main = html.indexOf('id="main"');
+        const mainTimer = html.indexOf('id="main-timer-banner"');
+        const map = html.indexOf('id="map"');
+        assert.ok(sidebarTimer > 0 && sidebarTimer < html.indexOf('id="info"'));
+        assert.ok(sidebarTimer < hostControls && hostControls < main);
+        assert.ok(main < mainTimer && mainTimer < map);
+    }
+});
+
 test('host can see start form before a timer and after it ends', () => {
     const { context, elements, gameInfo, tick } = createScreen(true);
     context.applyGameState({ valid_orders: [] });
     assert.equal(hidden(elements, 'diplomacy-timer-section'), false);
     assert.equal(hidden(elements, 'timer-start'), false);
     assert.equal(hidden(elements, 'timer-display'), true);
+    assert.equal(hidden(elements, 'main-timer-banner'), true);
+    assert.equal(hidden(elements, 'sidebar-timer-banner'), true);
 
     const timer = { active: true, start_time: Date.now() / 1000, duration: 1800, player_ready: {} };
     context.handleGameMessage({ type: 'lobby_update', host: 'Alice', timer });
     assert.equal(gameInfo.state.diplomacy_timer, timer);
     assert.equal(hidden(elements, 'timer-start'), true);
     assert.equal(hidden(elements, 'timer-display'), false);
+    assert.equal(hidden(elements, 'main-timer-banner'), false);
+    assert.equal(hidden(elements, 'sidebar-timer-banner'), false);
     tick();
     assert.match(elements['timer-countdown'].textContent, /^30:00$|^29:59$/);
+    assert.equal(elements['sidebar-timer-countdown'].textContent, elements['timer-countdown'].textContent);
 
     context.handleGameMessage({ type: 'lobby_update', host: 'Alice', timer: { ...timer, active: false } });
     assert.equal(hidden(elements, 'timer-start'), false);
     assert.equal(hidden(elements, 'timer-display'), true);
     assert.equal(hidden(elements, 'diplomacy-timer-section'), false);
+    assert.equal(hidden(elements, 'main-timer-banner'), true);
+    assert.equal(hidden(elements, 'sidebar-timer-banner'), true);
 });
 
 test('player timer appears on broadcast and hides when the timer ends', () => {
     const { context, elements } = createScreen(false);
     context.applyGameState({ valid_orders: [] });
     assert.equal(hidden(elements, 'diplomacy-timer-section'), true);
+    assert.equal(hidden(elements, 'main-timer-banner'), true);
+    assert.equal(hidden(elements, 'sidebar-timer-banner'), true);
 
     const timer = { active: true, start_time: Date.now() / 1000, duration: 300, player_ready: {} };
     context.handleGameMessage({ type: 'lobby_update', host: 'Alice', timer });
     assert.equal(hidden(elements, 'diplomacy-timer-section'), false);
     assert.equal(hidden(elements, 'timer-display'), false);
+    assert.equal(hidden(elements, 'main-timer-banner'), false);
+    assert.equal(hidden(elements, 'sidebar-timer-banner'), false);
+    assert.equal(elements['sidebar-timer-countdown'].textContent, elements['timer-countdown'].textContent);
 
     context.applyGameState({ valid_orders: [], diplomacy_timer: { ...timer, active: false } });
     assert.equal(hidden(elements, 'diplomacy-timer-section'), true);
     assert.equal(hidden(elements, 'timer-display'), true);
+    assert.equal(hidden(elements, 'main-timer-banner'), true);
+    assert.equal(hidden(elements, 'sidebar-timer-banner'), true);
 });
 
 function createDurationControls() {
