@@ -1021,11 +1021,12 @@ function initTimerControls() {
     
     if (endBtn) {
         endBtn.addEventListener('click', async () => {
-            if (!confirm('End the Diplomacy phase timer?')) return;
-            const reply = await sendHostAction(endBtn, { 
-                type: 'end_diplomacy_timer' 
-            }, 'diplomacy_timer_result');
-            if (reply.ok) endBtn.disabled = false;
+            confirmAction('End Timer', 'End the Diplomacy phase timer?', async () => {
+                const reply = await sendHostAction(endBtn, {
+                    type: 'end_diplomacy_timer'
+                }, 'diplomacy_timer_result');
+                if (reply.ok) endBtn.disabled = false;
+            });
         });
     }
     

@@ -153,19 +153,28 @@ function createDurationControls() {
         dials[unit] = { input, up, down, querySelector: () => input, querySelectorAll: () => [up, down] };
     }
     const start = element();
+    const end = element();
     const section = {};
     const timerStart = { querySelectorAll: () => Object.values(dials) };
-    const elements = { ...inputs, 'timer-start': timerStart, 'timer-start-btn': start, 'diplomacy-timer-section': section };
+    const elements = {
+        ...inputs,
+        'timer-start': timerStart,
+        'timer-start-btn': start,
+        'timer-end-early': end,
+        'diplomacy-timer-section': section,
+    };
     const calls = [];
     const alerts = [];
+    const confirmations = [];
     const context = vm.createContext({
         document: { getElementById: id => elements[id] || null },
         sendHostAction: async (button, payload) => { calls.push(payload); return { ok: true }; },
         alert: message => alerts.push(message),
+        confirmAction: (title, message, callback) => confirmations.push({ title, message, callback }),
     });
     vm.runInContext(source.slice(source.indexOf('function initTimerDial('), source.indexOf('function updateTimerDisplay(')), context);
     context.initTimerControls();
-    return { dials, start, calls, alerts };
+    return { dials, start, end, calls, alerts, confirmations };
 }
 
 test('duration defaults to 15 minutes and submits exact hours, minutes, and seconds', async () => {
@@ -228,4 +237,17 @@ test('duration validation accepts the bounds and rejects incomplete or excessive
     await start.fire('click');
     assert.equal(calls.length, 2);
     assert.equal(alerts.length, 4);
+});
+
+test('ending the timer uses the shared confirmation modal', async () => {
+    const { end, calls, confirmations } = createDurationControls();
+    await end.fire('click');
+    assert.equal(confirmations.length, 1);
+    assert.equal(confirmations[0].title, 'End Timer');
+    assert.equal(confirmations[0].message, 'End the Diplomacy phase timer?');
+    assert.equal(calls.length, 0);
+
+    await confirmations[0].callback();
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].type, 'end_diplomacy_timer');
 });
