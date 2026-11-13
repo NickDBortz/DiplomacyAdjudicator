@@ -115,10 +115,16 @@ def _available_variants(map_id):
         return [f.name.replace('.json', '') for f in variants_dir.iterdir() if f.is_file()]
     return []
 
-def _available_powers(map_id):
+def _available_powers(map_id, variant_id):
     try:
-        with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as file:
-            return sorted(player['name'] for player in json.load(file)['players'])
+        with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as map_file:
+            powers = sorted(player['name'] for player in json.load(map_file)['players'])
+            with open(MAPS_DIR / f'{map_id}' / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
+                variant = json.load(variant_file)
+                if 'make_neutral' in variant:
+                    neutral_powers = variant['make_neutral']
+                    powers = [power for power in powers if power not in neutral_powers]
+                return powers
     except (OSError, ValueError, KeyError):
         return []
 
@@ -248,7 +254,7 @@ def get_lobby_powers(lobby_id: str):
         if lobby is None:
             raise HTTPException(404, 'Lobby does not exist.')
         taken = {p['selected_power'] for p in lobby['players'] if p['selected_power']}
-        return [p for p in _available_powers(lobby['settings']['map']) if p not in taken]
+        return [p for p in _available_powers(lobby['settings']['map'], lobby['variant']) if p not in taken]
 
 def _prune_join_requests(lobby):
     """Drops expired requests whose sender never connected to wait; connected waiters time out on their own."""
@@ -1020,7 +1026,7 @@ async def _handle_message(lobby_id, user_name, raw):
                 power = (settings.get('power') or None) if isinstance(settings, dict) else None
                 taken = power not in (None, SPECTATOR_POWER) and any(
                     p['selected_power'] == power and p['user_name'] != user_name for p in lobby['players'])
-                if power is not None and power != SPECTATOR_POWER and power not in _available_powers(lobby['settings']['map']):
+                if power is not None and power != SPECTATOR_POWER and power not in _available_powers(lobby['settings']['map'], lobby['variant']):
                     reply = {'type': 'error', 'message': 'Unknown power.'}
                 elif taken:
                     reply = {'type': 'error', 'message': 'That power is already taken.'}
