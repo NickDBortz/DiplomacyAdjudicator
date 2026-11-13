@@ -41,10 +41,18 @@ class GameState:
         return True
 
     def get_player(self, name):
-        name = name.lower().strip()
-        if name in self.players:
-            return self.players[name]
-        return None
+        if len(name.split('/')) > 1:
+            names = [n.lower().strip() for n in name.split('/') if n.strip()]
+            players = []
+            for n in names:
+                if n in self.players:
+                    players.append(self.players[n])
+            return players
+        else:
+            name = name.lower().strip()
+            if name in self.players:
+                return self.players[name]
+            return None
 
     def get_territory(self, name):
         name = name.lower().strip()

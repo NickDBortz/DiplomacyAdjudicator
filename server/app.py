@@ -601,10 +601,12 @@ def _update_eliminations(lobby):
         if successor is not None:
             lobby['host'] = successor
 
-def _view(lobby, power, user_name):
+def _view(lobby, powers, user_name):
     """Own orders only, or everyone's once the host has revealed them."""
+    powers_list = [power.strip() for power in powers.split("/") if power.strip()]
+
     revealed = lobby.get('orders_revealed', False)
-    state = web_api.get_state(_lobby_games[lobby['id']], power=web_api.ALL_ORDERS if revealed else power)
+    state = web_api.get_state(_lobby_games[lobby['id']], power=web_api.ALL_ORDERS if revealed else powers_list)
     state['lobby_id'] = lobby['id']
     state['orders_revealed'] = revealed
     state['player_power'] = next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
@@ -620,8 +622,11 @@ def _view(lobby, power, user_name):
     state['join_requests'] = _open_join_requests(lobby)
     state['diplomacy_timer'] = lobby.get('diplomacy_timer')
     game = _lobby_games[lobby['id']]
-    player = game.game_state.get_player(power) if power else None
-    state['valid_orders'] = [] if revealed else web_api.get_valid_orders(game, player)
+    state['valid_orders'] = []
+    if not revealed:
+        for power in powers_list:
+            player = game.game_state.get_player(power) if power else None
+            state['valid_orders'].extend(web_api.get_valid_orders(game, player))
     return state
 
 def _game_views(lobby):
@@ -700,7 +705,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
     if msg.get('power') != power:
         return fail(f'You cannot act for {msg.get("power")}.')
 
-    player = game.game_state.get_player(power)
+    players = game.game_state.get_player(power)
     if kind == 'delete_order':
         if lobby.get('orders_revealed'):
             return fail('Orders are revealed; waiting for the host to resolve.')
@@ -709,7 +714,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
         if isinstance(queue_id, bool) or not isinstance(queue_id, int) or queue_id < 0 or queue_id >= len(orders):
             return fail('That order no longer exists.')
         order = orders[queue_id]
-        if order.unit.owner != player:
+        if (isinstance(players, str) and order.unit.owner != players) or (isinstance(players, list) and order.unit.owner not in players):
             return fail('You can only delete your own orders.')
         game.game_state.remove_queued_order(order)
         if order.unit.order is order:
@@ -728,7 +733,10 @@ def _handle_game_message(lobby, user_name, kind, msg):
         if not isinstance(order, str) or not order.strip() or len(order) > MAX_ORDER_LENGTH:
             return fail('Invalid order.')
         try:
-            ok = bool(game.submit_order(order.strip(), player))
+            if isinstance(players, str):
+                ok = bool(game.submit_order(order.strip(), players))
+            else:
+                ok = any(item is False for item in [game.submit_order(order.strip(), player) for player in players])
         except Exception:
             ok = False  # the parser can raise on malformed text
         if not ok:
@@ -740,7 +748,11 @@ def _handle_game_message(lobby, user_name, kind, msg):
         view = _view(lobby, power, user_name)
         return {'type': 'order_result', 'ok': True, 'error': None, 'orders': view['orders'], 'state': view}, _game_views(lobby)
 
-    game.game_state.vote_draw(player, _draw_voters(lobby, game))
+    if isinstance(players, str):
+        game.game_state.vote_draw(players, _draw_voters(lobby, game))
+    else:
+        for player in players:
+            game.game_state.vote_draw(player, _draw_voters(lobby, game))
     reply = {'type': 'draw_result', 'ok': True, 'error': None, 'draw_votes': [p.name for p in game.game_state.draw_votes]}
     return reply, _game_views(lobby)
 

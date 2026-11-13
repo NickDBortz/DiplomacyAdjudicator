@@ -163,7 +163,12 @@ def get_state(game, power=ALL_ORDERS):
             if not unit.disbanded:
                 units.append(_unit_json(unit))
 
-    queued = _visible_orders(state, power)
+    if isinstance(power, str):
+        queued = _visible_orders(state, power)
+    else:
+        queued = []
+        for p in power:
+            queued.extend(_visible_orders(state, p))
     orders = []
     for order in queued:
         if order.type == HOLD:
