@@ -129,6 +129,10 @@ def _available_powers(map_id, variant_id):
                 if 'coin_flip' in variant:
                     coin_flip_powers = variant['coin_flip']
                     powers = [power for power in powers if power not in coin_flip_powers]
+                # If the variant has added powers, add those to the power pool. Those powers will be playable along with the rest
+                if 'add_power' in variant:
+                    added_powers = sorted(player['name'] for player in variant['add_power'])
+                    powers.extend(added_powers)
                 # If the variant has power groups, group the existing powers by the specified groupings. The player assigned to a group will control all powers in said group
                 if 'power_groups' in variant:
                     groups = variant['power_groups']

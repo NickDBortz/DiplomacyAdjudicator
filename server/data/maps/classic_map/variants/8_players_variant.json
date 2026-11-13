@@ -1,1 +1,9 @@
-{}
+{
+    "add_power": [
+        {
+            "name": "Ottoman Empire",
+            "var_name": "ottoman_empire",
+            "color": "#FFFFFF"
+        }
+    ]
+}
