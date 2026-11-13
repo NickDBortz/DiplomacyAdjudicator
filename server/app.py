@@ -1049,16 +1049,15 @@ async def _handle_message(lobby_id, user_name, raw):
             variant = settings.get('variant') if isinstance(settings, dict) else None
             map_id = lobby['settings']['map']
             if map_id not in _available_maps() or not isinstance(variant, str) or variant not in _available_variants(map_id):
-                payload = {'type': 'lobby_update', 'event': 'failed thing', 'map_id': map_id, 'available_maps': _available_maps(), 'variant': variant, 'user_name': user_name, **_snapshot(lobby)}
-            else:
-                _lobby_pending_games.pop(lobby['id'], None)
-                lobby.pop('prepared_save', None)
-                lobby['eliminated'] = []
-                lobby['variant'] = variant
-                # Powers differ per variant, so picks are cleared.
-                for player in lobby['players']:
-                    player['selected_power'] = None
-                payload = {'type': 'lobby_update', 'event': 'variant_change', 'user_name': user_name, **_snapshot(lobby)}
+                return
+            _lobby_pending_games.pop(lobby['id'], None)
+            lobby.pop('prepared_save', None)
+            lobby['eliminated'] = []
+            lobby['variant'] = variant
+            # Powers differ per variant, so picks are cleared.
+            for player in lobby['players']:
+                player['selected_power'] = None
+            payload = {'type': 'lobby_update', 'event': 'variant_change', 'user_name': user_name, **_snapshot(lobby)}
         elif kind == 'set_ruleset':
             ruleset = msg.get('ruleset')
             if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
