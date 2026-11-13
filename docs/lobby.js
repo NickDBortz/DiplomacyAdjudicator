@@ -54,7 +54,7 @@ async function showPreview(mapId) {
         document.getElementById('terr-' + t.abbr).setAttribute('fill', t.land ? '#DDD' : mapData.water_color);
     }
     // Power colors come from the map, so redraw the list once it has loaded.
-    if (lastSnapshot) renderPlayerList(lastSnapshot.players, playerName, lastSnapshot.selected_powers, lastSnapshot.connected_players);
+    if (lastSnapshot) renderPlayerList(lobbyId, lastSnapshot.players, playerName, lastSnapshot.selected_powers, lastSnapshot.connected_players);
 }
 
 function updateRulesetSelection(ruleset) {
@@ -102,7 +102,7 @@ function enterGame(snapshot) {
     sessionStorage.setItem('diplomacyMap', snapshot.settings.map);
     sessionStorage.setItem('diplomacyVariant', snapshot.settings.variant ? snapshot.settings.variant : 'standard');
     sessionStorage.setItem('diplomacyGameName', lobbyName);
-    sessionStorage.setItem('diplomacyGameCode', lobbyName);
+    sessionStorage.setItem('diplomacyGameCode', lobbyId);
     sessionStorage.setItem('power', snapshot.selected_powers?.[playerName] ?? powerSelect.value);
     goTo(snapshot.host === playerName ? 'multiplayer-host.html' : 'multiplayer-client.html');
 }

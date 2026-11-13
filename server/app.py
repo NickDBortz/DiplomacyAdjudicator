@@ -140,7 +140,6 @@ def _available_powers(map_id, variant_id):
                     for group in groups:
                         for power in group:
                             if power not in powers:
-                                print(f"{power} doesn't exist")
                                 return []
                     powers = [' / '.join(group) for group in groups]
                 return powers
@@ -188,7 +187,6 @@ def _power_colors(map_id, variant_id):
                         col = (0, 0, 0)
                         for power in group:
                             if power not in colors:
-                                print(f"{power} doesn't exist")
                                 return []
                             rgb = hex_to_rgb(colors[power])
                             col = (col[0] + rgb[0], col[1] + rgb[1], col[2] + rgb[2])
@@ -607,6 +605,7 @@ def _view(lobby, power, user_name):
     """Own orders only, or everyone's once the host has revealed them."""
     revealed = lobby.get('orders_revealed', False)
     state = web_api.get_state(_lobby_games[lobby['id']], power=web_api.ALL_ORDERS if revealed else power)
+    state['lobby_id'] = lobby['id']
     state['orders_revealed'] = revealed
     state['player_power'] = next((p['selected_power'] for p in lobby['players'] if p['user_name'] == user_name), None)
     state['player_eliminated'] = user_name in lobby.get('eliminated', [])

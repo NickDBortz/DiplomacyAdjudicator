@@ -7,7 +7,7 @@ from game.order_generator import OrderGenerator
 from game.enums import ADJUSTMENT_PHASE, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class Game:
-    def __init__(self, json_file='data/maps/classic_map.json', start_phase=ADJUSTMENT_PHASE, render=True, allow_transformations=False):
+    def __init__(self, json_file='data/maps/classic_map.json', start_phase=ADJUSTMENT_PHASE, neutral_powers=None, render=True, allow_transformations=False):
         # Create a map loader to load the json file and populate the rest of the objects
         loader = MapLoader(json_file)
 
@@ -25,6 +25,17 @@ class Game:
         self.game_state.set_phase(start_phase)
         if allow_transformations:
             self.order_parser.activate_transformations()
+
+        # If there are any neutral powers, build units on home supply centers at the start. These will do nothing else the rest of the game
+        if neutral_powers is not None:
+            self._init_neutral_powers(neutral_powers)
+
+    def _init_neutral_powers(self, neutral_powers):
+        for power_name in neutral_powers:
+            power = self.game_state.get_player(power_name)
+            for territory in self.game_state.territory_list:
+                if territory.home_owner == power and territory.is_supply_center:
+                    self.submit_order(f'Build A {territory.abbr}', power)
 
     def submit_order(self, order, owner=None):
         return self.order_parser.parse_order_string(order, owner)

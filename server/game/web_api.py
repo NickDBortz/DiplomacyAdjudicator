@@ -59,10 +59,12 @@ def get_valid_orders(game, player):
     ]
 
 
-def new_game(map_path='data/maps/classic_map.json', start_phase=None):
+def new_game(map_path='data/maps/classic_map.json', start_phase=None, neutral_powers=None):
     kwargs = {'json_file': map_path, 'render': False}
     if start_phase is not None:
         kwargs['start_phase'] = start_phase
+    if neutral_powers is not None:
+        kwargs['neutral_powers'] = neutral_powers
     return Game(**kwargs)
 
 

@@ -119,7 +119,7 @@ function clearSession() {
 // Set by the lobby and game pages so the current host gets Kick and Make host buttons next to other players.
 let playerListKickEnabled = false;
 
-function renderPlayerList(players, selfName, powers = {}, connected = null) {
+function renderPlayerList(lobbyId, players, selfName, powers = {}, connected = null) {
     if (connected) gameInfo.connected = connected;
     const online = gameInfo.connected;
     const inGame = Boolean(gameInfo.state);
@@ -265,7 +265,7 @@ function watchLobby(lobbyId, userName, secretToken, onMessage = () => {}) {
                 if (pending.length === 0) delete pendingReplies[msg.type];
             }
             if (msg.type !== 'lobby_update') return;
-            renderPlayerList(msg.players, userName, msg.selected_powers, msg.connected_players);
+            renderPlayerList(lobbyId, msg.players, userName, msg.selected_powers, msg.connected_players);
             const status = lobbyEventMessage(msg, userName);
             if (status) notify(status);
         }, code => {
@@ -273,7 +273,7 @@ function watchLobby(lobbyId, userName, secretToken, onMessage = () => {}) {
             if (SEAT_LOST_CLOSE_CODES.includes(code)) clearSession();
             mainDiv.classList.add('disabled-div');
             if (FINAL_CLOSE_CODES.includes(code)) {
-                renderPlayerList([], userName);
+                renderPlayerList(lobbyId, [], userName);
                 notify(LOBBY_CLOSE_MESSAGES[code] || 'Connection to the lobby was lost.', true);
                 return;
             }
@@ -371,7 +371,7 @@ function applyGameState(state) {
     gameInfo.power = state.player_power ?? gameInfo.power;
     gameInfo.host = state.host ?? gameInfo.host;
     sessionStorage.setItem('power', gameInfo.power);
-    if (state.lobby_players) renderPlayerList(state.lobby_players, gameInfo.userName, state.selected_powers, state.connected_players);
+    if (state.lobby_players) renderPlayerList(state.lobby_id, state.lobby_players, gameInfo.userName, state.selected_powers, state.connected_players);
     renderHostTools(state);
     const resolveBtn = document.getElementById('resolve');
     if (resolveBtn) resolveBtn.textContent = state.orders_revealed ? 'Resolve Orders' : 'Render Orders';
@@ -1515,7 +1515,7 @@ function buildMap() {
 }
 
 async function loadMap(mapId = 'classic_map') {
-    mapData = await (await fetch(`data/${encodeURIComponent(mapId)}.json`)).json();
+    mapData = await (await fetch(`data/maps/${encodeURIComponent(mapId)}/${encodeURIComponent(mapId)}.json`)).json();
     buildMap();
 }
 
