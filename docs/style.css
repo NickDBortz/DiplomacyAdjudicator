@@ -458,6 +458,13 @@ body {
     color: #eef5fc;
 }
 
+.sidebar label.dropdown-label {
+    margin: 0 16px 16px 5px;
+    padding: 10px 40px 10px 12px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
 .order-picker {
     margin: 0 16px 16px;
     padding: 12px;
