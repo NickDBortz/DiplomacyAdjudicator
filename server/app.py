@@ -222,7 +222,7 @@ def get_maps():
 
 @app.get('/maps/{map_id}/variants')
 def get_variants(map_id: str):
-    return [{'id': v, 'name': v.removesuffix('_variant').replace('_', ' ').title()} for v in _available_variants(map_id)]
+    return [{'id': v, 'name': v.replace('_', ' ').title()} for v in _available_variants(map_id)]
 
 @app.get('/lobbies')
 def get_lobbies():
