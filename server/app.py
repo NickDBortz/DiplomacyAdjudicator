@@ -125,10 +125,13 @@ def _available_powers(map_id, variant_id):
                 if 'make_neutral' in variant:
                     neutral_powers = variant['make_neutral']
                     powers = [power for power in powers if power not in neutral_powers]
+                # If the variant has a coin flip, remove those powers from the pool. Those powers will be randomly assigned to a player after the first round
+                if 'coin_flip' in variant:
+                    coin_flip_powers = variant['coin_flip']
+                    powers = [power for power in powers if power not in coin_flip_powers]
+                # If the variant has power groups, group the existing powers by the specified groupings. The player assigned to a group will control all powers in said group
                 if 'power_groups' in variant:
                     groups = variant['power_groups']
-                    print(groups)
-                    print(powers)
                     # If any of the group elements is not a valid power, fail
                     for group in groups:
                         for power in group:
