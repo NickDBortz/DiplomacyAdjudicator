@@ -1,0 +1,19 @@
+{
+    "power_groups": [
+        [
+            "England",
+            "Austria-Hungary"
+        ], 
+        [
+            "France",
+            "Russia"
+        ],
+        [
+            "Germany",
+            "Turkey"
+        ]
+    ],
+    "make_neutral": [
+        "Italy"
+    ]
+}

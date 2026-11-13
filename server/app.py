@@ -121,9 +121,21 @@ def _available_powers(map_id, variant_id):
             powers = sorted(player['name'] for player in json.load(map_file)['players'])
             with open(MAPS_DIR / f'{map_id}' / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
                 variant = json.load(variant_file)
+                # If the variant has neutral powers, remove those powers from the pool. Those powers will be neutral and provide no orders to their troops
                 if 'make_neutral' in variant:
                     neutral_powers = variant['make_neutral']
                     powers = [power for power in powers if power not in neutral_powers]
+                if 'power_groups' in variant:
+                    groups = variant['power_groups']
+                    print(groups)
+                    print(powers)
+                    # If any of the group elements is not a valid power, fail
+                    for group in groups:
+                        for power in group:
+                            if power not in powers:
+                                print(f"{power} doesn't exist")
+                                return []
+                    powers = [' / '.join(group) for group in groups]
                 return powers
     except (OSError, ValueError, KeyError):
         return []

@@ -1,1 +1,14 @@
-{}
+{
+    "power_groups": [
+        [
+            "England",
+            "France",
+            "Russia"
+        ], 
+        [
+            "Austria-Hungary",
+            "Germany",
+            "Turkey"
+        ]
+    ]
+}
