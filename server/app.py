@@ -106,11 +106,19 @@ def _find_lobby(lobby_id):
     return None, None
 
 def _available_maps():
-    return sorted(p.stem for p in MAPS_DIR.glob('*.json'))
+    directories = [d for d in MAPS_DIR.rglob('*') if d.is_dir()]
+    return sorted(d.name for d in directories if (d / f'{d.name}.json').is_file())
+
+def _available_variants(map_id):
+    variants_dir = MAPS_DIR / map_id / 'variants'
+
+    if variants_dir.is_dir():
+        return [f.name.replace('.json', '') for f in variants_dir.iterdir() if f.is_file()]
+    return []
 
 def _available_powers(map_id):
     try:
-        with open(MAPS_DIR / f'{map_id}.json', 'r', encoding='utf-8') as file:
+        with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as file:
             return sorted(player['name'] for player in json.load(file)['players'])
     except (OSError, ValueError, KeyError):
         return []
@@ -157,7 +165,7 @@ def _snapshot(lobby):
         'host': lobby['host'],
         'started': lobby['started'],
         'ruleset': lobby.get('ruleset', 'normal'),
-        'variant': lobby.get('variant', 'standard'),
+        'variant': lobby.get('variant', 'standard_variant'),
         'settings': lobby['settings'],
         'prepared_save': lobby.get('prepared_save'),
         'vacant_powers': _vacant_powers(lobby),
@@ -200,7 +208,7 @@ def open_lobby(lobby_request: LobbyRequest):
             'host': user_name,
             'started': False,
             'ruleset': 'normal',
-            'variant': 'standard',
+            'variant': 'standard_variant',
             'settings': {'map': DEFAULT_MAP},
             'players': [{'user_name': user_name, 'selected_power': None, 'secret_token': secret_token}],
             'accepting_joins': False,
@@ -214,7 +222,7 @@ def get_maps():
 
 @app.get('/maps/{map_id}/variants')
 def get_variants(map_id: str):
-    return [{'id': 'standard', 'name': 'standard'.title()}]
+    return [{'id': v, 'name': v.removesuffix('_variant').replace('_', ' ').title()} for v in _available_variants(map_id)]
 
 @app.get('/lobbies')
 def get_lobbies():
@@ -1040,7 +1048,7 @@ async def _handle_message(lobby_id, user_name, raw):
         elif kind == 'set_variant':
             variant = msg.get('variant')
             map_id = lobby['settings']['map']
-            if not isinstance(variant, str) or variant not in VARIANTS.get(map_id, ['standard']):
+            if not isinstance(variant, str) or variant not in VARIANTS.get(map_id, ['standard_variant']):
                 reply = {'type': 'error', 'message': 'Unknown variant.'}
             else:
                 lobby['variant'] = variant
@@ -1070,7 +1078,7 @@ async def _handle_message(lobby_id, user_name, raw):
             variant = msg.get('variant', lobby.get('variant', 'standard'))
             if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
                 reply = {'type': 'error', 'message': 'Unknown chat rules.'}
-            elif not isinstance(variant, str) or variant not in VARIANTS.get(map_id, ['standard']):
+            elif not isinstance(variant, str) or variant not in VARIANTS.get(map_id, ['standard_variant']):
                 reply = {'type': 'error', 'message': 'Unknown variant.'}
             elif any(p['selected_power'] is None for p in lobby['players']):
                 reply = {'type': 'error', 'message': 'Every player must select a Great Power before starting.'}
