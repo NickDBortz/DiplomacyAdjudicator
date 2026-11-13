@@ -5,6 +5,7 @@ const secretToken = sessionStorage.getItem('secretToken');
 
 const powerSelect = document.getElementById('power-select');
 const mapSelect = document.getElementById('map-select');
+const ruleVariantSelect = document.getElementById('rule-variant-select');
 const rulesetControls = document.getElementById('ruleset-controls');
 const startBtn = document.getElementById('start-game');
 const waitEl = document.getElementById('lobby-wait');
@@ -64,14 +65,20 @@ function updateRulesetSelection(ruleset) {
     }
 }
 
+function updateVariantSelection(variant) {
+    ruleVariantSelect.value = variant ? variant : 'standard';
+}
+
 function applySnapshot(snapshot) {
     lastSnapshot = snapshot;
     gameInfo.host = snapshot.host;
     const isHost = snapshot.host === playerName;
     mapSelect.disabled = !isHost;
+    ruleVariantSelect.disabled = !isHost;
     rulesetControls.disabled = !isHost || snapshot.started;
     powerSelect.disabled = Boolean(snapshot.prepared_save);
     updateRulesetSelection(snapshot.ruleset);
+    updateVariantSelection(snapshot.variant);
     startBtn.classList.toggle('hidden', !isHost);
     document.getElementById('host-load-controls').classList.toggle('hidden', !isHost);
     const allReady = snapshot.players.every(p => snapshot.selected_powers[p]);
@@ -93,6 +100,7 @@ function applySnapshot(snapshot) {
 
 function enterGame(snapshot) {
     sessionStorage.setItem('diplomacyMap', snapshot.settings.map);
+    sessionStorage.setItem('diplomacyVariant', snapshot.settings.variant ? snapshot.settings.variant : 'standard');
     sessionStorage.setItem('diplomacyGameName', lobbyName);
     sessionStorage.setItem('diplomacyGameCode', lobbyName);
     sessionStorage.setItem('power', snapshot.selected_powers?.[playerName] ?? powerSelect.value);
@@ -107,6 +115,10 @@ mapSelect.addEventListener('change', () => {
     ws.send(JSON.stringify({ type: 'set_map', settings: { map: mapSelect.value } }));
 });
 
+ruleVariantSelect.addEventListener('change', () => {
+    ws.send(JSON.stringify({ type: 'set_variant', settings: { variant: ruleVariantSelect.value } }));
+});
+
 rulesetControls.addEventListener('change', event => {
     if (event.target.name === 'ruleset') {
         ws.send(JSON.stringify({ type: 'set_ruleset', ruleset: event.target.value }));
@@ -115,9 +127,11 @@ rulesetControls.addEventListener('change', event => {
 
 function startGame() {
     const selectedRuleset = rulesetControls.querySelector('input[name="ruleset"]:checked');
+    const variant = ruleVariantSelect.value;
     ws.send(JSON.stringify({
         type: 'start_game',
         ruleset: selectedRuleset ? selectedRuleset.value : 'normal',
+        variant: variant
     }));
 }
 
@@ -164,6 +178,13 @@ async function init() {
         option.value = m.id;
         option.textContent = m.name;
         mapSelect.appendChild(option);
+    }
+
+    for (const v of await request('GET', `/maps/${encodeURIComponent(mapSelect.value)}/variants`)) {
+        const option = document.createElement('option');
+        option.value = v.id;
+        option.textContent = v.name;
+        ruleVariantSelect.appendChild(option);
     }
 
     savedGameStatus.textContent = 'Choose a save file downloaded by the host.';

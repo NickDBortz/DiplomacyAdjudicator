@@ -40,6 +40,10 @@ CHAT_HISTORY_LIMIT = 200  # per conversation; older messages are dropped
 CHAT_RATE_COUNT = 5  # at most this many messages per CHAT_RATE_SECONDS from one player
 CHAT_RATE_SECONDS = 5
 CHAT_RULESETS = {'normal', 'gunboard', 'public_press'}
+VARIANTS = {}
+
+# Populate variants
+
 
 app = FastAPI(title='Diplomacy Adjudicator')
 app.add_middleware(
@@ -153,6 +157,7 @@ def _snapshot(lobby):
         'host': lobby['host'],
         'started': lobby['started'],
         'ruleset': lobby.get('ruleset', 'normal'),
+        'variant': lobby.get('variant', 'standard'),
         'settings': lobby['settings'],
         'prepared_save': lobby.get('prepared_save'),
         'vacant_powers': _vacant_powers(lobby),
@@ -195,6 +200,7 @@ def open_lobby(lobby_request: LobbyRequest):
             'host': user_name,
             'started': False,
             'ruleset': 'normal',
+            'variant': 'standard',
             'settings': {'map': DEFAULT_MAP},
             'players': [{'user_name': user_name, 'selected_power': None, 'secret_token': secret_token}],
             'accepting_joins': False,
@@ -205,6 +211,10 @@ def open_lobby(lobby_request: LobbyRequest):
 @app.get('/maps')
 def get_maps():
     return [{'id': m, 'name': m.removesuffix('_map').replace('_', ' ').title()} for m in _available_maps()]
+
+@app.get('/maps/{map_id}/variants')
+def get_variants(map_id: str):
+    return [{'id': 'standard', 'name': 'standard'.title()}]
 
 @app.get('/lobbies')
 def get_lobbies():
@@ -1027,6 +1037,14 @@ async def _handle_message(lobby_id, user_name, raw):
             for player in lobby['players']:
                 player['selected_power'] = None
             payload = {'type': 'lobby_update', 'event': 'map_change', 'user_name': user_name, **_snapshot(lobby)}
+        elif kind == 'set_variant':
+            variant = msg.get('variant')
+            map_id = lobby['settings']['map']
+            if not isinstance(variant, str) or variant not in VARIANTS.get(map_id, ['standard']):
+                reply = {'type': 'error', 'message': 'Unknown variant.'}
+            else:
+                lobby['variant'] = variant
+                payload = {'type': 'lobby_update', 'event': 'variant_change', **_snapshot(lobby)}
         elif kind == 'set_ruleset':
             ruleset = msg.get('ruleset')
             if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
@@ -1049,14 +1067,18 @@ async def _handle_message(lobby_id, user_name, raw):
                 }
         else:
             ruleset = msg.get('ruleset', lobby.get('ruleset', 'normal'))
+            variant = msg.get('variant', lobby.get('variant', 'standard'))
             if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
                 reply = {'type': 'error', 'message': 'Unknown chat rules.'}
+            elif not isinstance(variant, str) or variant not in VARIANTS.get(map_id, ['standard']):
+                reply = {'type': 'error', 'message': 'Unknown variant.'}
             elif any(p['selected_power'] is None for p in lobby['players']):
                 reply = {'type': 'error', 'message': 'Every player must select a Great Power before starting.'}
             elif not any(p['selected_power'] != SPECTATOR_POWER for p in lobby['players']):
                 reply = {'type': 'error', 'message': 'At least one player must select a Great Power.'}
             else:
                 lobby['ruleset'] = ruleset
+                lobby['variant'] = variant
                 if _power_of(lobby, lobby['host']) is None:
                     lobby['host'] = next(p['user_name'] for p in lobby['players'] if p['selected_power'] != SPECTATOR_POWER)
                 game = _lobby_pending_games.pop(lobby['id'], None)
