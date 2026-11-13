@@ -147,6 +147,59 @@ def _available_powers(map_id, variant_id):
     except (OSError, ValueError, KeyError):
         return []
 
+def hex_to_rgb(hex_str):
+    hex_str = hex_str.lstrip('#')
+    return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+
+def rgb_to_hex(rgb):
+    return f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
+
+def _power_colors(map_id, variant_id):
+    try:
+        with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as map_file:
+            colors = {}
+            for player in json.load(map_file)['players']:
+                colors[player['name']] = player['color']
+
+            with open(MAPS_DIR / f'{map_id}' / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
+                variant = json.load(variant_file)
+                # If the variant has neutral powers, remove those powers from the pool. Those powers will be neutral and provide no orders to their troops
+                if 'make_neutral' in variant:
+                    neutral_powers = variant['make_neutral']
+                    for power in neutral_powers:
+                        if power in colors:
+                            colors.pop(power)
+                # If the variant has a coin flip, remove those powers from the pool. Those powers will be randomly assigned to a player after the first round
+                if 'coin_flip' in variant:
+                    coin_flip_powers = variant['coin_flip']
+                    for power in coin_flip_powers:
+                        if power in colors:
+                            colors.pop(power)
+                # If the variant has added powers, add those to the power pool. Those powers will be playable along with the rest
+                if 'add_power' in variant:
+                    for power in variant['add_power']:
+                        colors[power['name']] = power['color']
+                # If the variant has power groups, group the existing powers by the specified groupings. The player assigned to a group will control all powers in said group
+                if 'power_groups' in variant:
+                    groups = variant['power_groups']
+                    group_colors = {}
+                    # If any of the group elements is not a valid power, fail
+                    for group in groups:
+                        col = (0, 0, 0)
+                        for power in group:
+                            if power not in colors:
+                                print(f"{power} doesn't exist")
+                                return []
+                            rgb = hex_to_rgb(colors[power])
+                            col = (col[0] + rgb[0], col[1] + rgb[1], col[2] + rgb[2])
+                        avg_col = tuple(x // len(group) for x in col)
+                        group_colors[' / '.join(group)] = rgb_to_hex(avg_col)
+                            
+                    colors = group_colors
+                return colors
+    except (OSError, ValueError, KeyError):
+        return []
+
 def _connected_names(lobby):
     return set(_lobby_sockets.get(lobby['id'], {}))
 
@@ -274,6 +327,15 @@ def get_lobby_powers(lobby_id: str):
             raise HTTPException(404, 'Lobby does not exist.')
         taken = {p['selected_power'] for p in lobby['players'] if p['selected_power']}
         return [p for p in _available_powers(lobby['settings']['map'], lobby['variant']) if p not in taken]
+
+@app.get('/lobbies/{lobby_id}/colors')
+def get_lobby_powers(lobby_id: str):
+    """Powers on the lobby's map that no player has picked yet."""
+    with _lock:
+        _, lobby = _find_lobby(lobby_id)
+        if lobby is None:
+            raise HTTPException(404, 'Lobby does not exist.')
+        return _power_colors(lobby['settings']['map'], lobby['variant'])
 
 def _prune_join_requests(lobby):
     """Drops expired requests whose sender never connected to wait; connected waiters time out on their own."""

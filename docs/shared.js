@@ -53,6 +53,16 @@ async function request(method, path, body, loading_screen = false) {
     return res.json();
 }
 
+function syncRequest(method, path, body) {
+    let res;
+    fetch(API_BASE + path, { 
+        method, 
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined 
+    }).then(response => res = response.json()).catch(error => console.error(error));
+    return res;
+}
+
 function goTo(page) {
     location.href = page;
 }
@@ -114,54 +124,55 @@ function renderPlayerList(players, selfName, powers = {}, connected = null) {
     const online = gameInfo.connected;
     const inGame = Boolean(gameInfo.state);
     const canManage = playerListKickEnabled && gameInfo.host === selfName;
-    const colors = Object.fromEntries((mapData?.players ?? []).map(p => [p.name, p.color]));
-    const list = document.getElementById('player-list');
-    list.innerHTML = '';
-    for (const name of players) {
-        const isOnline = !online || online.includes(name);
-        const item = document.createElement('li');
-        item.className = 'player-item' + (isOnline ? '' : ' player-offline');
-        const color = colors[powers[name]];
-        if (color) item.style.borderLeftColor = color;
-        const label = document.createElement('span');
-        label.textContent = name === selfName ? `${name} (you)` : name;
-        if (color) label.style.color = color;
-        if (name === gameInfo.host) {
-            const tag = document.createElement('span');
-            tag.className = 'player-tag';
-            tag.textContent = 'host';
-            label.append(' ', tag);
-        }
-        const power = document.createElement('span');
-        power.className = 'player-power';
-        power.textContent = (powers[name] || 'No power selected') + (isOnline ? '' : ' · disconnected');
-        const details = document.createElement('div');
-        details.className = 'player-details';
-        details.append(label, power);
-        item.appendChild(details);
-
-        if (canManage && name !== selfName) {
-            const buttons = document.createElement('div');
-            buttons.className = 'player-buttons';
-            // During a game the host has to control a power, so spectators cannot take the role.
-            if (isOnline && !(inGame && (!powers[name] || powers[name] === 'Spectator'))) {
-                buttons.appendChild(playerActionButton('Make host', 'player-action', `Make ${name} the host`, button => {
-                    confirmAction('Hand Over Host', `Make ${name} the host? They can hand it back to you later.`,
-                        () => sendHostAction(button, { type: 'transfer_host', user_name: name }, 'host_transfer_result'));
-                }));
+    request('GET', `/lobbies/${encodeURIComponent(lobbyId)}/colors`).then((colors) => {
+        const list = document.getElementById('player-list');
+        list.innerHTML = '';
+        for (const name of players) {
+            const isOnline = !online || online.includes(name);
+            const item = document.createElement('li');
+            item.className = 'player-item' + (isOnline ? '' : ' player-offline');
+            const color = colors[powers[name]];
+            if (color) item.style.borderLeftColor = color;
+            const label = document.createElement('span');
+            label.textContent = name === selfName ? `${name} (you)` : name;
+            if (color) label.style.color = color;
+            if (name === gameInfo.host) {
+                const tag = document.createElement('span');
+                tag.className = 'player-tag';
+                tag.textContent = 'host';
+                label.append(' ', tag);
             }
-            buttons.appendChild(playerActionButton('Kick', 'order-delete', `Kick player: ${name}`, button => {
-                const held = inGame && powers[name] && powers[name] !== 'Spectator';
-                const message = held
-                    ? `Remove ${name} from the game? ${powers[name]} will become vacant: its units hold until you give it to someone else.`
-                    : `Remove ${name} from the game?`;
-                confirmAction('Kick Player', message,
-                    () => sendHostAction(button, { type: 'kick_player', user_name: name }, 'kick_result'));
-            }));
-            item.appendChild(buttons);
+            const power = document.createElement('span');
+            power.className = 'player-power';
+            power.textContent = (powers[name] || 'No power selected') + (isOnline ? '' : ' · disconnected');
+            const details = document.createElement('div');
+            details.className = 'player-details';
+            details.append(label, power);
+            item.appendChild(details);
+
+            if (canManage && name !== selfName) {
+                const buttons = document.createElement('div');
+                buttons.className = 'player-buttons';
+                // During a game the host has to control a power, so spectators cannot take the role.
+                if (isOnline && !(inGame && (!powers[name] || powers[name] === 'Spectator'))) {
+                    buttons.appendChild(playerActionButton('Make host', 'player-action', `Make ${name} the host`, button => {
+                        confirmAction('Hand Over Host', `Make ${name} the host? They can hand it back to you later.`,
+                            () => sendHostAction(button, { type: 'transfer_host', user_name: name }, 'host_transfer_result'));
+                    }));
+                }
+                buttons.appendChild(playerActionButton('Kick', 'order-delete', `Kick player: ${name}`, button => {
+                    const held = inGame && powers[name] && powers[name] !== 'Spectator';
+                    const message = held
+                        ? `Remove ${name} from the game? ${powers[name]} will become vacant: its units hold until you give it to someone else.`
+                        : `Remove ${name} from the game?`;
+                    confirmAction('Kick Player', message,
+                        () => sendHostAction(button, { type: 'kick_player', user_name: name }, 'kick_result'));
+                }));
+                item.appendChild(buttons);
+            }
+            list.appendChild(item);
         }
-        list.appendChild(item);
-    }
+    });
 }
 
 function playerActionButton(text, className, label, onClick) {
