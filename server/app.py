@@ -40,7 +40,6 @@ CHAT_HISTORY_LIMIT = 200  # per conversation; older messages are dropped
 CHAT_RATE_COUNT = 5  # at most this many messages per CHAT_RATE_SECONDS from one player
 CHAT_RATE_SECONDS = 5
 CHAT_RULESETS = {'normal', 'gunboard', 'public_press'}
-VARIANTS = {}
 
 # Populate variants
 
@@ -992,7 +991,7 @@ async def _handle_message(lobby_id, user_name, raw):
     except ValueError:
         return
     kind = msg.get('type') if isinstance(msg, dict) else None
-    if kind not in ('set_map', 'set_ruleset', 'set_power', 'start_game', 'load_saved_game', 'chat_send', *GAME_REPLY_TYPES, *HOST_ACTIONS):
+    if kind not in ('set_map', 'set_variant', 'set_ruleset', 'set_power', 'start_game', 'load_saved_game', 'chat_send', *GAME_REPLY_TYPES, *HOST_ACTIONS):
         return
 
     reply = None
@@ -1046,13 +1045,20 @@ async def _handle_message(lobby_id, user_name, raw):
                 player['selected_power'] = None
             payload = {'type': 'lobby_update', 'event': 'map_change', 'user_name': user_name, **_snapshot(lobby)}
         elif kind == 'set_variant':
-            variant = msg.get('variant')
+            settings = msg.get('settings')
+            variant = settings.get('variant') if isinstance(settings, dict) else None
             map_id = lobby['settings']['map']
-            if not isinstance(variant, str) or variant not in VARIANTS.get(map_id, ['standard_variant']):
-                reply = {'type': 'error', 'message': 'Unknown variant.'}
+            if map_id not in _available_maps() or not isinstance(variant, str) or variant not in _available_variants(map_id):
+                payload = {'type': 'lobby_update', 'event': 'failed thing', 'map_id': map_id, 'available_maps': _available_maps(), 'variant': variant, 'user_name': user_name, **_snapshot(lobby)}
             else:
+                _lobby_pending_games.pop(lobby['id'], None)
+                lobby.pop('prepared_save', None)
+                lobby['eliminated'] = []
                 lobby['variant'] = variant
-                payload = {'type': 'lobby_update', 'event': 'variant_change', **_snapshot(lobby)}
+                # Powers differ per variant, so picks are cleared.
+                for player in lobby['players']:
+                    player['selected_power'] = None
+                payload = {'type': 'lobby_update', 'event': 'variant_change', 'user_name': user_name, **_snapshot(lobby)}
         elif kind == 'set_ruleset':
             ruleset = msg.get('ruleset')
             if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
@@ -1078,7 +1084,7 @@ async def _handle_message(lobby_id, user_name, raw):
             variant = msg.get('variant', lobby.get('variant', 'standard'))
             if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
                 reply = {'type': 'error', 'message': 'Unknown chat rules.'}
-            elif not isinstance(variant, str) or variant not in VARIANTS.get(map_id, ['standard_variant']):
+            elif not isinstance(variant, str) or variant not in _available_variants(map_id):
                 reply = {'type': 'error', 'message': 'Unknown variant.'}
             elif any(p['selected_power'] is None for p in lobby['players']):
                 reply = {'type': 'error', 'message': 'Every player must select a Great Power before starting.'}

@@ -204,6 +204,8 @@ async function init() {
                 setStatus(`${msg.user_name} changed the map`);
             } else if (msg.event === 'power_change' && msg.user_name !== playerName) {
                 setStatus(`${msg.user_name} picked ${msg.power || 'no power'}`);
+            } else if (msg.event === 'variant_change' && msg.user_name !== playerName) {
+                setStatus(`${msg.user_name} changed the variant`);
             }
         }
     });
