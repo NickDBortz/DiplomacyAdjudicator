@@ -1168,6 +1168,7 @@ async def _handle_message(lobby_id, user_name, raw):
         else:
             ruleset = msg.get('ruleset', lobby.get('ruleset', 'normal'))
             variant = msg.get('variant', lobby.get('variant', 'standard'))
+            map_id = lobby['settings']['map']
             if not isinstance(ruleset, str) or ruleset not in CHAT_RULESETS:
                 reply = {'type': 'error', 'message': 'Unknown chat rules.'}
             elif not isinstance(variant, str) or variant not in _available_variants(map_id):
@@ -1182,7 +1183,7 @@ async def _handle_message(lobby_id, user_name, raw):
                 if _power_of(lobby, lobby['host']) is None:
                     lobby['host'] = next(p['user_name'] for p in lobby['players'] if p['selected_power'] != SPECTATOR_POWER)
                 game = _lobby_pending_games.pop(lobby['id'], None)
-                _lobby_games[lobby['id']] = game or web_api.new_game(str(MAPS_DIR / f"{lobby['settings']['map']}.json"))
+                _lobby_games[lobby['id']] = game or web_api.new_game(str(MAPS_DIR / f'{lobby['settings']['map']}' / f'{lobby['settings']['map']}.json'))
                 lobby['started'] = True
                 lobby.pop('prepared_save', None)
                 payload = {'type': 'game_started', **_snapshot(lobby)}
