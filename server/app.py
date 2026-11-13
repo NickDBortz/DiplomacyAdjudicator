@@ -587,11 +587,16 @@ def _update_eliminations(lobby):
         power_name = member['selected_power']
         if not power_name or power_name == SPECTATOR_POWER:
             continue
-        power = state.get_player(power_name)
-        has_centers = bool(power.get_supply_centers(state.territory_list))
-        has_units = any(not unit.disbanded for unit in power.units)
-        lost = (not has_centers and not has_units) or (
-            state.winner is not None and power.name != state.winner.name)
+        powers = state.get_player(power_name)
+        if isinstance(powers, list):
+            has_centers = any([bool(power.get_supply_centers(state.territory_list)) for power in powers])
+            has_units = any(any(not unit.disbanded for unit in power.units) for power in powers)
+            won = state.winner is not None and any(state.winner.name == power.name for power in powers)
+        else:
+            has_centers = bool(powers.get_supply_centers(state.territory_list))
+            has_units = any(not unit.disbanded for unit in powers.units)
+            won = state.winner is not None and state.winner.name == powers.name
+        lost = (not has_centers and not has_units) or won
         if lost:
             member['selected_power'] = SPECTATOR_POWER
             eliminated.append(member['user_name'])

@@ -167,7 +167,6 @@ def get_state(game, power=ALL_ORDERS):
         queued = _visible_orders(state, power)
     else:
         queued = []
-        print(power)
         for p in power:
             queued.extend(_visible_orders(state, p))
     orders = []
