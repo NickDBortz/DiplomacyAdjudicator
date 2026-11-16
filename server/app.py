@@ -125,6 +125,13 @@ def _get_neutral_powers(map_id, variant_id):
     except(OSError, ValueError, KeyError):
         return []
 
+def _get_power_groups(map_id, variant_id):
+    try:
+        with open(MAPS_DIR / f'{map_id}' / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
+            return json.load(variant_file).get('power_groups')
+    except (OSError, ValueError, KeyError):
+        return None
+
 def _available_powers(map_id, variant_id):
     try:
         with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as map_file:
@@ -232,12 +239,10 @@ def _vacant_powers(lobby):
         if avail not in assigned:
             if len(avail.split('/')) > 1:
                 powers = [item.strip() for item in avail.split('/')]
-                is_vacant = True
-                for p in powers:
-                    player = state.get_player(p)
-                    if not (player is not None and _power_is_alive(state, player)):
-                        is_vacant = False
-                if is_vacant:
+                if any(
+                    player is not None and _power_is_alive(state, player)
+                    for player in (state.get_player(power) for power in powers)
+                ):
                     vacant.append(avail)
             else:
                 player = state.get_player(avail)
@@ -419,6 +424,7 @@ def _game_save_data(lobby):
         'version': 1,
         'name': lobby.get('name', 'Diplomacy game'),
         'map': lobby['settings']['map'],
+        'variant': lobby.get('variant', 'standard_variant'),
         'players': [
             {
                 'user_name': player['user_name'],
@@ -439,15 +445,21 @@ def _restore_lobby_game(lobby, save_data):
         raise ValueError('Save file is too large.')
 
     map_id = save_data.get('map')
+    variant_id = save_data.get('variant', lobby.get('variant', 'standard_variant'))
     saved_players = save_data.get('players')
     game_data = save_data.get('game')
-    if map_id not in _available_maps() or not isinstance(saved_players, list) or not isinstance(game_data, dict):
+    if (map_id not in _available_maps() or variant_id not in _available_variants(map_id)
+            or not isinstance(saved_players, list) or not isinstance(game_data, dict)):
         raise ValueError('Save file has invalid game data or an unavailable map.')
     if game_data.get('map') != map_id:
         raise ValueError('Save file map does not match its game state.')
 
-    game = web_api.restore_game(game_data, str(MAPS_DIR / f'{map_id}.json'))
-    available_powers = {player.name for player in game.game_state.player_list}
+    available_powers = set(_available_powers(map_id, variant_id))
+    game = web_api.restore_game(
+        game_data,
+        str(MAPS_DIR / map_id / f'{map_id}.json'),
+        power_groups=_get_power_groups(map_id, variant_id),
+    )
     saved_by_name = {
         player['user_name']: player for player in saved_players
         if isinstance(player, dict) and isinstance(player.get('user_name'), str)
@@ -483,6 +495,7 @@ def _restore_lobby_game(lobby, save_data):
                 player['selected_power'] = SPECTATOR_POWER
 
     lobby['settings']['map'] = map_id
+    lobby['variant'] = variant_id
     lobby['orders_revealed'] = False
     lobby['eliminated'] = [
         player['user_name'] for player in lobby['players']
@@ -515,9 +528,12 @@ def _remove_player(lobby_id, user_name):
     game = _lobby_games.get(lobby_id)
     if game is not None and removed['selected_power'] not in (None, SPECTATOR_POWER):
         # The power is now vacant: its units hold, and a vote it can no longer withdraw should not count.
-        power = game.game_state.get_player(removed['selected_power'])
-        if power in game.game_state.draw_votes:
-            game.game_state.draw_votes.remove(power)
+        powers = game.game_state.get_player(removed['selected_power'])
+        if not isinstance(powers, list):
+            powers = [powers] if powers is not None else []
+        game.game_state.draw_votes = [
+            voter for voter in game.game_state.draw_votes if voter not in powers
+        ]
         # Everyone still playing may already have voted, in which case the game ends now.
         if game.game_state.winner is None and not game.game_state.draw:
             game.game_state.check_draw(_draw_voters(lobby, game))
@@ -611,10 +627,12 @@ def _draw_voters(lobby, game):
     held = []
     for p in lobby['players']:
         power = p['selected_power']
-        if len(power.split('/')) > 1:
-            held.extend([item.strip() for item in power.split('/') if item.strip() in game.game_state.players])
-        elif power in game.game_state.players:
-            held.append(power)
+        if not isinstance(power, str) or power == SPECTATOR_POWER:
+            continue
+        players = game.game_state.get_player(power)
+        if not isinstance(players, list):
+            players = [players] if players is not None else []
+        held.extend(player for player in players if player not in held)
     return held
 
 def _update_eliminations(lobby):
@@ -647,7 +665,7 @@ def _update_eliminations(lobby):
 
 def _view(lobby, powers, user_name):
     """Own orders only, or everyone's once the host has revealed them."""
-    powers_list = [power.strip() for power in powers.split("/") if power.strip()]
+    powers_list = [power.strip() for power in powers.split("/") if power.strip()] if powers else []
 
     revealed = lobby.get('orders_revealed', False)
     state = web_api.get_state(_lobby_games[lobby['id']], power=web_api.ALL_ORDERS if revealed else powers_list)
@@ -780,7 +798,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
             if isinstance(players, str):
                 ok = bool(game.submit_order(order.strip(), players))
             else:
-                ok = any(item is False for item in [game.submit_order(order.strip(), player) for player in players])
+                ok = any(game.submit_order(order.strip(), player) for player in players)
         except Exception:
             ok = False  # the parser can raise on malformed text
         if not ok:
@@ -1238,7 +1256,11 @@ async def _handle_message(lobby_id, user_name, raw):
                 if _power_of(lobby, lobby['host']) is None:
                     lobby['host'] = next(p['user_name'] for p in lobby['players'] if p['selected_power'] != SPECTATOR_POWER)
                 game = _lobby_pending_games.pop(lobby['id'], None)
-                _lobby_games[lobby['id']] = game or web_api.new_game(str(MAPS_DIR / f'{lobby['settings']['map']}' / f'{lobby['settings']['map']}.json'), neutral_powers=_get_neutral_powers(lobby['settings']['map'], lobby['variant']))
+                _lobby_games[lobby['id']] = game or web_api.new_game(
+                    str(MAPS_DIR / lobby['settings']['map'] / f"{lobby['settings']['map']}.json"),
+                    neutral_powers=_get_neutral_powers(lobby['settings']['map'], lobby['variant']),
+                    power_groups=_get_power_groups(lobby['settings']['map'], lobby['variant']),
+                )
                 lobby['started'] = True
                 lobby.pop('prepared_save', None)
                 payload = {'type': 'game_started', **_snapshot(lobby)}

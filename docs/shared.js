@@ -1312,7 +1312,7 @@ function initSidebar() {
 
     helpPanel.innerHTML = `
         <h2>How to play</h2>
-        <p>Negotiate with the other powers and compete for supply centers. The first power to reach the map's winning count wins. All orders for a phase resolve at the same time.</p>
+        <p>Negotiate with the other powers and compete for supply centers. The first player to reach the map's winning count across their assigned powers wins. All orders for a phase resolve at the same time.</p>
         <p>Armies move on land; fleets move through water and coastal territories. A unit can hold, move, support another unit, or convoy an army. Support adds strength; equal opposing forces can bounce. Attacks can cut support.</p>
         <h3>Movement: Spring and Fall</h3>
         <p>Select one order for each unit. A unit without an order holds. Filter the available orders by unit and type to narrow the list.</p>
@@ -1631,7 +1631,7 @@ function render(state) {
         popup.classList.remove('hidden');
         document.getElementById('outcome-title').textContent = state.winner ? 'Victory!' : 'Draw!';
         document.getElementById('outcome-message').textContent = state.winner
-        ? `${state.winner} controls 18 supply centers and wins the game!`
+        ? `${state.winner} controls a combined 18 supply centers and wins the game!`
         : 'All players chose to draw. The game ends in a draw.';
     }
     window.diplomacy.state = state;

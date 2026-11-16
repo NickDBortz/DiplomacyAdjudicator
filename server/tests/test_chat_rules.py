@@ -12,6 +12,7 @@ def make_lobby(ruleset):
         'needs_password': False,
         'ruleset': ruleset,
         'started': True,
+        'variant': 'standard_variant',
         'settings': {'map': 'classic_map'},
         'players': [
             {'user_name': 'Alice', 'selected_power': 'France'},

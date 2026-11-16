@@ -124,6 +124,8 @@ def test_multiplayer_views_are_per_player_and_safe_for_spectators(monkeypatch):
     lobby = {
         'id': 'test-orders',
         'host': 'host',
+        'settings': {'map': 'classic_map'},
+        'variant': 'standard_variant',
         'players': [
             {'user_name': 'host', 'selected_power': 'France'},
             {'user_name': 'guest', 'selected_power': 'England'},

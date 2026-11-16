@@ -59,12 +59,14 @@ def get_valid_orders(game, player):
     ]
 
 
-def new_game(map_path='data/maps/classic_map.json', start_phase=None, neutral_powers=None):
+def new_game(map_path='data/maps/classic_map.json', start_phase=None, neutral_powers=None, power_groups=None):
     kwargs = {'json_file': map_path, 'render': False}
     if start_phase is not None:
         kwargs['start_phase'] = start_phase
     if neutral_powers is not None:
         kwargs['neutral_powers'] = neutral_powers
+    if power_groups is not None:
+        kwargs['power_groups'] = power_groups
     return Game(**kwargs)
 
 
@@ -74,7 +76,7 @@ def serialize_game(game, map_id):
         'map': map_id,
         'phase': state.get_phase(),
         'year': state.year,
-        'winner': state.winner.name if state.winner else None,
+        'winner': state.get_winner_name(),
         'draw': state.draw,
         'draw_votes': [player.name for player in state.draw_votes],
         'territory_owners': {territory.abbr: territory.owner.name if territory.owner else None
@@ -95,8 +97,8 @@ def serialize_game(game, map_id):
     }
 
 
-def restore_game(data, map_path):
-    game = new_game(map_path, start_phase=data['phase'])
+def restore_game(data, map_path, power_groups=None):
+    game = new_game(map_path, start_phase=data['phase'], power_groups=power_groups)
     state = game.game_state
     territories = {territory.abbr: territory for territory in state.territory_list}
 
@@ -127,7 +129,13 @@ def restore_game(data, map_path):
         territory.owner = state.get_player(owner_name) if owner_name else None
 
     state.year = int(data['year'])
-    state.winner = state.get_player(data['winner']) if data.get('winner') else None
+    winner_name = data.get('winner')
+    if winner_name:
+        winner = state.get_player(winner_name)
+        if isinstance(winner, list):
+            state.set_winner(winner[0] if winner else None, winner_name)
+        else:
+            state.set_winner(winner)
     state.draw = bool(data.get('draw', False))
     state.draw_votes = [state.get_player(name) for name in data.get('draw_votes', [])]
     state.queued_orders.clear()
@@ -221,7 +229,7 @@ def get_state(game, power=ALL_ORDERS):
     return {
         'phase': state.get_phase(),
         'year': state.year,
-        'winner': state.winner.name if state.winner else None,
+        'winner': state.get_winner_name(),
         'draw': state.draw,
         'draw_votes': [p.name for p in state.draw_votes],
         'players': [

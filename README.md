@@ -72,7 +72,7 @@ A power with no player is **vacant**. Its units hold, a dislodged unit is disban
 
 ## How the game works
 
-Diplomacy is a strategy game in which powers compete to control supply centers. Armies move over land, fleets move over water and coastal territories, and fleets can convoy armies across connected seas. A unit can hold, move, support another unit, or take part in a convoy. A successful move into a supply center changes its owner. The first power to control the map's `win_count` supply centers wins.
+Diplomacy is a strategy game in which powers compete to control supply centers. Armies move over land, fleets move over water and coastal territories, and fleets can convoy armies across connected seas. A unit can hold, move, support another unit, or take part in a convoy. A successful move into a supply center changes its owner. The first player to control the map's `win_count` supply centers across their assigned powers wins.
 
 The game cycles through Spring and Fall movement, retreat, and adjustment phases; phases with nothing to resolve are skipped. Orders are entered separately but resolve simultaneously.
 

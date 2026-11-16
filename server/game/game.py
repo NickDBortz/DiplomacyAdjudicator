@@ -7,13 +7,15 @@ from game.order_generator import OrderGenerator
 from game.enums import ADJUSTMENT_PHASE, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class Game:
-    def __init__(self, json_file='data/maps/classic_map.json', start_phase=ADJUSTMENT_PHASE, neutral_powers=None, render=True, allow_transformations=False):
+    def __init__(self, json_file='data/maps/classic_map.json', start_phase=ADJUSTMENT_PHASE, neutral_powers=None, render=True, allow_transformations=False, power_groups=None):
         # Create a map loader to load the json file and populate the rest of the objects
         loader = MapLoader(json_file)
 
         players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj = loader.load_map_json()
 
-        self.game_state = GameState(players, territories, neutral_powers)
+        self.game_state = GameState(
+            players, territories, power_groups=power_groups, neutral_powers=neutral_powers
+        )
         self.adjudicator = Adjudicator(self.game_state, supply_centers_to_win)
         self.order_generator = OrderGenerator(self.game_state, self.adjudicator)
         self.order_parser = OrderParser(self.adjudicator, self.game_state, self.order_generator)
@@ -67,7 +69,7 @@ class Game:
 
             # If there is a winner, render the final frame and break
             if self.game_state.winner is not None:
-                print(f'{self.game_state.winner.name} wins!')
+                print(f'{self.game_state.get_winner_name()} wins!')
                 self.renderer.render(wait=True)
                 break
 

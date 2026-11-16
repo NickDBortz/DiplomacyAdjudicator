@@ -280,7 +280,14 @@ class Adjudicator:
                 order.supported_order.cut_support(order)
 
     def _check_for_winner(self):
-        for player in self.game_state.player_list:
-            if len(player.get_supply_centers(self.game_state.territory_list)) >= self.supply_centers_to_win:
-                # This player wins
-                self.game_state.set_winner(player)
+        groups = self.game_state.power_groups or [[player.name] for player in self.game_state.player_list]
+        for group in groups:
+            players = [self.game_state.get_player(name) for name in group]
+            players = [player for player in players if player is not None]
+            supply_centers = sum(
+                len(player.get_supply_centers(self.game_state.territory_list))
+                for player in players
+            )
+            if players and supply_centers >= self.supply_centers_to_win:
+                self.game_state.set_winner(players[0], ' / '.join(player.name for player in players))
+                return
