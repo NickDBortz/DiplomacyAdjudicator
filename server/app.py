@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from game import web_api
+from game.enums import FALL_PHASE, FALL_RETREAT_PHASE
 from name_filter import clean_name
 
 MAX_SAVE_BYTES = 2_000_000
@@ -132,6 +133,10 @@ def _get_power_groups(map_id, variant_id):
     except (OSError, ValueError, KeyError):
         return None
 
+def _get_coin_flip_powers(map_id, variant_id):
+    with open(MAPS_DIR / map_id / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
+        return json.load(variant_file).get('coin_flip', [])
+
 def _available_powers(map_id, variant_id):
     try:
         with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as map_file:
@@ -170,12 +175,20 @@ def hex_to_rgb(hex_str):
 def rgb_to_hex(rgb):
     return f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
 
-def _power_colors(map_id, variant_id):
+def _power_colors(map_id, variant_id, groups=None):
     try:
         with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as map_file:
             colors = {}
             for player in json.load(map_file)['players']:
                 colors[player['name']] = player['color']
+
+            if groups is not None:
+                group_colors = {}
+                for group in groups:
+                    rgb_values = [hex_to_rgb(colors[power]) for power in group]
+                    average = tuple(sum(rgb[i] for rgb in rgb_values) // len(group) for i in range(3))
+                    group_colors[' / '.join(group)] = rgb_to_hex(average)
+                return group_colors
 
             with open(MAPS_DIR / f'{map_id}' / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
                 variant = json.load(variant_file)
@@ -227,7 +240,11 @@ def _vacant_powers(lobby):
     if game is None or game.game_state.winner is not None or game.game_state.draw:
         return []
     state = game.game_state
-    available_powers = _available_powers(lobby['settings']['map'], lobby['variant'])
+    available_powers = (
+        [' / '.join(group) for group in state.power_groups]
+        if state.power_groups is not None
+        else _available_powers(lobby['settings']['map'], lobby['variant'])
+    )
     assigned = []
     for p in lobby['players']:
         power = p['selected_power']
@@ -371,7 +388,11 @@ def get_lobby_powers(lobby_id: str):
         _, lobby = _find_lobby(lobby_id)
         if lobby is None:
             raise HTTPException(404, 'Lobby does not exist.')
-        return _power_colors(lobby['settings']['map'], lobby['variant'])
+        game = _lobby_games.get(lobby_id) or _lobby_pending_games.get(lobby_id)
+        return _power_colors(
+            lobby['settings']['map'], lobby['variant'],
+            game.game_state.power_groups if game else None,
+        )
 
 def _prune_join_requests(lobby):
     """Drops expired requests whose sender never connected to wait; connected waiters time out on their own."""
@@ -425,6 +446,7 @@ def _game_save_data(lobby):
         'name': lobby.get('name', 'Diplomacy game'),
         'map': lobby['settings']['map'],
         'variant': lobby.get('variant', 'standard_variant'),
+        'power_groups': _lobby_games[lobby['id']].game_state.power_groups,
         'players': [
             {
                 'user_name': player['user_name'],
@@ -454,11 +476,29 @@ def _restore_lobby_game(lobby, save_data):
     if game_data.get('map') != map_id:
         raise ValueError('Save file map does not match its game state.')
 
-    available_powers = set(_available_powers(map_id, variant_id))
+    initial_powers = _available_powers(map_id, variant_id)
+    initial_groups = [power.split(' / ') for power in initial_powers]
+    coin_powers = _get_coin_flip_powers(map_id, variant_id)
+    groups = save_data.get('power_groups')
+    if groups is not None:
+        if (not isinstance(groups, list) or len(groups) != len(initial_groups)
+                or any(not isinstance(group, list) or group[:len(base)] != base
+                       for group, base in zip(groups, initial_groups))):
+            raise ValueError('Save file has invalid power groups.')
+        extras = [power for group, base in zip(groups, initial_groups) for power in group[len(base):]]
+        if (any(not isinstance(power, str) or power not in coin_powers for power in extras)
+                or len(extras) != len(set(extras))
+                or (extras and set(extras) != set(coin_powers))):
+            raise ValueError('Save file has invalid coin flip assignments.')
+    else:
+        groups = _get_power_groups(map_id, variant_id)
+        if coin_powers and groups is None:
+            groups = initial_groups
+    available_powers = set(' / '.join(group) for group in groups) if groups is not None else set(initial_powers)
     game = web_api.restore_game(
         game_data,
         str(MAPS_DIR / map_id / f'{map_id}.json'),
-        power_groups=_get_power_groups(map_id, variant_id),
+        power_groups=groups,
     )
     saved_by_name = {
         player['user_name']: player for player in saved_players
@@ -653,7 +693,7 @@ def _update_eliminations(lobby):
             has_centers = bool(powers.get_supply_centers(state.territory_list))
             has_units = any(not unit.disbanded for unit in powers.units)
             won = state.winner is not None and state.winner.name == powers.name
-        lost = (not has_centers and not has_units) or won
+        lost = (not has_centers and not has_units) or (state.winner is not None and not won)
         if lost:
             member['selected_power'] = SPECTATOR_POWER
             eliminated.append(member['user_name'])
@@ -694,6 +734,39 @@ def _view(lobby, powers, user_name):
 def _game_views(lobby):
     """Each player sees every unit and territory, plus their own orders until the host reveals all."""
     return {p['user_name']: _view(lobby, _power_of(lobby, p['user_name']), p['user_name']) for p in lobby['players']}
+
+def _coin_flip_pending(lobby, game):
+    state = game.game_state
+    coin_powers = _get_coin_flip_powers(lobby['settings']['map'], lobby['variant'])
+    if not coin_powers:
+        return [], []
+    if (not isinstance(coin_powers, list)
+            or any(not isinstance(power, str) or state.get_player(power) is None
+                   or '/' in power for power in coin_powers)
+            or len(coin_powers) != len(set(coin_powers))):
+        raise ValueError('The variant has invalid coin flip powers.')
+    groups = state.power_groups
+    if groups is None:
+        raise ValueError('Coin flip requires power groups.')
+    assigned = {power for group in groups for power in group}
+    pending = [power for power in coin_powers if power not in assigned]
+    members = [member for member in lobby['players'] if _power_of(lobby, member['user_name']) is not None]
+    if pending and not members:
+        raise ValueError('Cannot assign coin flip powers without an active player.')
+    if any(member['selected_power'] not in [' / '.join(group) for group in groups] for member in members):
+        raise ValueError('A player has an invalid power group.')
+    return pending, members
+
+def _assign_coin_flip_powers(lobby, game, pending, members):
+    state = game.game_state
+    groups = state.power_groups
+    for power in pending:
+        member = secrets.choice(members)
+        group = next(group for group in groups if ' / '.join(group) == member['selected_power'])
+        group.append(power)
+        member['selected_power'] = ' / '.join(group)
+    if pending and state.winner is None:
+        game.adjudicator._check_for_winner()
 
 GAME_REPLY_TYPES = {
     'submit_order': 'order_result',
@@ -748,7 +821,18 @@ def _handle_game_message(lobby, user_name, kind, msg):
                     'requires_override': True,
                 }, None
             
+            state = game.game_state
+            phase, year = state.get_phase(), state.year
+            pending, members = [], []
+            if year == 1901 and phase in (FALL_PHASE, FALL_RETREAT_PHASE):
+                try:
+                    pending, members = _coin_flip_pending(lobby, game)
+                except (OSError, ValueError, TypeError) as error:
+                    return fail(str(error))
             game.adjudicator.resolve_orders()
+            if (year == 1901 and phase in (FALL_PHASE, FALL_RETREAT_PHASE)
+                    and state.get_phase() != FALL_RETREAT_PHASE):
+                _assign_coin_flip_powers(lobby, game, pending, members)
             lobby['orders_revealed'] = False
             # Clear the timer when resolving
             if 'diplomacy_timer' in lobby:
@@ -768,6 +852,8 @@ def _handle_game_message(lobby, user_name, kind, msg):
         return fail(f'You cannot act for {msg.get("power")}.')
 
     players = game.game_state.get_player(power)
+    if not isinstance(players, list):
+        players = [players] if players is not None else []
     if kind == 'delete_order':
         if lobby.get('orders_revealed'):
             return fail('Orders are revealed; waiting for the host to resolve.')
@@ -776,7 +862,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
         if isinstance(queue_id, bool) or not isinstance(queue_id, int) or queue_id < 0 or queue_id >= len(orders):
             return fail('That order no longer exists.')
         order = orders[queue_id]
-        if (isinstance(players, str) and order.unit.owner != players) or (isinstance(players, list) and order.unit.owner not in players):
+        if order.unit.owner not in players:
             return fail('You can only delete your own orders.')
         game.game_state.remove_queued_order(order)
         if order.unit.order is order:
@@ -795,10 +881,7 @@ def _handle_game_message(lobby, user_name, kind, msg):
         if not isinstance(order, str) or not order.strip() or len(order) > MAX_ORDER_LENGTH:
             return fail('Invalid order.')
         try:
-            if isinstance(players, str):
-                ok = bool(game.submit_order(order.strip(), players))
-            else:
-                ok = any(game.submit_order(order.strip(), player) for player in players)
+            ok = any(game.submit_order(order.strip(), player) for player in players)
         except Exception:
             ok = False  # the parser can raise on malformed text
         if not ok:
@@ -810,11 +893,8 @@ def _handle_game_message(lobby, user_name, kind, msg):
         view = _view(lobby, power, user_name)
         return {'type': 'order_result', 'ok': True, 'error': None, 'orders': view['orders'], 'state': view}, _game_views(lobby)
 
-    if isinstance(players, str):
-        game.game_state.vote_draw(players, _draw_voters(lobby, game))
-    else:
-        for player in players:
-            game.game_state.vote_draw(player, _draw_voters(lobby, game))
+    for player in players:
+        game.game_state.vote_draw(player, _draw_voters(lobby, game))
     reply = {'type': 'draw_result', 'ok': True, 'error': None, 'draw_votes': [p.name for p in game.game_state.draw_votes]}
     return reply, _game_views(lobby)
 
@@ -1256,10 +1336,13 @@ async def _handle_message(lobby_id, user_name, raw):
                 if _power_of(lobby, lobby['host']) is None:
                     lobby['host'] = next(p['user_name'] for p in lobby['players'] if p['selected_power'] != SPECTATOR_POWER)
                 game = _lobby_pending_games.pop(lobby['id'], None)
+                groups = _get_power_groups(lobby['settings']['map'], lobby['variant'])
+                if groups is None and _get_coin_flip_powers(lobby['settings']['map'], lobby['variant']):
+                    groups = [power.split(' / ') for power in _available_powers(lobby['settings']['map'], lobby['variant'])]
                 _lobby_games[lobby['id']] = game or web_api.new_game(
                     str(MAPS_DIR / lobby['settings']['map'] / f"{lobby['settings']['map']}.json"),
                     neutral_powers=_get_neutral_powers(lobby['settings']['map'], lobby['variant']),
-                    power_groups=_get_power_groups(lobby['settings']['map'], lobby['variant']),
+                    power_groups=groups,
                 )
                 lobby['started'] = True
                 lobby.pop('prepared_save', None)

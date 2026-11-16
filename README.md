@@ -81,6 +81,8 @@ The game cycles through Spring and Fall movement, retreat, and adjustment phases
 
 Maps define players and territory ownership but not starting units. The classic map begins in Adjustment, so players build their starting units at their home supply centers before the first movement phase.
 
+For variants with `coin_flip` powers, each listed power starts without units and is independently assigned to a random player controlling a power after the first Fall and any retreats, before the next adjustment. Spectators and vacant seats are not eligible; disconnected players retain their seats and remain eligible.
+
 **Draws:** any power can vote to draw. The game ends in a draw once every power that still has supply centers and is controlled by a player has voted. In singleplayer that means every power with supply centers. A player who leaves takes their vote with them.
 
 ### Order format

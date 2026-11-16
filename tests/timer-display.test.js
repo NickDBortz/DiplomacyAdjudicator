@@ -36,6 +36,7 @@ function createScreen(host) {
     if (host) elements['timer-start'] = element();
     const window = { diplomacy: { state: null, timerInterval: null } };
     const gameInfo = { state: null, userName: host ? 'Alice' : 'Bob', host: 'Alice' };
+    const notifications = [];
     let interval;
     const context = vm.createContext({
         window, gameInfo, document: {
@@ -46,6 +47,7 @@ function createScreen(host) {
         render(state) { window.diplomacy.state = state; },
         renderHostTools() {}, renderSubmittedOrders() {}, updateGameRole() {}, renderGameInfo() {},
         setOrderPicker() {}, resetOrderFilters() {}, renderPlayerList() {},
+        notify(message) { notifications.push(message); },
         setInterval(fn) { interval = fn; return 1; },
         clearInterval() { interval = null; },
     });
@@ -53,12 +55,43 @@ function createScreen(host) {
     vm.runInContext(source.slice(source.indexOf('function handleGameMessage('), source.indexOf('// Host tools during a game:')), context);
     vm.runInContext(source.slice(source.indexOf('function formatSeconds('), source.indexOf('function initTimerDial(')), context);
     vm.runInContext(source.slice(source.indexOf('function updateTimerDisplay('), source.indexOf('// Tells the server this is a deliberate exit')), context);
-    return { context, elements, gameInfo, tick: () => interval() };
+    return { context, elements, gameInfo, notifications, tick: () => interval() };
 }
 
 function hidden(elements, id) {
     return elements[id].classList.contains('hidden');
 }
+
+test('newly assigned powers update the player and produce one notification', () => {
+    const { context, gameInfo, notifications } = createScreen(false);
+    context.applyGameState({ player_power: 'France', valid_orders: [] });
+    context.applyGameState({ player_power: 'France / Italy', valid_orders: [] });
+    context.applyGameState({ player_power: 'France / Italy', valid_orders: [] });
+
+    assert.equal(gameInfo.power, 'France / Italy');
+    assert.deepEqual(notifications, ['You now control Italy.']);
+});
+
+test('game info shows adjustments for every controlled power', () => {
+    const info = { textContent: '' };
+    const state = {
+        phase: 'Adjustment',
+        players: [
+            { name: 'France', units_to_build: 0, supply_centers: [] },
+            { name: 'Italy', units_to_build: 1, supply_centers: ['Rome'] },
+        ],
+        units: [],
+    };
+    const context = vm.createContext({
+        gameInfo: { base: '', power: 'France / Italy', state },
+        document: { getElementById: () => info },
+    });
+    vm.runInContext(source.slice(source.indexOf('function phaseInfoLines('), source.indexOf('function updateGameRole(')), context);
+    context.renderGameInfo();
+    assert.match(info.textContent, /Adjustment for France:/);
+    assert.match(info.textContent, /Adjustment for Italy:/);
+    assert.match(info.textContent, /Units to build: 1/);
+});
 
 test('both game pages place timer banners above the map and sidebar content', () => {
     for (const file of ['multiplayer-host.html', 'multiplayer-client.html']) {

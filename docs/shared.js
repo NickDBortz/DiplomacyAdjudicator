@@ -333,7 +333,7 @@ function renderGameInfo() {
     if (gameInfo.host) lines.push(`Host: ${gameInfo.host}`);
     lines.push(`Power: ${gameInfo.power || 'none (spectating)'}`);
     if (state) {
-        const phase = phaseInfoLines(state, gameInfo.power);
+        const phase = (gameInfo.power || '').split('/').flatMap(power => phaseInfoLines(state, power.trim()));
         if (phase.length > 0) lines.push('', ...phase);
         if (state.draw_votes && state.draw_votes.length > 0) {
             lines.push('', 'Draw votes:', ...state.draw_votes.map(v => `- ${v}`));
@@ -362,6 +362,12 @@ function updateGameRole() {
 // The server sends every unit and territory, plus this player's orders (everyone's once revealed).
 function applyGameState(state) {
     const previous = gameInfo.state;
+    if (previous && previous.player_power && state.player_power) {
+        const oldPowers = previous.player_power.split('/').map(power => power.trim());
+        const addedPowers = state.player_power.split('/').map(power => power.trim())
+            .filter(power => power !== 'Spectator' && !oldPowers.includes(power));
+        if (addedPowers.length) notify(`You now control ${addedPowers.join(', ')}.`);
+    }
     if (previous && (previous.phase !== state.phase || previous.year !== state.year ||
         previous.player_power !== state.player_power || state.orders_revealed)) {
         resetOrderFilters();
@@ -643,7 +649,7 @@ function updateOrderHighlights() {
     for (const unit of state.units) {
         const abbr = unit.dislodged ? unit.dislodged_from : unit.territory;
         const key = `${unit.type} ${abbr}`;
-        const actor = unit.owner === power && highlights.actors.has(key);
+        const actor = (power || '').split('/').map(name => name.trim()).includes(unit.owner) && highlights.actors.has(key);
         const related = !unit.dislodged && highlights.related.has(key);
         if (!actor && !related) continue;
         if (unit.dislodged) {
