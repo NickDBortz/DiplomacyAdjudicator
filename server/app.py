@@ -220,8 +220,31 @@ def _vacant_powers(lobby):
     if game is None or game.game_state.winner is not None or game.game_state.draw:
         return []
     state = game.game_state
-    assigned = {p['selected_power'] for p in lobby['players']}
-    return sorted(p.name for p in state.player_list if p.name not in assigned and _power_is_alive(state, p))
+    available_powers = _available_powers(lobby['settings']['map'], lobby['variant'])
+    assigned = []
+    for p in lobby['players']:
+        power = p['selected_power']
+        if power in available_powers:
+            assigned.append(power)
+
+    vacant = []
+    for avail in available_powers:
+        if avail not in assigned:
+            if len(avail.split('/')) > 1:
+                powers = [item.strip() for item in avail.split('/')]
+                is_vacant = True
+                for p in powers:
+                    player = state.get_player(p)
+                    if not (player is not None and _power_is_alive(state, player)):
+                        is_vacant = False
+                if is_vacant:
+                    vacant.append(avail)
+            else:
+                player = state.get_player(avail)
+                if player is not None and _power_is_alive(state, player):
+                    vacant.append(avail)
+
+    return sorted(vacant)
 
 def _open_join_requests(lobby):
     """Requests whose sender is connected and waiting; those are the ones the host can answer."""
