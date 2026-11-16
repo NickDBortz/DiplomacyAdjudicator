@@ -13,7 +13,7 @@ class Game:
 
         players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj = loader.load_map_json()
 
-        self.game_state = GameState(players, territories)
+        self.game_state = GameState(players, territories, neutral_powers)
         self.adjudicator = Adjudicator(self.game_state, supply_centers_to_win)
         self.order_generator = OrderGenerator(self.game_state, self.adjudicator)
         self.order_parser = OrderParser(self.adjudicator, self.game_state, self.order_generator)

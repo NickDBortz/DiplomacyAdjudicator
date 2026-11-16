@@ -115,6 +115,16 @@ def _available_variants(map_id):
         return [f.name.replace('.json', '') for f in variants_dir.iterdir() if f.is_file()]
     return []
 
+def _get_neutral_powers(map_id, variant_id):
+    try:
+        with open(MAPS_DIR / f'{map_id}' / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
+            variant = json.load(variant_file)
+            if 'make_neutral' in variant:
+                return variant['make_neutral']
+            return []
+    except(OSError, ValueError, KeyError):
+        return []
+
 def _available_powers(map_id, variant_id):
     try:
         with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as map_file:
@@ -575,8 +585,14 @@ def _power_of(lobby, user_name):
 
 def _draw_voters(lobby, game):
     """Only powers a player controls vote on a draw; vacant powers cannot vote, so they do not block one."""
-    held = {p['selected_power'] for p in lobby['players']}
-    return [p for p in game.game_state.player_list if p.name in held]
+    held = []
+    for p in lobby['players']:
+        power = p['selected_power']
+        if len(power.split('/')) > 1:
+            held.extend([item.strip() for item in power.split('/') if item.strip() in game.game_state.player_list])
+        elif power in game.game_state.player_list:
+            held.append(power)
+    return held
 
 def _update_eliminations(lobby):
     game = _lobby_games[lobby['id']]
@@ -1199,7 +1215,7 @@ async def _handle_message(lobby_id, user_name, raw):
                 if _power_of(lobby, lobby['host']) is None:
                     lobby['host'] = next(p['user_name'] for p in lobby['players'] if p['selected_power'] != SPECTATOR_POWER)
                 game = _lobby_pending_games.pop(lobby['id'], None)
-                _lobby_games[lobby['id']] = game or web_api.new_game(str(MAPS_DIR / f'{lobby['settings']['map']}' / f'{lobby['settings']['map']}.json'))
+                _lobby_games[lobby['id']] = game or web_api.new_game(str(MAPS_DIR / f'{lobby['settings']['map']}' / f'{lobby['settings']['map']}.json'), neutral_powers=_get_neutral_powers(lobby['settings']['map'], lobby['variant']))
                 lobby['started'] = True
                 lobby.pop('prepared_save', None)
                 payload = {'type': 'game_started', **_snapshot(lobby)}
