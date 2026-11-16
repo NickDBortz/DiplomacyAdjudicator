@@ -348,7 +348,8 @@ function handleMapClickWithRadialMenu(event, availableOrders, state, power, phas
     return;
   }
 
-  const unit = state.units.find(item => !item.dislodged && item.territory === abbr && item.owner === power);
+  const powers = power.split("/").map(item => item.trim());
+  const unit = state.units.find(item => !item.dislodged && item.territory === abbr && (item.owner === power || powers.includes(item.owner)));
   if (!unit) return;
   const unitMarker = marker || [...svg.querySelectorAll('#units .unit')].find(item =>
     item.dataset.territory === unit.territory && item.dataset.owner === unit.owner && item.dataset.type === unit.type);
