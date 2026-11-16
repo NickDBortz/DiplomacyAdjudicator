@@ -612,8 +612,8 @@ def _draw_voters(lobby, game):
     for p in lobby['players']:
         power = p['selected_power']
         if len(power.split('/')) > 1:
-            held.extend([item.strip() for item in power.split('/') if item.strip() in game.game_state.player_list])
-        elif power in game.game_state.player_list:
+            held.extend([item.strip() for item in power.split('/') if item.strip() in game.game_state.players])
+        elif power in game.game_state.players:
             held.append(power)
     return held
 

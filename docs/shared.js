@@ -1185,6 +1185,7 @@ async function submitOrder(order) {
 
 async function submitDraw() {
     const r = await sendForReply({ type: 'draw', power: gameInfo.power }, 'draw_result');
+    console.log(r);
     return r.ok ? 'You voted to draw.' : `Draw rejected: ${r.error}`;
 }
 
