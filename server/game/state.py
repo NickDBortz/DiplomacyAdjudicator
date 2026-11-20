@@ -1,7 +1,7 @@
 from game.enums import ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE
 
 class GameState:
-    def __init__(self, players, territories, power_groups=None, neutral_powers=None):
+    def __init__(self, players, territories, power_groups=None, neutral_powers=None, start_date=1901):
         self.players = {}
         for player in players:
             self.players[player.name.lower()] = player 
@@ -18,7 +18,7 @@ class GameState:
         self.resolution_phases = [ADJUSTMENT_PHASE, SPRING_PHASE, SPRING_RETREAT_PHASE, FALL_PHASE, FALL_RETREAT_PHASE]
         self.resolution_phase = 0
         
-        self.year = 1901
+        self.year = start_date
         self.winner = None
         self.winner_name = None
         self.draw = False

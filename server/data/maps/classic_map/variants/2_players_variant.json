@@ -13,5 +13,7 @@
     ],
     "coin_flip": [
         "Italy"
-    ]
+    ],
+    "win_count": 24,
+    "start_date": 1914
 }

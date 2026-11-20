@@ -73,7 +73,7 @@ class MapLoader:
 
             # ------ Create Adjudicator ------
 
-            supply_centers_to_win = map_obj['win_count']
+            supply_centers_to_win = self.variant.get('win_count', map_obj['win_count'])
 
             # ------ Create Renderer ------
 
@@ -81,5 +81,6 @@ class MapLoader:
             height = map_obj['height']
             vertices = map_obj['vertices']
             water_color = map_obj['water_color']
+            start_date = self.variant.get('start_date', 1901)
 
-            return players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj
+            return players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj, start_date
