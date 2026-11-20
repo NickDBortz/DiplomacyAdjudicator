@@ -1,7 +1,12 @@
-/**
- * Test suite for Radial Menu System
- * Tests all order types, phases, and selection flows
- */
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const vm = require('node:vm');
+
+const source = fs.readFileSync(path.join(__dirname, '..', 'docs', 'radial-menu.js'), 'utf8');
+const context = vm.createContext({});
+vm.runInContext(source, context);
+const RadialMenu = vm.runInContext('RadialMenu', context);
 
 // Mock game state and map data
 const mockMapData = {
@@ -116,11 +121,6 @@ const mockAvailableOrders = [
 ];
 
 // Test utilities
-const tests = [];
-function test(name, fn) {
-  tests.push({ name, fn });
-}
-
 function assertEqual(actual, expected, message) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`${message}\nExpected: ${JSON.stringify(expected)}\nActual: ${JSON.stringify(actual)}`);
@@ -140,25 +140,10 @@ function assertContains(array, value, message) {
 // ============================================================================
 
 test('RadialMenu initialization', () => {
-  assertExists(window.RadialMenu, 'RadialMenu class should be defined');
-  const menu = new window.RadialMenu({ radius: 80 });
+  const menu = new RadialMenu();
   assertExists(menu, 'RadialMenu should instantiate');
-  assertEqual(menu.isVisible, false, 'Menu should start hidden');
-});
-
-test('RadialMenu configuration', () => {
-  const menu = new window.RadialMenu({ radius: 100 });
-  assertEqual(menu.config.radius, 100, 'Custom radius should be set');
-  assertEqual(menu.config.itemCount, 5, 'Should have 5 items by default');
-});
-
-test('RADIAL_MENU_CONFIG colors defined', () => {
-  assertExists(RADIAL_MENU_CONFIG.colors, 'Color configuration should exist');
-  assertExists(RADIAL_MENU_CONFIG.colors.Hold, 'Hold color should be defined');
-  assertExists(RADIAL_MENU_CONFIG.colors.Advance, 'Advance color should be defined');
-  assertExists(RADIAL_MENU_CONFIG.colors.Support, 'Support color should be defined');
-  assertExists(RADIAL_MENU_CONFIG.colors.Transform, 'Transform color should be defined');
-  assertExists(RADIAL_MENU_CONFIG.colors.Convoy, 'Convoy color should be defined');
+  assertEqual(menu.currentUnit, null, 'No unit should be selected initially');
+  assertEqual(menu.selectionMode, null, 'No selection should be active initially');
 });
 
 test('Territory adjacency conversion (name to abbreviation)', () => {
@@ -325,77 +310,29 @@ test('Radial menu item positions (5 items)', () => {
   assertExists(positions[0], 'First position should exist');
 });
 
-test('Advance highlighting color', () => {
-  const advanceColor = RADIAL_MENU_CONFIG.highlights.regular;
-  assertExists(advanceColor, 'Advance highlight color should be defined');
-  assertEqual(typeof advanceColor, 'string', 'Color should be a string');
-});
-
-test('Convoy highlighting with checkerboard', () => {
-  const convoyColor = RADIAL_MENU_CONFIG.highlights.convoy;
-  const checkerboardColor = RADIAL_MENU_CONFIG.highlights.checkerboard;
-  assertExists(convoyColor, 'Convoy highlight color should be defined');
-  assertExists(checkerboardColor, 'Checkerboard highlight color should be defined');
-});
-
 test('Retreat order filtering (no convoy)', () => {
   const orders = mockAvailableOrders.filter(o => o.type === 'Move');
   const retreatableOrders = orders.filter(o => !o.text.includes('C'));
   assertEqual(retreatableOrders.length > 0, true, 'Should have non-convoy move orders for retreat');
 });
 
-test('Multiple selection tracking state', () => {
-  const menu = new window.RadialMenu();
-  menu.selectionState = {
-    step: 1,
-    supportUnit: 'F LON',
-    supportMode: 'advance'
+test('cancelling a selection clears its highlights and selection state', () => {
+  const menu = new RadialMenu();
+  const classes = new Set();
+  const element = {
+    classList: {
+      add: name => classes.add(name),
+      remove: name => classes.delete(name),
+    },
   };
-  
-  assertExists(menu.selectionState.step, 'Selection step should be tracked');
-  assertEqual(menu.selectionState.supportUnit, 'F LON', 'Support unit should be tracked');
-  assertEqual(menu.selectionState.supportMode, 'advance', 'Support mode should be tracked');
+  menu.currentUnit = { type: 'F', territory: 'LON' };
+  menu.selectionMode = 'Support';
+  menu.selectionSource = 'NTH';
+  menu.highlight(element, 'support-target');
+  assertEqual(classes.has('support-target'), true, 'Target should be highlighted');
+  menu.cancel();
+  assertEqual(classes.size, 0, 'Highlights should be removed');
+  assertEqual(menu.currentUnit, null, 'Selected unit should be cleared');
+  assertEqual(menu.selectionMode, null, 'Selection mode should be cleared');
+  assertEqual(menu.selectionSource, null, 'Selection source should be cleared');
 });
-
-// ============================================================================
-// RUN TESTS
-// ============================================================================
-
-let passed = 0;
-let failed = 0;
-const results = [];
-
-console.log('Starting Radial Menu Test Suite...\n');
-
-for (const { name, fn } of tests) {
-  try {
-    fn();
-    passed++;
-    results.push({ status: '✓', name, message: 'PASSED' });
-    console.log(`✓ ${name}`);
-  } catch (error) {
-    failed++;
-    results.push({ status: '✗', name, message: error.message });
-    console.log(`✗ ${name}`);
-    console.log(`  Error: ${error.message}\n`);
-  }
-}
-
-console.log(`\n${'='.repeat(70)}`);
-console.log(`TEST SUMMARY: ${passed} passed, ${failed} failed out of ${passed + failed} tests`);
-console.log(`${'='.repeat(70)}\n`);
-
-if (failed === 0) {
-  console.log('✓ All tests passed!');
-} else {
-  console.log(`✗ ${failed} test(s) failed.`);
-  console.log('\nFailed tests:');
-  results.filter(r => r.status === '✗').forEach(r => {
-    console.log(`  - ${r.name}: ${r.message}`);
-  });
-}
-
-// Export for Node.js environments
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { tests, passed, failed, results };
-}

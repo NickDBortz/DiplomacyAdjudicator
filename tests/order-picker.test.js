@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'docs', 'shared.js'), 'utf8');
 const pickerSource = source.slice(source.indexOf('let availableOrders = [];'), source.indexOf('function downloadGameSave('));
-const mapData = JSON.parse(fs.readFileSync(path.join(root, 'docs', 'data', 'classic_map.json'), 'utf8'));
+const mapData = JSON.parse(fs.readFileSync(path.join(root, 'docs', 'data', 'maps', 'classic_map', 'classic_map.json'), 'utf8'));
 
 function createPicker() {
     class Option {

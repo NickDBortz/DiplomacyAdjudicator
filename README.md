@@ -150,7 +150,13 @@ cd server
 python -m pytest
 ```
 
-The `Run Tests` workflow runs the suite on every push.
+Run the frontend tests from the repository root with Node.js:
+
+```bash
+node --test
+```
+
+The `Run Tests` workflow runs the backend suite on every push.
 
 ## Deployment
 
