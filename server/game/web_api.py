@@ -59,7 +59,7 @@ def get_valid_orders(game, player):
     ]
 
 
-def new_game(map_path='data/maps/classic_map.json', start_phase=None, neutral_powers=None, power_groups=None):
+def new_game(map_path='data/maps/classic_map.json', start_phase=None, neutral_powers=None, power_groups=None, variant=None):
     kwargs = {'json_file': map_path, 'render': False}
     if start_phase is not None:
         kwargs['start_phase'] = start_phase
@@ -67,6 +67,8 @@ def new_game(map_path='data/maps/classic_map.json', start_phase=None, neutral_po
         kwargs['neutral_powers'] = neutral_powers
     if power_groups is not None:
         kwargs['power_groups'] = power_groups
+    if variant is not None:
+        kwargs['variant'] = variant
     return Game(**kwargs)
 
 
@@ -97,8 +99,8 @@ def serialize_game(game, map_id):
     }
 
 
-def restore_game(data, map_path, power_groups=None):
-    game = new_game(map_path, start_phase=data['phase'], power_groups=power_groups)
+def restore_game(data, map_path, power_groups=None, variant=None):
+    game = new_game(map_path, start_phase=data['phase'], power_groups=power_groups, variant=variant)
     state = game.game_state
     territories = {territory.abbr: territory for territory in state.territory_list}
 

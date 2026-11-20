@@ -15,6 +15,7 @@ const chatState = {
     lastRead: {},  // conversation -> highest read message id; kept per tab so page changes do not re-notify
     players: [],
     powers: {},
+    powerColors: {},
     started: false,
     timerActive: false,
     ruleset: 'normal',
@@ -79,7 +80,7 @@ function isViewing(conversation) {
 }
 
 function powerColor(power) {
-    return (mapData?.players ?? []).find(p => p.name === power)?.color;
+    return chatState.powerColors[power];
 }
 
 function chatElement(tag, className, text) {
@@ -325,17 +326,20 @@ function chatReceive(msg) {
     } else if (msg.type === 'lobby_update') {
         chatState.players = msg.players || chatState.players;
         chatState.powers = msg.selected_powers || chatState.powers;
+        if (msg.power_colors) chatState.powerColors = msg.power_colors;
         chatState.started = Boolean(msg.started);
         if ('ruleset' in msg) chatState.ruleset = msg.ruleset;
         if ('timer' in msg) chatState.timerActive = Boolean(msg.timer && msg.timer.active);
     } else if (msg.type === 'game_started') {
         chatState.players = msg.players || chatState.players;
         chatState.powers = msg.selected_powers || chatState.powers;
+        if (msg.power_colors) chatState.powerColors = msg.power_colors;
         chatState.started = true;
         if ('ruleset' in msg) chatState.ruleset = msg.ruleset;
     } else if (msg.type === 'game_state') {
         chatState.players = msg.state.lobby_players || chatState.players;
         chatState.powers = msg.state.selected_powers || chatState.powers;
+        if (msg.state.power_colors) chatState.powerColors = msg.state.power_colors;
         chatState.started = true;
         if ('ruleset' in msg.state) chatState.ruleset = msg.state.ruleset;
         chatState.timerActive = Boolean(msg.state.diplomacy_timer && msg.state.diplomacy_timer.active);

@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import app as server
+import pytest
 from game import web_api
 from game.enums import ARMY
 from game.unit import Unit
@@ -241,3 +242,108 @@ def test_group_save_restores_variant_powers_and_winner(monkeypatch):
     ]
     assert restored.game_state.power_groups == [GROUP_A, GROUP_B]
     assert restored.game_state.get_winner_name() == GROUP_A_NAME
+
+
+def test_added_power_ownership_builds_and_save_restore(monkeypatch):
+    class Socket:
+        async def send_json(self, message):
+            pass
+
+    variant = '8_players_variant'
+    lobby = {
+        'id': 'eight-player',
+        'name': 'Eight player game',
+        'host': 'Alice',
+        'started': False,
+        'variant': variant,
+        'settings': {'map': 'classic_map'},
+        'players': [{'user_name': 'Alice', 'selected_power': 'Ottoman Empire'}],
+    }
+    monkeypatch.setattr(server, '_lobbies', {'Eight player game': lobby})
+    monkeypatch.setattr(server, '_lobby_games', {})
+    monkeypatch.setattr(server, '_lobby_pending_games', {})
+    monkeypatch.setitem(server._lobby_sockets, lobby['id'], {'Alice': Socket()})
+
+    assert 'Ottoman Empire' in server._available_powers('classic_map', variant)
+    assert server._snapshot(lobby)['power_colors']['Ottoman Empire'] == '#FFFFFF'
+    asyncio.run(server._handle_message(lobby['id'], 'Alice', json.dumps({'type': 'start_game'})))
+
+    assert lobby['started']
+    game = server._lobby_games[lobby['id']]
+    ottoman = game.game_state.get_player('Ottoman Empire')
+    assert ottoman.color == '#FFFFFF'
+    for abbr in ('RUM', 'BUL', 'SER', 'ALB', 'GRE'):
+        territory = game.game_state.get_territory(abbr)
+        assert territory.owner is ottoman
+        assert territory.home_owner is ottoman
+    view = server._view(lobby, 'Ottoman Empire', 'Alice')
+    assert next(player for player in view['players'] if player['name'] == 'Ottoman Empire')['color'] == '#FFFFFF'
+    assert {t['abbr'] for t in view['territories'] if t['owner'] == 'Ottoman Empire'} == {'RUM', 'BUL', 'SER', 'ALB', 'GRE'}
+    assert 'Build A RUM' in view['valid_orders']
+    assert server._handle_game_message(lobby, 'Alice', 'submit_order', {'power': 'Ottoman Empire', 'order': 'Build A RUM'})[0]['ok']
+    game.adjudicator.resolve_orders()
+
+    game.game_state.get_territory('BUL').owner = game.game_state.get_player('Turkey')
+    saved = server._game_save_data(lobby)
+    restored_lobby = make_lobby('eight-restored', [{'user_name': 'Alice', 'selected_power': None}])
+    server._restore_lobby_game(restored_lobby, saved)
+    restored = server._lobby_pending_games['eight-restored']
+    ottoman = restored.game_state.get_player('Ottoman Empire')
+    assert restored_lobby['players'][0]['selected_power'] == 'Ottoman Empire'
+    assert restored.game_state.get_territory('BUL').owner.name == 'Turkey'
+    assert restored.game_state.get_territory('BUL').home_owner is ottoman
+    assert restored.game_state.get_territory('RUM').unit.owner is ottoman
+    restored.game_state.get_territory('BUL').owner = ottoman
+    restored.game_state.set_phase('Adjustment')
+    assert 'Build A BUL' in web_api.get_valid_orders(restored, ottoman)
+
+
+def test_variant_ownership_changes_and_invalid_references():
+    variant = {
+        'modify_ownership': [
+            {'territory_name': 'Paris', 'new_owner': 'England'},
+            {'territory_name': 'London', 'new_owner': ''},
+        ],
+    }
+    game = web_api.new_game(MAP, variant=variant)
+    assert game.game_state.get_territory('PAR').home_owner.name == 'England'
+    assert game.game_state.get_territory('LON').home_owner is None
+    assert web_api.new_game(MAP).game_state.get_territory('PAR').home_owner.name == 'France'
+    for change in (
+        {'territory_name': 'Unknown', 'new_owner': 'England'},
+        {'territory_name': 'Paris', 'new_owner': 'Unknown'},
+    ):
+        with pytest.raises(ValueError, match='Unknown'):
+            web_api.new_game(MAP, variant={'modify_ownership': [change]})
+    with pytest.raises(ValueError, match='Duplicate power'):
+        web_api.new_game(MAP, variant={'add_power': [{'name': 'FRANCE', 'color': '#000000'}]})
+
+
+def test_added_power_color_in_running_groups():
+    colors = server._power_colors('classic_map', '8_players_variant', [['Ottoman Empire', 'France']])
+    assert colors['Ottoman Empire / France'] == '#bcd7e2'
+
+
+def test_start_rejects_a_power_from_another_variant(monkeypatch):
+    class Socket:
+        def __init__(self):
+            self.messages = []
+
+        async def send_json(self, message):
+            self.messages.append(message)
+
+    lobby = {
+        'id': 'wrong-variant', 'host': 'Alice', 'started': False,
+        'variant': '8_players_variant', 'settings': {'map': 'classic_map'},
+        'players': [{'user_name': 'Alice', 'selected_power': 'Ottoman Empire'}],
+    }
+    socket = Socket()
+    monkeypatch.setattr(server, '_lobbies', {'Game': lobby})
+    monkeypatch.setattr(server, '_lobby_games', {})
+    monkeypatch.setattr(server, '_lobby_pending_games', {})
+    monkeypatch.setitem(server._lobby_sockets, lobby['id'], {'Alice': socket})
+    asyncio.run(server._handle_message(lobby['id'], 'Alice', json.dumps({
+        'type': 'start_game', 'variant': 'standard_variant',
+    })))
+    assert not lobby['started']
+    assert socket.messages[-1]['message'] == 'A selected Great Power is not available in this variant.'

@@ -53,7 +53,7 @@ async function showPreview(mapId) {
     for (const t of mapData.territories) {
         document.getElementById('terr-' + t.abbr).setAttribute('fill', t.land ? '#DDD' : mapData.water_color);
     }
-    // Power colors come from the map, so redraw the list once it has loaded.
+    // Redraw the player list once the map has loaded.
     if (lastSnapshot) renderPlayerList(lobbyId, lastSnapshot.players, playerName, lastSnapshot.selected_powers, lastSnapshot.connected_players);
 }
 

@@ -5,5 +5,27 @@
             "var_name": "ottoman_empire",
             "color": "#FFFFFF"
         }
+    ],
+    "modify_ownership": [
+        {
+            "territory_name": "Rumania",
+            "new_owner": "Ottoman Empire"
+        },
+        {
+            "territory_name": "Bulgaria",
+            "new_owner": "Ottoman Empire"
+        },
+        {
+            "territory_name": "Serbia",
+            "new_owner": "Ottoman Empire"
+        },
+        {
+            "territory_name": "Albania",
+            "new_owner": "Ottoman Empire"
+        },
+        {
+            "territory_name": "Greece",
+            "new_owner": "Ottoman Empire"
+        }
     ]
 }

@@ -137,12 +137,17 @@ def _get_coin_flip_powers(map_id, variant_id):
     with open(MAPS_DIR / map_id / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
         return json.load(variant_file).get('coin_flip', [])
 
+def _load_variant(map_id, variant_id):
+    with open(MAPS_DIR / map_id / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
+        return json.load(variant_file)
+
 def _available_powers(map_id, variant_id):
     try:
         with open(MAPS_DIR / f'{map_id}' / f'{map_id}.json', 'r', encoding='utf-8') as map_file:
             powers = sorted(player['name'] for player in json.load(map_file)['players'])
             with open(MAPS_DIR / f'{map_id}' / 'variants' / f'{variant_id}.json', 'r', encoding='utf-8') as variant_file:
                 variant = json.load(variant_file)
+                powers.extend(sorted(player['name'] for player in variant.get('add_power', [])))
                 # If the variant has neutral powers, remove those powers from the pool. Those powers will be neutral and provide no orders to their troops
                 if 'make_neutral' in variant:
                     neutral_powers = variant['make_neutral']
@@ -151,10 +156,6 @@ def _available_powers(map_id, variant_id):
                 if 'coin_flip' in variant:
                     coin_flip_powers = variant['coin_flip']
                     powers = [power for power in powers if power not in coin_flip_powers]
-                # If the variant has added powers, add those to the power pool. Those powers will be playable along with the rest
-                if 'add_power' in variant:
-                    added_powers = sorted(player['name'] for player in variant['add_power'])
-                    powers.extend(added_powers)
                 # If the variant has power groups, group the existing powers by the specified groupings. The player assigned to a group will control all powers in said group
                 if 'power_groups' in variant:
                     groups = variant['power_groups']
@@ -182,6 +183,10 @@ def _power_colors(map_id, variant_id, groups=None):
             for player in json.load(map_file)['players']:
                 colors[player['name']] = player['color']
 
+            variant = _load_variant(map_id, variant_id)
+            for power in variant.get('add_power', []):
+                colors[power['name']] = power['color']
+
             if groups is not None:
                 group_colors = {}
                 for group in groups:
@@ -204,10 +209,6 @@ def _power_colors(map_id, variant_id, groups=None):
                     for power in coin_flip_powers:
                         if power in colors:
                             colors.pop(power)
-                # If the variant has added powers, add those to the power pool. Those powers will be playable along with the rest
-                if 'add_power' in variant:
-                    for power in variant['add_power']:
-                        colors[power['name']] = power['color']
                 # If the variant has power groups, group the existing powers by the specified groupings. The player assigned to a group will control all powers in said group
                 if 'power_groups' in variant:
                     groups = variant['power_groups']
@@ -288,6 +289,7 @@ def _pick_successor(lobby, exclude=None, require_power=False, require_connected=
     return None
 
 def _snapshot(lobby):
+    game = _lobby_games.get(lobby['id']) or _lobby_pending_games.get(lobby['id'])
     return {
         'players': [p['user_name'] for p in lobby['players']],
         'selected_powers': {p['user_name']: p['selected_power'] for p in lobby['players']},
@@ -296,6 +298,8 @@ def _snapshot(lobby):
         'started': lobby['started'],
         'ruleset': lobby.get('ruleset', 'normal'),
         'variant': lobby.get('variant', 'standard_variant'),
+        'power_colors': _power_colors(lobby['settings']['map'], lobby.get('variant', 'standard_variant'),
+                                      game.game_state.power_groups if game else None),
         'settings': lobby['settings'],
         'prepared_save': lobby.get('prepared_save'),
         'vacant_powers': _vacant_powers(lobby),
@@ -499,6 +503,7 @@ def _restore_lobby_game(lobby, save_data):
         game_data,
         str(MAPS_DIR / map_id / f'{map_id}.json'),
         power_groups=groups,
+        variant=_load_variant(map_id, variant_id),
     )
     saved_by_name = {
         player['user_name']: player for player in saved_players
@@ -717,6 +722,8 @@ def _view(lobby, powers, user_name):
     state['ruleset'] = lobby.get('ruleset', 'normal')
     state['lobby_players'] = [p['user_name'] for p in lobby['players']]
     state['selected_powers'] = {p['user_name']: p['selected_power'] for p in lobby['players']}
+    state['power_colors'] = _power_colors(lobby['settings']['map'], lobby['variant'],
+                                          _lobby_games[lobby['id']].game_state.power_groups)
     state['eliminated_players'] = list(lobby.get('eliminated', []))
     state['connected_players'] = sorted(_connected_names(lobby))
     state['vacant_powers'] = _vacant_powers(lobby)
@@ -1330,6 +1337,12 @@ async def _handle_message(lobby_id, user_name, raw):
                 reply = {'type': 'error', 'message': 'Every player must select a Great Power before starting.'}
             elif not any(p['selected_power'] != SPECTATOR_POWER for p in lobby['players']):
                 reply = {'type': 'error', 'message': 'At least one player must select a Great Power.'}
+            elif lobby['id'] in _lobby_pending_games and variant != lobby['variant']:
+                reply = {'type': 'error', 'message': 'The selected variant does not match the loaded game.'}
+            elif any(p['selected_power'] != SPECTATOR_POWER and
+                     p['selected_power'] not in _available_powers(map_id, variant)
+                     for p in lobby['players']) and lobby['id'] not in _lobby_pending_games:
+                reply = {'type': 'error', 'message': 'A selected Great Power is not available in this variant.'}
             else:
                 lobby['ruleset'] = ruleset
                 lobby['variant'] = variant
@@ -1339,14 +1352,20 @@ async def _handle_message(lobby_id, user_name, raw):
                 groups = _get_power_groups(lobby['settings']['map'], lobby['variant'])
                 if groups is None and _get_coin_flip_powers(lobby['settings']['map'], lobby['variant']):
                     groups = [power.split(' / ') for power in _available_powers(lobby['settings']['map'], lobby['variant'])]
-                _lobby_games[lobby['id']] = game or web_api.new_game(
-                    str(MAPS_DIR / lobby['settings']['map'] / f"{lobby['settings']['map']}.json"),
-                    neutral_powers=_get_neutral_powers(lobby['settings']['map'], lobby['variant']),
-                    power_groups=groups,
-                )
-                lobby['started'] = True
-                lobby.pop('prepared_save', None)
-                payload = {'type': 'game_started', **_snapshot(lobby)}
+                try:
+                    game = game or web_api.new_game(
+                        str(MAPS_DIR / lobby['settings']['map'] / f"{lobby['settings']['map']}.json"),
+                        neutral_powers=_get_neutral_powers(lobby['settings']['map'], lobby['variant']),
+                        power_groups=groups,
+                        variant=_load_variant(lobby['settings']['map'], lobby['variant']),
+                    )
+                except (OSError, ValueError, KeyError, TypeError) as e:
+                    reply = {'type': 'error', 'message': f'Could not start game: {e}'}
+                else:
+                    _lobby_games[lobby['id']] = game
+                    lobby['started'] = True
+                    lobby.pop('prepared_save', None)
+                    payload = {'type': 'game_started', **_snapshot(lobby)}
 
     if closes:
         await _close_sockets(closes)

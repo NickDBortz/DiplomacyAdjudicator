@@ -5,8 +5,9 @@ from pathlib import Path
 import json
 
 class MapLoader:
-    def __init__(self, json_file='/data/maps/classic_map/classic_map.json'):
+    def __init__(self, json_file='/data/maps/classic_map/classic_map.json', variant=None):
         self.json_file = json_file
+        self.variant = variant if variant is not None else {}
 
     def load_map_json(self):
         json_file_path = Path(self.json_file)
@@ -19,14 +20,26 @@ class MapLoader:
             # ------ Create Game State ------
 
             # Load Players
-            players_obj = map_obj['players']
+            players_obj = map_obj['players'] + self.variant.get('add_power', [])
             players = []
             for player_obj in players_obj:
+                if any(player.name.lower() == player_obj['name'].lower() for player in players):
+                    raise ValueError(f"Duplicate power: {player_obj['name']}")
                 player = Player(player_obj['name'], player_obj['color'])
                 players.append(player)
 
             # Load Territories
             territories_obj = map_obj['territories']
+            territories_by_name = {territory['name']: territory for territory in territories_obj}
+            player_names = {player.name for player in players}
+            for change in self.variant.get('modify_ownership', []):
+                name = change['territory_name']
+                owner = change['new_owner']
+                if name not in territories_by_name:
+                    raise ValueError(f'Unknown territory in variant: {name}')
+                if owner not in player_names and owner not in ('', None):
+                    raise ValueError(f'Unknown power in variant: {owner}')
+                territories_by_name[name]['owner'] = owner
             territories = []
             for territory_obj in territories_obj:
                 name = territory_obj['name']

@@ -67,12 +67,29 @@ test('chat timer updates control private chat eligibility', () => {
     assert.equal(vm.runInContext('privateChatPartners().length', context), 0);
 });
 
+test('chat colors follow variant and running game snapshots without map players', () => {
+    const context = createEligibilityContext();
+    vm.runInContext('chatState.el = {}', context);
+    const colorStart = source.indexOf('function powerColor(');
+    const colorEnd = source.indexOf('\nfunction chatElement(', colorStart);
+    vm.runInContext(source.slice(colorStart, colorEnd), context);
+    const receiveStart = source.indexOf('function chatReceive(');
+    const receiveEnd = source.indexOf('\nfunction initChat(', receiveStart);
+    vm.runInContext(source.slice(receiveStart, receiveEnd), context);
+
+    vm.runInContext("chatReceive({ type: 'lobby_update', power_colors: { 'Ottoman Empire': '#ffffff' } })", context);
+    assert.equal(vm.runInContext("powerColor('Ottoman Empire')", context), '#ffffff');
+    vm.runInContext("chatReceive({ type: 'game_state', state: { power_colors: { 'Ottoman Empire / France': '#bcd7e2' } } })", context);
+    assert.equal(vm.runInContext("powerColor('Ottoman Empire / France')", context), '#bcd7e2');
+});
+
 test('starting the game sends the selected chat ruleset to the server', () => {
     const messages = [];
     const context = vm.createContext({
         rulesetControls: {
             querySelector: () => ({ value: 'public_press' }),
         },
+        ruleVariantSelect: { value: '8_players_variant' },
         ws: { send: message => messages.push(message) },
     });
     const start = lobbySource.indexOf('function startGame()');
@@ -80,7 +97,7 @@ test('starting the game sends the selected chat ruleset to the server', () => {
     vm.runInContext(lobbySource.slice(start, end), context);
     vm.runInContext('startGame()', context);
 
-    assert.deepEqual(JSON.parse(messages[0]), { type: 'start_game', ruleset: 'public_press' });
+    assert.deepEqual(JSON.parse(messages[0]), { type: 'start_game', ruleset: 'public_press', variant: '8_players_variant' });
 });
 
 test('lobby clients mirror the host-selected ruleset from server snapshots', () => {

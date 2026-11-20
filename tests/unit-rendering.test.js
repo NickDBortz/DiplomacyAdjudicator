@@ -42,6 +42,7 @@ test('unit icons use the correct type, color and position across redraws', () =>
         setStatus() {},
         updateOrderHighlights() {},
     });
+
     vm.runInContext(renderingSource, context);
     const state = {
         players: [{ name: 'France', color: '#123456' }, { name: 'England', color: '#abcdef' }],
@@ -64,4 +65,30 @@ test('unit icons use the correct type, color and position across redraws', () =>
         assert.equal(fleet.children[0].style.color, '#abcdef');
         assert.deepEqual(elements['map-orders'].children.map(child => child.tag), ['line', 'polygon']);
     }
+});
+
+test('variant ownership and power colors render from game state, not the map', () => {
+    const elements = {
+        units: new Element('g'), 'map-orders': new Element('g'), 'terr-RUM': new Element('path'),
+    };
+    const context = vm.createContext({
+        SVG_NS: 'http://www.w3.org/2000/svg',
+        mapData: { water_color: '#abc', players: [], territories: [
+            { abbr: 'RUM', land: true, army_pos: [20, 30], coast_pos: [25, 35] },
+        ] },
+        document: {
+            createElementNS: (_, tag) => new Element(tag),
+            getElementById: id => elements[id] || null,
+        },
+        window: { diplomacy: {} }, setStatus() {}, updateOrderHighlights() {},
+    });
+    vm.runInContext(renderingSource, context);
+    context.render({
+        players: [{ name: 'Ottoman Empire', color: '#ffffff' }],
+        territories: [{ abbr: 'RUM', owner: 'Ottoman Empire' }],
+        units: [{ type: 'A', territory: 'RUM', owner: 'Ottoman Empire' }],
+        orders: [], phase: 'Spring', year: 1901,
+    });
+    assert.equal(elements['terr-RUM'].attributes.fill, '#ffffff');
+    assert.equal(elements.units.children[0].children[0].style.color, '#ffffff');
 });

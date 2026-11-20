@@ -83,6 +83,8 @@ Maps define players and territory ownership but not starting units. The classic 
 
 For variants with `coin_flip` powers, each listed power starts without units and is independently assigned to a random player controlling a power after the first Fall and any retreats, before the next adjustment. Spectators and vacant seats are not eligible; disconnected players retain their seats and remain eligible.
 
+The eight-player variant adds the Ottoman Empire and assigns it Rumania, Bulgaria, Serbia, Albania, and Greece. Its supply centers are home centers where it can build.
+
 **Draws:** any power can vote to draw. The game ends in a draw once every power that still has supply centers and is controlled by a player has voted. In singleplayer that means every power with supply centers. A player who leaves takes their vote with them.
 
 ### Order format
@@ -184,6 +186,12 @@ Drawing the map also needs layout data on each territory:
 - `supply_center_pos` for land supply centers.
 
 All positions are pixel coordinates within `width` by `height`. `var_name` appears in the included JSON but is not used. See `server/data/maps/classic_map.json` for a full example.
+
+### Variants
+
+Place variant JSON files in the map's `variants` directory on the server. The browser only needs the map JSON; the server sends variant powers, colors, and current ownership as game state.
+
+`add_power` is an array of power definitions with `name` and `color` (and optional `var_name`). `modify_ownership` is an array of objects with `territory_name` and `new_owner`, where the owner is a map or added power's name, or `""` to make the territory unowned. Ownership changes also set home ownership, so reassigned supply centers become build locations for the new owner. See `server/data/maps/classic_map/variants/8_players_variant.json` for an example.
 
 To run the command-line game with a custom map, from `server/`:
 

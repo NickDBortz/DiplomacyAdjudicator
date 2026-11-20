@@ -7,9 +7,9 @@ from game.order_generator import OrderGenerator
 from game.enums import ADJUSTMENT_PHASE, SPRING_RETREAT_PHASE, FALL_RETREAT_PHASE
 
 class Game:
-    def __init__(self, json_file='data/maps/classic_map.json', start_phase=ADJUSTMENT_PHASE, neutral_powers=None, render=True, allow_transformations=False, power_groups=None):
+    def __init__(self, json_file='data/maps/classic_map.json', start_phase=ADJUSTMENT_PHASE, neutral_powers=None, render=True, allow_transformations=False, power_groups=None, variant=None):
         # Create a map loader to load the json file and populate the rest of the objects
-        loader = MapLoader(json_file)
+        loader = MapLoader(json_file, variant=variant)
 
         players, territories, supply_centers_to_win, width, height, vertices, water_color, territories_obj = loader.load_map_json()
 
