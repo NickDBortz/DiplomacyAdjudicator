@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Diplomacy map builder</title>
+    <style>
+        body { margin: 0; font: 14px system-ui, sans-serif; color: #202630; }
+        header { padding: 12px 18px; background: #24354b; color: white; }
+        h1 { font-size: 20px; margin: 0; }
+        main { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); height: calc(100vh - 50px); }
+        aside { padding: 12px; overflow-y: auto; border-right: 1px solid #bbb; }
+        section { border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px; }
+        h2 { font-size: 16px; margin: 8px 0; }
+        label { display: block; margin: 6px 0; }
+        input, select, button { font: inherit; }
+        input[type=text], input[type=number], select { max-width: 100%; }
+        button { margin: 3px 3px 3px 0; padding: 4px 8px; cursor: pointer; }
+        #workspace { overflow: auto; background: #ddd; padding: 12px; }
+        #map { display: block; background: white; max-width: none; touch-action: manipulation; }
+        #map polygon { stroke: #ef9700; stroke-width: 2; fill: #fbbc0555; vector-effect: non-scaling-stroke; }
+        #map polygon.selected { stroke: #004ce0; fill: #3b82f655; }
+        #map polyline { stroke: #f00; stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; }
+        #map text { font-size: 14px; fill: #111; stroke: white; stroke-width: 3px; paint-order: stroke; pointer-events: none; }
+        #map circle { stroke: white; stroke-width: 1; pointer-events: none; }
+        #neighbors { max-height: 200px; overflow: auto; }
+        #neighbors label { display: flex; gap: 5px; align-items: center; }
+        #neighbors span { flex: 1; }
+        #message { white-space: pre-wrap; color: #9c1c1c; }
+        .hint { color: #555; font-size: 12px; }
+        @media (max-width: 700px) { main { display: block; height: auto; } #workspace { min-height: 400px; } }
+    </style>
+</head>
+<body>
+<header><h1>Diplomacy map builder</h1></header>
+<main>
+<aside>
+    <section>
+        <h2>Map</h2>
+        <label>Reference image <input id="image" type="file" accept="image/*"></label>
+        <label>Import existing map JSON <input id="import" type="file" accept=".json,application/json"></label>
+        <label>Supply centers to win <input id="win-count" type="number" min="1" value="1"></label>
+        <label>Water color <input id="water-color" type="color" value="#c5dfea"></label>
+        <button id="export" type="button">Validate and download map</button>
+        <button id="save-draft" type="button">Download draft</button>
+        <p class="hint">A draft preserves unfinished work. Re-import it and select the same image to continue.</p>
+        <div id="message" role="status" aria-live="polite"></div>
+    </section>
+    <section>
+        <h2>Powers</h2>
+        <label>Name <input id="power-name" type="text"></label>
+        <label>Color <input id="power-color" type="color"></label>
+        <button id="add-power" type="button">Add power</button>
+        <div id="powers"></div>
+    </section>
+    <section>
+        <h2>Provinces</h2>
+        <label>Selected <select id="territory"></select></label>
+        <button id="add-territory" type="button">New province</button>
+        <button id="delete-territory" type="button">Delete province</button>
+        <div id="territory-fields" hidden>
+            <label>Name <input id="name" type="text"></label>
+            <label>Abbreviation <input id="abbr" type="text"></label>
+            <label>Owner <select id="owner"></select></label>
+            <label>Terrain <select id="land"><option value="land">Land</option><option value="water">Water</option></select></label>
+            <label><input id="supply" type="checkbox"> Supply center</label>
+            <button id="update-territory" type="button">Apply province details</button>
+            <h2>Adjacent provinces</h2>
+            <p class="hint">Select adjacency, then choose north, south, or both for a two-coast province. Adjacencies are reciprocal.</p>
+            <div id="neighbors"></div>
+        </div>
+    </section>
+    <section>
+        <h2>Map editing</h2>
+        <label>Click action <select id="mode">
+            <option value="select">Select province</option>
+            <option value="trace">Trace polygon points</option>
+            <option value="region">Detect light region</option>
+            <option value="move_vertex">Move polygon vertex</option>
+            <option value="label_pos">Place label</option>
+            <option value="supply_center_pos">Place supply center</option>
+            <option value="army_pos">Place army</option>
+            <option value="coast_pos">Place fleet / north coast</option>
+            <option value="south_coast_pos">Place south coast fleet</option>
+            <option value="fleet_pos">Place water fleet</option>
+        </select></label>
+        <label>Region brightness threshold <input id="threshold" type="number" min="1" max="255" value="200"></label>
+        <button id="finish" type="button">Finish polygon</button>
+        <button id="undo-point" type="button">Undo point</button>
+        <button id="remove-polygon" type="button">Remove last polygon</button>
+        <label>Zoom <input id="zoom" type="range" min="25" max="200" value="100"> <span id="zoom-value">100%</span></label>
+        <p class="hint">Choose a province and trace its outline, or click inside a light region bounded by dark lines. Finish each polygon separately; islands can have additional polygons. Drag a vertex in move mode to adjust it. Choose a placement action and click the image. Detected regions use their outer boundary only.</p>
+    </section>
+</aside>
+<div id="workspace">
+    <svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="Map editing canvas"></svg>
+</div>
+</main>
+<script src="map_builder_model.js"></script>
+<script src="map_builder.js"></script>
+</body>
+</html>

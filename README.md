@@ -153,7 +153,17 @@ The `Run Tests` workflow runs the suite on every push.
 - **Front end:** the `Deploy Pages` workflow publishes `docs/` to GitHub Pages on every push to `main`. Set the Pages source to "GitHub Actions".
 - **Backend:** `render.yaml` deploys `server/` to Render with `uvicorn app:app`. Set `ALLOWED_ORIGINS` to the Pages origin.
 
-## Custom maps
+## Building a custom map
+
+Open `tools/map_builder.html` in a browser. The editor runs locally; it does not upload the image or map. Select a reference image, add powers (colors are suggested and can be changed), and create and name provinces. Select each province and:
+
+1. Trace its outline by clicking points and choosing **Finish polygon**, or use **Detect light region** to click inside an area bounded by dark lines. Adjust the brightness threshold if necessary. Check the detected outline: gaps in borders can join regions, and detection keeps only the outer boundary. Use additional polygons for islands. Choose **Move polygon vertex** to drag an existing vertex; shared vertices move for every polygon that uses them.
+2. Set its abbreviation, owner, land/water classification, and supply-center status, then apply the details. Select adjacent provinces and, for a two-coast land province, assign the appropriate neighbors to its north coast, south coast, or both. Adjacencies are reciprocal.
+3. Use the click-action menu to place the label, army, fleet/coast, and supply-center markers as applicable. A two-coast province also needs a south-coast fleet position. These positions are drawing locations, not starting units.
+
+Set the win count and water color, then **Validate and download map**. Copy the downloaded JSON, with the same filename, to both `server/data/maps/` and `docs/data/`. The image is only a tracing reference and is not required by the game. Use **Download draft** to save incomplete work; import that JSON and reselect the same-sized reference image to resume. Existing map JSON can also be imported for editing. The editor replaces the former separate JSON, polygon, and position scripts.
+
+## Custom map format
 
 Maps are JSON files. To use a map in the web game, put the same file in both `server/data/maps/` (rules) and `docs/data/` (drawing). The host can then pick it in the lobby. The default is `classic_map.json`. A map has these top-level fields:
 
