@@ -303,11 +303,14 @@
         if (x < 0 || y < 0 || x >= map.width || y >= map.height) { message('Click inside the image.', true); return; }
         if (mode === 'trace') { points.push([x, y]); draw(); return; }
         if (mode === 'region') {
+            if (points.length) {
+                message('Finish or undo the manual polygon before detecting a region.', true); return;
+            }
             const threshold = Number($('threshold').value);
             if (!Number.isInteger(threshold) || threshold < 1 || threshold > 255) { message('Threshold must be between 1 and 255.', true); return; }
             try {
                 model.addPolygon(map, selected, model.traceRegion(imageData, x, y, threshold));
-                message('Region added. Check its outline; remove it if the image has gaps in its borders.');
+                message('Region added automatically; no need to finish it. Check its outline and remove it if the image has gaps in its borders.');
             } catch (error) { message(error.message, true); }
             draw(); return;
         }
@@ -320,6 +323,9 @@
     });
     $('finish').addEventListener('click', () => {
         if (!selected) { message('Select a province first.', true); return; }
+        if (!points.length) {
+            message('No manual outline is in progress. Detected regions are added automatically; use Trace polygon points to draw one manually.'); return;
+        }
         try { model.addPolygon(map, selected, points); points = []; message('Polygon added.'); draw(); }
         catch (error) { message(error.message, true); }
     });
