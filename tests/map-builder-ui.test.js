@@ -13,7 +13,7 @@ function createEditor() {
             this.files = [];
             this.children = [];
             this.listeners = {};
-            this.style = {};
+            this.style = { setProperty(name, value) { this[name] = value; } };
             this.classList = { add() {} };
         }
         addEventListener(type, callback) { this.listeners[type] = callback; }
@@ -33,6 +33,7 @@ function createEditor() {
     elements.mode.value = 'select';
     elements.zoom.value = '100';
     elements.threshold.value = '200';
+    elements['label-size'].value = '14';
     let download;
     const document = {
         getElementById: id => elements[id],
@@ -144,6 +145,21 @@ test('name preview follows vertex edits without moving a saved label', async () 
     const label = elements.map.children.find(child => child.tag === 'text');
     assert.notEqual(label.x + ',' + label.y, '4,4');
     assert.deepEqual((await editor.draft()).territories[0].label_pos, [4, 4]);
+});
+
+test('label size slider updates the preview without changing map data', async () => {
+    const editor = createEditor(), { elements } = editor;
+    elements.mode.value = 'region';
+    editor.clickMap(3, 3);
+    const before = await editor.draft();
+    elements['label-size'].value = '48';
+    elements['label-size'].dispatch('input');
+    assert.equal(elements.map.style['--label-size'], '48px');
+    assert.equal(elements['label-size-value'].textContent, '48px');
+    elements.zoom.value = '50';
+    elements.zoom.dispatch('input');
+    assert.equal(elements.map.style['--label-size'], '48px');
+    assert.deepEqual(await editor.draft(), before);
 });
 
 test('adjacency search filters by name or abbreviation and preserves selected neighbors', async () => {

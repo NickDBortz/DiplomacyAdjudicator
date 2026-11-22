@@ -356,6 +356,11 @@
         message(`Label position set to the center of ${selected.name}.`); draw();
     });
     $('zoom').addEventListener('input', draw);
+    $('label-size').addEventListener('input', () => {
+        const size = `${$('label-size').value}px`;
+        $('map').style.setProperty('--label-size', size);
+        $('label-size-value').textContent = size;
+    });
     $('export').addEventListener('click', () => {
         if (!canContinue(true)) return;
         const errors = model.validate(map);

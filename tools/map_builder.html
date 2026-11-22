@@ -21,7 +21,7 @@
         #map polygon { stroke: #ef9700; stroke-width: 2; fill: #fbbc0555; vector-effect: non-scaling-stroke; }
         #map polygon.selected { stroke: #004ce0; fill: #3b82f655; }
         #map polyline { stroke: #f00; stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; }
-        #map text { font-size: 14px; fill: #111; stroke: white; stroke-width: 3px; paint-order: stroke; pointer-events: none; }
+        #map text { font-size: var(--label-size, 14px); fill: #111; stroke: white; stroke-width: 3px; paint-order: stroke; pointer-events: none; }
         #map circle { stroke: white; stroke-width: 1; pointer-events: none; }
         #neighbors { max-height: 200px; overflow: auto; }
         #neighbors label { display: flex; gap: 5px; align-items: center; }
@@ -92,6 +92,7 @@
         <button id="remove-polygon" type="button">Remove last polygon</button>
         <button id="center-label" type="button">Set label position to province center</button>
         <label>Zoom <input id="zoom" type="range" min="25" max="200" value="100"> <span id="zoom-value">100%</span></label>
+        <label>Label size <input id="label-size" type="range" min="8" max="96" value="14"> <span id="label-size-value">14px</span></label>
         <p class="hint">Province names are shown at the center of their largest polygon for editing. Set the selected province's game label position there with the button, or place it manually. For manual tracing, click outline points and choose Finish polygon. Detected light regions are added immediately; they do not need Finish polygon. Islands can have additional polygons. Drag a vertex in move mode to adjust it. Choose a placement action and click the image. Detected regions use their outer boundary only.</p>
     </section>
 </aside>
