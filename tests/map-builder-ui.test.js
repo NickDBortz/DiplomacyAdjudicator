@@ -7,7 +7,8 @@ const model = require('../tools/map_builder_model.js');
 
 function createEditor() {
     class Element {
-        constructor() {
+        constructor(tag = '') {
+            this.tag = tag;
             this.value = '';
             this.files = [];
             this.children = [];
@@ -22,6 +23,7 @@ function createEditor() {
         setAttribute(name, value) { this[name] = value; }
         createSVGPoint() { return { matrixTransform() { return this; } }; }
         getScreenCTM() { return { inverse() { return {}; } }; }
+        setPointerCapture() {}
         click() {}
     }
 
@@ -35,7 +37,7 @@ function createEditor() {
     const document = {
         getElementById: id => elements[id],
         createElement(tag) {
-            const element = new Element();
+            const element = new Element(tag);
             if (tag === 'canvas') element.getContext = () => ({
                 drawImage() {},
                 getImageData() {
@@ -49,7 +51,7 @@ function createEditor() {
             });
             return element;
         },
-        createElementNS() { return new Element(); }
+        createElementNS(ns, tag) { return new Element(tag); }
     };
     class Image {
         constructor() { this.width = 8; this.height = 8; }
@@ -111,4 +113,62 @@ test('manual points remain finishable and prevent accidental region mixing', asy
     elements.finish.dispatch('click');
     assert.equal(elements.message.textContent, 'Polygon added.');
     assert.equal((await editor.draft()).territories[0].polygons[0].length, 3);
+});
+
+test('province names preview at polygon centers without changing saved label positions', async () => {
+    const editor = createEditor(), { elements } = editor;
+    elements.mode.value = 'region';
+    editor.clickMap(3, 3);
+    let label = elements.map.children.find(child => child.tag === 'text');
+    assert.equal(label.textContent, 'Province 1');
+    assert.equal(label.x, 4);
+    assert.equal(label.y, 4);
+    assert.equal((await editor.draft()).territories[0].label_pos, undefined);
+    elements['center-label'].dispatch('click');
+    assert.deepEqual((await editor.draft()).territories[0].label_pos, [4, 4]);
+    elements['remove-polygon'].dispatch('click');
+    elements['center-label'].dispatch('click');
+    assert.match(elements.message.textContent, /non-degenerate polygon/);
+    assert.deepEqual((await editor.draft()).territories[0].label_pos, [4, 4]);
+});
+
+test('name preview follows vertex edits without moving a saved label', async () => {
+    const editor = createEditor(), { elements } = editor;
+    elements.mode.value = 'region';
+    editor.clickMap(3, 3);
+    elements['center-label'].dispatch('click');
+    elements.mode.value = 'move_vertex';
+    elements.map.dispatch('pointerdown', { button: 0, clientX: 7, clientY: 7, pointerId: 1 });
+    elements.map.dispatch('pointermove', { clientX: 7, clientY: 1 });
+    elements.map.dispatch('pointerup');
+    const label = elements.map.children.find(child => child.tag === 'text');
+    assert.notEqual(label.x + ',' + label.y, '4,4');
+    assert.deepEqual((await editor.draft()).territories[0].label_pos, [4, 4]);
+});
+
+test('adjacency search filters by name or abbreviation and preserves selected neighbors', async () => {
+    const { elements, draft } = createEditor();
+    elements['add-territory'].dispatch('click');
+    elements['add-territory'].dispatch('click');
+    const rows = () => elements.neighbors.children;
+    elements['neighbor-search'].value = 'p1';
+    elements['neighbor-search'].dispatch('input');
+    assert.equal(rows()[0].hidden, false);
+    assert.equal(rows()[1].hidden, true);
+    rows()[0].children[0].checked = true;
+    rows()[0].children[0].dispatch('change');
+    assert.equal(rows()[0].hidden, false);
+    assert.equal(rows()[1].hidden, true);
+    elements['neighbor-search'].value = 'province 2';
+    elements['neighbor-search'].dispatch('input');
+    assert.equal(rows()[0].hidden, true);
+    assert.equal(rows()[1].hidden, false);
+    elements['neighbor-search'].value = '';
+    elements['neighbor-search'].dispatch('input');
+    assert.equal(rows()[0].hidden, false);
+    assert.equal(rows()[1].hidden, false);
+    assert.equal(rows()[0].children[0].checked, true);
+    const map = await draft();
+    assert.deepEqual(map.territories[2].adjacents, ['Province 1']);
+    assert.deepEqual(map.territories[0].adjacents, ['Province 3']);
 });

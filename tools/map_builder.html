@@ -25,6 +25,7 @@
         #map circle { stroke: white; stroke-width: 1; pointer-events: none; }
         #neighbors { max-height: 200px; overflow: auto; }
         #neighbors label { display: flex; gap: 5px; align-items: center; }
+        #neighbors label[hidden] { display: none; }
         #neighbors span { flex: 1; }
         #message { white-space: pre-wrap; color: #9c1c1c; }
         .hint { color: #555; font-size: 12px; }
@@ -67,6 +68,7 @@
             <button id="update-territory" type="button">Apply province details</button>
             <h2>Adjacent provinces</h2>
             <p class="hint">Select adjacency, then choose north, south, or both for a two-coast province. Adjacencies are reciprocal.</p>
+            <label>Search adjacent provinces <input id="neighbor-search" type="search" placeholder="Name or abbreviation"></label>
             <div id="neighbors"></div>
         </div>
     </section>
@@ -88,8 +90,9 @@
         <button id="finish" type="button">Finish polygon</button>
         <button id="undo-point" type="button">Undo point</button>
         <button id="remove-polygon" type="button">Remove last polygon</button>
+        <button id="center-label" type="button">Set label position to province center</button>
         <label>Zoom <input id="zoom" type="range" min="25" max="200" value="100"> <span id="zoom-value">100%</span></label>
-        <p class="hint">For manual tracing, click outline points and choose Finish polygon. Detected light regions are added immediately; they do not need Finish polygon. Islands can have additional polygons. Drag a vertex in move mode to adjust it. Choose a placement action and click the image. Detected regions use their outer boundary only.</p>
+        <p class="hint">Province names are shown at the center of their largest polygon for editing. Set the selected province's game label position there with the button, or place it manually. For manual tracing, click outline points and choose Finish polygon. Detected light regions are added immediately; they do not need Finish polygon. Islands can have additional polygons. Drag a vertex in move mode to adjust it. Choose a placement action and click the image. Detected regions use their outer boundary only.</p>
     </section>
 </aside>
 <div id="workspace">

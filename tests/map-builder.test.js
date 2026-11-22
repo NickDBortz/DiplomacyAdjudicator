@@ -85,6 +85,32 @@ test('manual polygons reuse shared vertices and reject incomplete shapes', () =>
     assert.throws(() => builder.addPolygon(map, a, [[0, 0], [1, 1]]), /three points/);
 });
 
+test('main polygon center uses area rather than vertex count or polygon order', () => {
+    const map = builder.newMap(100, 100), t = builder.newTerritory('Islands', 'ISL');
+    builder.addPolygon(map, t, [[80, 80], [85, 80], [86, 82], [85, 85], [80, 85]]);
+    builder.addPolygon(map, t, [[0, 0], [20, 0], [20, 10], [0, 10]]);
+    assert.deepEqual(builder.mainPolygonCenter(map, t), [10, 5]);
+    t.polygons.reverse();
+    assert.deepEqual(builder.mainPolygonCenter(map, t), [10, 5]);
+});
+
+test('main polygon center handles concave and degenerate outlines', () => {
+    const map = builder.newMap(20, 20), t = builder.newTerritory('Concave', 'C');
+    assert.equal(builder.mainPolygonCenter(map, t), null);
+    builder.addPolygon(map, t, [[0, 0], [10, 0], [10, 10], [8, 10], [8, 2], [2, 2], [2, 10], [0, 10]]);
+    const [x, y] = builder.mainPolygonCenter(map, t);
+    assert.ok(y > 2 && y < 10 && (x > 0 && x < 2 || x > 8 && x < 10));
+    t.polygons = [];
+    builder.addPolygon(map, t, [[1, 1], [2, 2], [3, 3]]);
+    assert.equal(builder.mainPolygonCenter(map, t), null);
+});
+
+test('polygon center uses integer coordinates compatible with the CLI renderer', () => {
+    const map = builder.newMap(20, 20), t = builder.newTerritory('Triangle', 'T');
+    builder.addPolygon(map, t, [[0, 0], [10, 0], [0, 10]]);
+    assert.deepEqual(builder.mainPolygonCenter(map, t), [3, 3]);
+});
+
 test('generated map loads into the game with owners and separate coasts', () => {
     const { map } = fixture();
     const code = `

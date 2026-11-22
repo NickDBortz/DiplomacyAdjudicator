@@ -66,12 +66,14 @@
             $('owner').value = selected.owner;
             const neighbors = $('neighbors');
             neighbors.replaceChildren();
+            const search = $('neighbor-search').value.trim().toLocaleLowerCase();
             for (const other of map.territories.filter(t => t !== selected)) {
                 const row = document.createElement('label');
+                row.hidden = !other.name.toLocaleLowerCase().includes(search) && !other.abbr.toLocaleLowerCase().includes(search);
                 const check = document.createElement('input'); check.type = 'checkbox';
                 check.checked = selected.adjacents.includes(other.name) || other.adjacents.includes(selected.name);
                 check.setAttribute('aria-label', `Adjacent to ${other.name}`);
-                const name = document.createElement('span'); name.textContent = other.name;
+                const name = document.createElement('span'); name.textContent = `${other.name} (${other.abbr})`;
                 const coast = document.createElement('select');
                 coast.setAttribute('aria-label', `Coast for ${other.name}`);
                 coast.append(option('', 'No coast'), option('north_coast', 'North'), option('south_coast', 'South'), option('both', 'Both'));
@@ -123,9 +125,14 @@
                 });
                 svg.append(shape);
             }
-            if (t.label_pos) {
+        }
+        for (const t of map.territories) {
+            const center = model.mainPolygonCenter(map, t);
+            if (center) {
                 const text = document.createElementNS(ns, 'text');
-                text.setAttribute('x', t.label_pos[0]); text.setAttribute('y', t.label_pos[1]); text.textContent = t.abbr;
+                text.setAttribute('x', center[0]); text.setAttribute('y', center[1]);
+                text.setAttribute('text-anchor', 'middle'); text.setAttribute('dominant-baseline', 'central');
+                text.textContent = t.name;
                 svg.append(text);
             }
         }
@@ -240,6 +247,13 @@
         selected = $('territory').value === '' ? null : map.territories[Number($('territory').value)];
         points = []; render();
     });
+    $('neighbor-search').addEventListener('input', () => {
+        const search = $('neighbor-search').value.trim().toLocaleLowerCase();
+        for (const row of $('neighbors').children) {
+            const name = row.children[1].textContent.toLocaleLowerCase();
+            row.hidden = !name.includes(search);
+        }
+    });
     $('delete-territory').addEventListener('click', () => {
         if (!canContinue(true)) return;
         if (!selected) { message('Select a province first.', true); return; }
@@ -333,6 +347,13 @@
     $('remove-polygon').addEventListener('click', () => {
         if (!selected || !selected.polygons.length) { message('Select a province with a polygon.', true); return; }
         selected.polygons.pop(); draw();
+    });
+    $('center-label').addEventListener('click', () => {
+        if (!selected) { message('Select a province first.', true); return; }
+        const center = model.mainPolygonCenter(map, selected);
+        if (!center) { message('Add a non-degenerate polygon to this province first.', true); return; }
+        selected.label_pos = center;
+        message(`Label position set to the center of ${selected.name}.`); draw();
     });
     $('zoom').addEventListener('input', draw);
     $('export').addEventListener('click', () => {

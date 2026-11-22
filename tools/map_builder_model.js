@@ -49,6 +49,46 @@
         territory.polygons.push(indices);
     }
 
+    function mainPolygonCenter(map, territory) {
+        let main = null, largestArea = 0, center = null;
+        for (const polygon of territory.polygons) {
+            if (polygon.length < 3) continue;
+            const vertices = polygon.map(index => map.vertices[index]);
+            if (vertices.some(point => !Array.isArray(point) || point.length !== 2 || !point.every(Number.isFinite))) continue;
+            let area = 0, x = 0, y = 0;
+            for (let i = 0; i < vertices.length; i++) {
+                const a = vertices[i], b = vertices[(i + 1) % vertices.length];
+                const cross = a[0] * b[1] - b[0] * a[1];
+                area += cross;
+                x += (a[0] + b[0]) * cross;
+                y += (a[1] + b[1]) * cross;
+            }
+            if (Math.abs(area) > largestArea) {
+                largestArea = Math.abs(area);
+                main = vertices;
+                center = [x / (3 * area), y / (3 * area)];
+            }
+        }
+        if (!main) return null;
+
+        // A concave polygon's centroid may lie outside; choose an interior point on its horizontal scanline.
+        const intersections = [];
+        for (let i = 0; i < main.length; i++) {
+            const a = main[i], b = main[(i + 1) % main.length];
+            if ((a[1] > center[1]) !== (b[1] > center[1])) {
+                intersections.push(a[0] + (center[1] - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+            }
+        }
+        intersections.sort((a, b) => a - b);
+        let widest = null;
+        for (let i = 0; i + 1 < intersections.length; i += 2) {
+            const left = intersections[i], right = intersections[i + 1];
+            if (center[0] >= left && center[0] <= right) return center.map(Math.round);
+            if (!widest || right - left > widest[1] - widest[0]) widest = [left, right];
+        }
+        return widest ? [Math.round((widest[0] + widest[1]) / 2), Math.round(center[1])] : null;
+    }
+
     // Extract the outside boundary of a connected region of light pixels.
     function traceRegion(image, x, y, threshold) {
         const { width, height, data } = image;
@@ -155,7 +195,7 @@
         return errors;
     }
 
-    const api = { palette, newMap, newTerritory, renameTerritory, setAdjacency, addPolygon, traceRegion, validate };
+    const api = { palette, newMap, newTerritory, renameTerritory, setAdjacency, addPolygon, mainPolygonCenter, traceRegion, validate };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.MapBuilderModel = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
