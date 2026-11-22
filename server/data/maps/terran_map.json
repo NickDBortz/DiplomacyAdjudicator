@@ -464806,7 +464806,12 @@
             "owner": "Sjaelland",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Vottra",
+                "Motten",
+                "Havenar Sea",
+                "Elissen"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -465752,6 +465757,14 @@
                     938,
                     939
                 ]
+            ],
+            "label_pos": [
+                2232,
+                652
+            ],
+            "supply_center_pos": [
+                2296,
+                506
             ]
         },
         {
@@ -465760,9 +465773,22 @@
             "owner": "Sjaelland",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Konigsburg",
+                "Motten",
+                "Elissen",
+                "Ceteve",
+                "Vottra Sound",
+                "Havenar Sea",
+                "East Passage"
+            ],
+            "north_coast": [
+                "Havenar Sea"
+            ],
+            "south_coast": [
+                "Vottra Sound",
+                "East Passage"
+            ],
             "polygons": [
                 [
                     940,
@@ -467230,6 +467256,14 @@
                     2402,
                     2403
                 ]
+            ],
+            "label_pos": [
+                2269,
+                843
+            ],
+            "supply_center_pos": [
+                2240,
+                926
             ]
         },
         {
@@ -467238,7 +467272,14 @@
             "owner": "Sjaelland",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Konigsburg",
+                "Vottra",
+                "Elissen",
+                "Havenar Sea",
+                "East Havenar Sea",
+                "Sibirenn"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -468444,6 +468485,10 @@
                     7759,
                     7760
                 ]
+            ],
+            "label_pos": [
+                2594,
+                572
             ]
         },
         {
@@ -468452,7 +468497,16 @@
             "owner": "Sjaelland",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Motten",
+                "Konigsburg",
+                "Vottra",
+                "Sibirenn",
+                "Puvapal",
+                "Banyi",
+                "Heilendi",
+                "Ceteve"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -470016,6 +470070,14 @@
                     9317,
                     9318
                 ]
+            ],
+            "label_pos": [
+                2792,
+                738
+            ],
+            "supply_center_pos": [
+                2568,
+                722
             ]
         },
         {
@@ -470024,7 +470086,15 @@
             "owner": "Sjaelland",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Elissen",
+                "Motten",
+                "East Havenar Sea",
+                "North Drakonian Ocean",
+                "Kobota",
+                "Makada",
+                "Puvapal"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -471784,6 +471854,10 @@
                     11069,
                     11070
                 ]
+            ],
+            "label_pos": [
+                3020,
+                379
             ]
         },
         {
@@ -471792,9 +471866,19 @@
             "owner": "Sjaelland",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Sorgsted",
+                "Black Passage",
+                "West Passage",
+                "Strait of Mathaid"
+            ],
+            "north_coast": [
+                "Black Passage"
+            ],
+            "south_coast": [
+                "West Passage",
+                "Strait of Mathaid"
+            ],
             "polygons": [
                 [
                     11071,
@@ -472822,6 +472906,14 @@
                     12093,
                     12094
                 ]
+            ],
+            "label_pos": [
+                1799,
+                1081
+            ],
+            "supply_center_pos": [
+                1576,
+                782
             ]
         },
         {
@@ -472830,9 +472922,23 @@
             "owner": "Sjaelland",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Langtill",
+                "Zrok",
+                "Fieldgug",
+                "Malkez",
+                "Abiso",
+                "Black Passage",
+                "Gulf of Triyer",
+                "Strait of Mathaid"
+            ],
+            "north_coast": [
+                "Black Passage",
+                "Gulf of Triyer"
+            ],
+            "south_coast": [
+                "Strait of Mathaid"
+            ],
             "polygons": [
                 [
                     12095,
@@ -474494,6 +474600,10 @@
                     13751,
                     13752
                 ]
+            ],
+            "label_pos": [
+                1546,
+                956
             ]
         },
         {
@@ -474502,7 +474612,13 @@
             "owner": "Sjaelland",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "East Heibhirmanian Sea",
+                "North Sea",
+                "Black Passage",
+                "Gulf of Triyer",
+                "Levant"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -476244,6 +476360,10 @@
                     17692,
                     17693
                 ]
+            ],
+            "label_pos": [
+                1228,
+                440
             ]
         },
         {
@@ -476252,9 +476372,19 @@
             "owner": "Duroval",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Fieldgug",
+                "Bujar",
+                "Green Sea",
+                "Prekjen",
+                "Cauci Sea"
+            ],
+            "north_coast": [
+                "Green Sea"
+            ],
+            "south_coast": [
+                "Cauci Sea"
+            ],
             "polygons": [
                 [
                     18481,
@@ -477546,6 +477676,14 @@
                     19748,
                     19749
                 ]
+            ],
+            "label_pos": [
+                1227,
+                1452
+            ],
+            "supply_center_pos": [
+                1208,
+                1358
             ]
         },
         {
@@ -477554,7 +477692,13 @@
             "owner": "Duroval",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Sorgsted",
+                "Zrok",
+                "Malkez",
+                "Sugrod",
+                "Green Sea"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -479016,6 +479160,14 @@
                     21204,
                     21205
                 ]
+            ],
+            "label_pos": [
+                1313,
+                1154
+            ],
+            "supply_center_pos": [
+                1348,
+                1014
             ]
         },
         {
@@ -479024,7 +479176,12 @@
             "owner": "Duroval",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sorgsted",
+                "Fieldgug",
+                "Green Sea",
+                "Strait of Mathaid"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -479736,6 +479893,10 @@
                     21910,
                     21911
                 ]
+            ],
+            "label_pos": [
+                1559,
+                1176
             ]
         },
         {
@@ -479744,7 +479905,11 @@
             "owner": "Duroval",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sorgsted",
+                "Fieldgug",
+                "Abiso"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -480460,6 +480625,10 @@
                     22620,
                     22621
                 ]
+            ],
+            "label_pos": [
+                1225,
+                1033
             ]
         },
         {
@@ -480468,9 +480637,20 @@
             "owner": "Duroval",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Green Sea",
+                "Strait of Mathaid",
+                "Sugrod",
+                "Ngush",
+                "Cauci Sea"
+            ],
+            "north_coast": [
+                "Green Sea",
+                "Strait of Mathaid"
+            ],
+            "south_coast": [
+                "Cauci Sea"
+            ],
             "polygons": [
                 [
                     22622,
@@ -482204,6 +482384,14 @@
                     24348,
                     24349
                 ]
+            ],
+            "label_pos": [
+                1571,
+                1524
+            ],
+            "supply_center_pos": [
+                1708,
+                1426
             ]
         },
         {
@@ -482212,7 +482400,12 @@
             "owner": "Duroval",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Bujar",
+                "Strait of Mathaid",
+                "Adrian Ocean",
+                "Cauci Sea"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -482848,6 +483041,10 @@
                     24961,
                     24962
                 ]
+            ],
+            "label_pos": [
+                1529,
+                1776
             ]
         },
         {
@@ -482856,7 +483053,13 @@
             "owner": "Duroval",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sugrod",
+                "Fihela",
+                "Boslyni",
+                "Lundroj",
+                "Cauci Sea"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -483412,6 +483615,10 @@
                     25508,
                     25509
                 ]
+            ],
+            "label_pos": [
+                991,
+                1310
             ]
         },
         {
@@ -483420,7 +483627,11 @@
             "owner": "Duroval",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Prekjen",
+                "Boslyni",
+                "Cauci Sea"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -483561,6 +483772,10 @@
                     25791,
                     25792
                 ]
+            ],
+            "label_pos": [
+                993,
+                1474
             ]
         },
         {
@@ -483569,7 +483784,14 @@
             "owner": "",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Prekjen",
+                "Lundroj",
+                "Fihela",
+                "Monia",
+                "Cauci Sea",
+                "Sea of Farras"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -484785,6 +485007,14 @@
                     26982,
                     26983
                 ]
+            ],
+            "label_pos": [
+                792,
+                1424
+            ],
+            "supply_center_pos": [
+                856,
+                1522
             ]
         },
         {
@@ -484793,7 +485023,12 @@
             "owner": "",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Boslyni",
+                "Fihela",
+                "Gulf of Wyvera",
+                "Sea of Farras"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -485853,6 +486088,14 @@
                     27997,
                     27998
                 ]
+            ],
+            "label_pos": [
+                327,
+                1388
+            ],
+            "supply_center_pos": [
+                280,
+                1328
             ]
         },
         {
@@ -485861,9 +486104,17 @@
             "owner": "Heibhermanian Theocracy",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Abiso",
+                "Gulf of Triyer",
+                "East Heibhirmanian Sea",
+                "Levant",
+                "Sintula"
+            ],
             "north_coast": [],
-            "south_coast": [],
+            "south_coast": [
+                "Gulf of Triyer"
+            ],
             "polygons": [
                 [
                     32860,
@@ -488299,6 +488550,14 @@
                     34860,
                     34861
                 ]
+            ],
+            "label_pos": [
+                826,
+                614
+            ],
+            "supply_center_pos": [
+                696,
+                608
             ]
         },
         {
@@ -488307,9 +488566,18 @@
             "owner": "Heibhermanian Theocracy",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Norst Aln",
+                "Palvo",
+                "East Heibhirmanian Sea",
+                "Gulf of Triyer"
+            ],
+            "north_coast": [
+                "East Heibhirmanian Sea"
+            ],
+            "south_coast": [
+                "Gulf of Triyer"
+            ],
             "polygons": [
                 [
                     32111,
@@ -489077,6 +489345,10 @@
                     35438,
                     35439
                 ]
+            ],
+            "label_pos": [
+                1034,
+                533
             ]
         },
         {
@@ -489085,7 +489357,12 @@
             "owner": "Heibhermanian Theocracy",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sorgsted",
+                "Malkez",
+                "Palvo",
+                "Gulf of Triyer"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -489891,6 +490168,10 @@
                     17711,
                     35989
                 ]
+            ],
+            "label_pos": [
+                1140,
+                878
             ]
         },
         {
@@ -489899,7 +490180,12 @@
             "owner": "Heibhermanian Theocracy",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Palvo",
+                "West Heibhirmanian Sea",
+                "East Heibhirmanian Sea",
+                "Biskia"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -491599,6 +491885,14 @@
                     37212,
                     37213
                 ]
+            ],
+            "label_pos": [
+                589,
+                736
+            ],
+            "supply_center_pos": [
+                712,
+                792
             ]
         },
         {
@@ -491607,9 +491901,19 @@
             "owner": "Heibhermanian Theocracy",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Sintula",
+                "West Heibhirmanian Sea",
+                "Gulf of Wyvera",
+                "Penosola",
+                "Fihela"
+            ],
+            "north_coast": [
+                "West Heibhirmanian Sea"
+            ],
+            "south_coast": [
+                "Gulf of Wyvera"
+            ],
             "polygons": [
                 [
                     37214,
@@ -494221,6 +494525,14 @@
                     39808,
                     39809
                 ]
+            ],
+            "label_pos": [
+                648,
+                1010
+            ],
+            "supply_center_pos": [
+                288,
+                936
             ]
         },
         {
@@ -494229,7 +494541,13 @@
             "owner": "Heibhermanian Theocracy",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Prekjen",
+                "Boslyni",
+                "Biskia",
+                "Monia",
+                "Gulf of Wyvera"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -495445,6 +495763,10 @@
                     41018,
                     41019
                 ]
+            ],
+            "label_pos": [
+                637,
+                1253
             ]
         },
         {
@@ -495453,9 +495775,17 @@
             "owner": "Heibhermanian Theocracy",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Biskia",
+                "West Heibhirmanian Sea",
+                "Gulf of Wyvera"
+            ],
+            "north_coast": [
+                "West Heibhirmanian Sea"
+            ],
+            "south_coast": [
+                "Gulf of Wyvera"
+            ],
             "polygons": [
                 [
                     41020,
@@ -496247,6 +496577,10 @@
                     41806,
                     41807
                 ]
+            ],
+            "label_pos": [
+                132,
+                1091
             ]
         },
         {
@@ -496255,7 +496589,14 @@
             "owner": "Elgobar",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Ceteve",
+                "Cavrotier",
+                "Heilendi",
+                "Rendel",
+                "Chapisa",
+                "Tonmg"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -497385,6 +497726,14 @@
                     42930,
                     42931
                 ]
+            ],
+            "label_pos": [
+                2536,
+                1276
+            ],
+            "supply_center_pos": [
+                2680,
+                1368
             ]
         },
         {
@@ -497393,7 +497742,13 @@
             "owner": "Elgobar",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Ceteve",
+                "Mendi",
+                "Chapisa",
+                "West Passage",
+                "East Passage"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -497590,6 +497945,14 @@
                     45329,
                     45330
                 ]
+            ],
+            "label_pos": [
+                2414,
+                1140
+            ],
+            "supply_center_pos": [
+                2348,
+                1112
             ]
         },
         {
@@ -497598,7 +497961,18 @@
             "owner": "Elgobar",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Cavrotier",
+                "Mendi",
+                "Rendel",
+                "Calrinde",
+                "Thetorum",
+                "Trawyn",
+                "Gheffli",
+                "Gahluri",
+                "Cylcho",
+                "West Passage"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -497861,6 +498235,10 @@
                     45494,
                     44485
                 ]
+            ],
+            "label_pos": [
+                2414,
+                1495
             ]
         },
         {
@@ -497869,7 +498247,14 @@
             "owner": "Elgobar",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Elissen",
+                "Vottra",
+                "Heilendi",
+                "Cavrotier",
+                "Mendi",
+                "East Passage"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -499061,6 +499446,10 @@
                     46679,
                     46680
                 ]
+            ],
+            "label_pos": [
+                2614,
+                959
             ]
         },
         {
@@ -499069,7 +499458,14 @@
             "owner": "Elgobar",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Elissen",
+                "Banyi",
+                "Moskil",
+                "Ceteve",
+                "Mendi",
+                "Tonmg"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -500187,6 +500583,14 @@
                     47791,
                     47792
                 ]
+            ],
+            "label_pos": [
+                2753,
+                1108
+            ],
+            "supply_center_pos": [
+                2772,
+                1048
             ]
         },
         {
@@ -500195,7 +500599,13 @@
             "owner": "Elgobar",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Nawa",
+                "Mendi",
+                "Chapisa",
+                "Tonmg",
+                "Chaklan"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -500947,6 +501357,10 @@
                     48537,
                     48538
                 ]
+            ],
+            "label_pos": [
+                2652,
+                1467
             ]
         },
         {
@@ -500955,9 +501369,23 @@
             "owner": "",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Baccef",
+                "Hirgron",
+                "Gheffli",
+                "Trawyn",
+                "Thetorum",
+                "Agyonis",
+                "Adrian Ocean",
+                "Adnicta Sea",
+                "Strait of Mathaid"
+            ],
+            "north_coast": [
+                "Strait of Mathaid"
+            ],
+            "south_coast": [
+                "Strait of Mathaid"
+            ],
             "polygons": [
                 [
                     48539,
@@ -502057,6 +502485,14 @@
                     49445,
                     49446
                 ]
+            ],
+            "label_pos": [
+                2083,
+                1934
+            ],
+            "supply_center_pos": [
+                1944,
+                1930
             ]
         },
         {
@@ -502065,7 +502501,13 @@
             "owner": "",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Gheffli",
+                "Trawyn",
+                "Thetorum",
+                "Adnicta",
+                "Adnicta Sea"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -503007,6 +503449,14 @@
                     50381,
                     50382
                 ]
+            ],
+            "label_pos": [
+                2430,
+                2027
+            ],
+            "supply_center_pos": [
+                2312,
+                2022
             ]
         },
         {
@@ -503015,7 +503465,14 @@
             "owner": "",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Chapisa",
+                "Trawyn",
+                "Calrinde",
+                "West Bogtha",
+                "Adnicta",
+                "Agyonis"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -504459,6 +504916,10 @@
                     52729,
                     52730
                 ]
+            ],
+            "label_pos": [
+                2605,
+                1890
             ]
         },
         {
@@ -504467,7 +504928,13 @@
             "owner": "",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Nawa",
+                "Chapisa",
+                "Travoda",
+                "Thetorum",
+                "West Bogtha"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -505547,6 +506014,14 @@
                     53795,
                     53796
                 ]
+            ],
+            "label_pos": [
+                2707,
+                1726
+            ],
+            "supply_center_pos": [
+                2696,
+                1838
             ]
         },
         {
@@ -505555,7 +506030,11 @@
             "owner": "",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "South Bogtha",
+                "West Bogtha",
+                "Calrinde"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -506471,6 +506950,10 @@
                     51291,
                     51292
                 ]
+            ],
+            "label_pos": [
+                3021,
+                1950
             ]
         },
         {
@@ -506479,7 +506962,11 @@
             "owner": "",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Husala",
+                "Askalai",
+                "South Bogtha"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -507433,6 +507920,14 @@
                     54751,
                     54752
                 ]
+            ],
+            "label_pos": [
+                3110,
+                1864
+            ],
+            "supply_center_pos": [
+                3212,
+                1952
             ]
         },
         {
@@ -507441,7 +507936,13 @@
             "owner": "",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Husala",
+                "Sojen",
+                "Maduo",
+                "Travodium",
+                "South Bogtha"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -508345,6 +508846,10 @@
                     55649,
                     55650
                 ]
+            ],
+            "label_pos": [
+                3244,
+                1751
             ]
         },
         {
@@ -508353,9 +508858,16 @@
             "owner": "",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Drakonian Ocean",
+                "North Bogtha"
+            ],
+            "north_coast": [
+                "Drakonian Ocean"
+            ],
+            "south_coast": [
+                "North Bogtha"
+            ],
             "polygons": [
                 [
                     55651,
@@ -508941,6 +509453,14 @@
                     56231,
                     56232
                 ]
+            ],
+            "label_pos": [
+                3615,
+                1333
+            ],
+            "supply_center_pos": [
+                3624,
+                1400
             ]
         },
         {
@@ -508949,7 +509469,13 @@
             "owner": "Puvapamasia",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Husala",
+                "Rendel",
+                "Calrinde",
+                "Chaklan",
+                "Sojen"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -509927,6 +510453,14 @@
                     57203,
                     57204
                 ]
+            ],
+            "label_pos": [
+                2853,
+                1578
+            ],
+            "supply_center_pos": [
+                2956,
+                1508
             ]
         },
         {
@@ -509935,7 +510469,13 @@
             "owner": "Puvapamasia",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Nawa",
+                "Sojen",
+                "Askalai",
+                "Travodium",
+                "Chaklan"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -510975,6 +511515,10 @@
                     58237,
                     58238
                 ]
+            ],
+            "label_pos": [
+                3028,
+                1633
             ]
         },
         {
@@ -510982,8 +511526,13 @@
             "abbr": "PUV",
             "owner": "Puvapamasia",
             "land": true,
-            "supply_center": true,
-            "adjacents": [],
+            "supply_center": false,
+            "adjacents": [
+                "Elissen",
+                "Sibirenn",
+                "Makada",
+                "Banyi"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -511859,6 +512408,10 @@
                     59107,
                     59108
                 ]
+            ],
+            "label_pos": [
+                3016,
+                725
             ]
         },
         {
@@ -511867,7 +512420,14 @@
             "owner": "Puvapamasia",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Sibirenn",
+                "Kobota",
+                "Masuah",
+                "Puvapal",
+                "Banyi",
+                "Sibhil"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -512863,6 +513423,14 @@
                     60097,
                     60098
                 ]
+            ],
+            "label_pos": [
+                3146,
+                738
+            ],
+            "supply_center_pos": [
+                3152,
+                840
             ]
         },
         {
@@ -512871,7 +513439,14 @@
             "owner": "Puvapamasia",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Elissen",
+                "Makada",
+                "Puvapal",
+                "Heilendi",
+                "Sibhil",
+                "Moskil"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -513535,6 +514110,10 @@
                     60755,
                     60756
                 ]
+            ],
+            "label_pos": [
+                3005,
+                906
             ]
         },
         {
@@ -513543,7 +514122,13 @@
             "owner": "",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sibirenn",
+                "North Drakonian Ocean",
+                "Drakonian Ocean",
+                "Makada",
+                "Masuah"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -514861,6 +515446,10 @@
                     62053,
                     62054
                 ]
+            ],
+            "label_pos": [
+                3336,
+                633
             ]
         },
         {
@@ -514869,7 +515458,13 @@
             "owner": "Puvapamasia",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Makada",
+                "Banyi",
+                "Masuah",
+                "Moskil",
+                "Drakonian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -515527,6 +516122,14 @@
                     62705,
                     62706
                 ]
+            ],
+            "label_pos": [
+                3156,
+                1025
+            ],
+            "supply_center_pos": [
+                3244,
+                1104
             ]
         },
         {
@@ -515535,7 +516138,13 @@
             "owner": "Puvapamasia",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Banyi",
+                "Sibhil",
+                "Heilendi",
+                "Tonmg",
+                "Drakonian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -516371,6 +516980,10 @@
                     63535,
                     63536
                 ]
+            ],
+            "label_pos": [
+                2961,
+                1103
             ]
         },
         {
@@ -516379,7 +516992,12 @@
             "owner": "Puvapamasia",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Kobota",
+                "Makada",
+                "Sibhil",
+                "Drakonian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -517085,6 +517703,10 @@
                     65823,
                     65824
                 ]
+            ],
+            "label_pos": [
+                3320,
+                944
             ]
         },
         {
@@ -517093,7 +517715,15 @@
             "owner": "Lempudasmaa",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Moskil",
+                "Mendi",
+                "Heilendi",
+                "Chaklan",
+                "Rendel",
+                "Mabate",
+                "Drakonian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -518145,6 +518775,10 @@
                     69477,
                     69478
                 ]
+            ],
+            "label_pos": [
+                2843,
+                1244
             ]
         },
         {
@@ -518153,7 +518787,14 @@
             "owner": "Lempudasmaa",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Nawa",
+                "Husala",
+                "Tonmg",
+                "Mabate",
+                "Rendel",
+                "Sojen"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -518793,15 +519434,29 @@
                     70111,
                     70112
                 ]
+            ],
+            "label_pos": [
+                2902,
+                1350
+            ],
+            "supply_center_pos": [
+                2804,
+                1392
             ]
         },
         {
-            "name": "Makate",
-            "abbr": "MKT",
+            "name": "Mabate",
+            "abbr": "MBT",
             "owner": "Lempudasmaa",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Tonmg",
+                "Chaklan",
+                "Drakonian Ocean",
+                "Sojen",
+                "Maduo"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -520059,6 +520714,14 @@
                     71360,
                     71361
                 ]
+            ],
+            "label_pos": [
+                3200,
+                1289
+            ],
+            "supply_center_pos": [
+                3368,
+                1196
             ]
         },
         {
@@ -520067,7 +520730,15 @@
             "owner": "Lempudasmaa",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Husala",
+                "Nawa",
+                "Chaklan",
+                "Mabate",
+                "Maduo",
+                "Askalai",
+                "Drakonian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -520879,6 +521550,14 @@
                     72166,
                     72167
                 ]
+            ],
+            "label_pos": [
+                3173,
+                1525
+            ],
+            "supply_center_pos": [
+                3248,
+                1624
             ]
         },
         {
@@ -520887,9 +521566,21 @@
             "owner": "Lempudasmaa",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
+            "adjacents": [
+                "Mabate",
+                "Sojen",
+                "Drakonian Ocean",
+                "North Bogtha",
+                "South Bogtha",
+                "Askalai"
+            ],
+            "north_coast": [
+                "Drakonian Ocean"
+            ],
+            "south_coast": [
+                "North Bogtha",
+                "South Bogtha"
+            ],
             "polygons": [
                 [
                     72168,
@@ -521945,6 +522636,10 @@
                     73216,
                     73217
                 ]
+            ],
+            "label_pos": [
+                3420,
+                1551
             ]
         },
         {
@@ -521953,7 +522648,11 @@
             "owner": "Gatzundan",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Cylcho",
+                "Gahluri",
+                "Strait of Mathaid"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -522655,6 +523354,14 @@
                     73912,
                     73913
                 ]
+            ],
+            "label_pos": [
+                1895,
+                1548
+            ],
+            "supply_center_pos": [
+                1808,
+                1632
             ]
         },
         {
@@ -522663,7 +523370,15 @@
             "owner": "Gatzundan",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Chapisa",
+                "Cylcho",
+                "Gveilgi",
+                "Baccef",
+                "Gheffli",
+                "Hirgron",
+                "Strait of Mathaid"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -523859,6 +524574,14 @@
                     75102,
                     75103
                 ]
+            ],
+            "label_pos": [
+                2050,
+                1574
+            ],
+            "supply_center_pos": [
+                1972,
+                1644
             ]
         },
         {
@@ -523867,7 +524590,12 @@
             "owner": "Gatzundan",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Gahluri",
+                "Gheffli",
+                "Hirgron",
+                "Adnicta"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -524593,6 +525321,14 @@
                     75822,
                     75823
                 ]
+            ],
+            "label_pos": [
+                2113,
+                1701
+            ],
+            "supply_center_pos": [
+                2064,
+                1808
             ]
         },
         {
@@ -524601,7 +525337,12 @@
             "owner": "Gatzundan",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Gahluri",
+                "Baccef",
+                "Adnicta",
+                "Strait of Mathaid"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -525205,6 +525946,10 @@
                     76420,
                     76421
                 ]
+            ],
+            "label_pos": [
+                1907,
+                1763
             ]
         },
         {
@@ -525213,7 +525958,13 @@
             "owner": "Gatzundan",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Chapisa",
+                "West Passage",
+                "Strait of Mathaid",
+                "Gahluri",
+                "Gveilgi"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -525813,6 +526564,10 @@
                     77014,
                     77015
                 ]
+            ],
+            "label_pos": [
+                2074,
+                1430
             ]
         },
         {
@@ -525821,7 +526576,14 @@
             "owner": "Gatzundan",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Chapisa",
+                "Gahluri",
+                "Baccef",
+                "Trawyn",
+                "Adnicta",
+                "Agyonis"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -526789,6 +527551,10 @@
                     77976,
                     77977
                 ]
+            ],
+            "label_pos": [
+                2280,
+                1755
             ]
         },
         {
@@ -526797,7 +527563,13 @@
             "owner": "Gatzundan",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Chapisa",
+                "Gheffli",
+                "Agyonis",
+                "Adnicta",
+                "Thetorum"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -527445,6 +528217,10 @@
                     78618,
                     78619
                 ]
+            ],
+            "label_pos": [
+                2411,
+                1849
             ]
         },
         {
@@ -527453,7 +528229,11 @@
             "owner": "",
             "land": true,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sea of Farras",
+                "Cauci Sea",
+                "Inis"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -528957,6 +529737,10 @@
                     83585,
                     83586
                 ]
+            ],
+            "label_pos": [
+                540,
+                1996
             ]
         },
         {
@@ -528965,7 +529749,11 @@
             "owner": "",
             "land": true,
             "supply_center": true,
-            "adjacents": [],
+            "adjacents": [
+                "Trachta",
+                "Cauci Sea",
+                "Adrian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -529423,6 +530211,14 @@
                     5673,
                     85518
                 ]
+            ],
+            "label_pos": [
+                1181,
+                2111
+            ],
+            "supply_center_pos": [
+                1280,
+                2086
             ]
         },
         {
@@ -529431,7 +530227,13 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Biskia",
+                "Penosola",
+                "Fihela",
+                "Monia",
+                "Sea of Farras"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -530389,6 +531191,10 @@
                     89565,
                     89566
                 ]
+            ],
+            "label_pos": [
+                174,
+                1283
             ]
         },
         {
@@ -530397,7 +531203,13 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Boslyni",
+                "Monia",
+                "Trachta",
+                "Cauci Sea",
+                "Gulf of Wyvera"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -532153,6 +532965,10 @@
                     90840,
                     79037
                 ]
+            ],
+            "label_pos": [
+                345,
+                1649
             ]
         },
         {
@@ -532161,7 +532977,18 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sugrod",
+                "Bujar",
+                "Prekjen",
+                "Lundroj",
+                "Boslyni",
+                "Trachta",
+                "Inis",
+                "Adrian Ocean",
+                "Sea of Farras",
+                "Ngush"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -534483,6 +535310,10 @@
                     3627,
                     91983
                 ]
+            ],
+            "label_pos": [
+                1130,
+                1800
             ]
         },
         {
@@ -534491,7 +535322,12 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Norst Aln",
+                "East Heibhirmanian Sea",
+                "Havenar Sea",
+                "Black Passage"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -535221,6 +536057,10 @@
                     92706,
                     92707
                 ]
+            ],
+            "label_pos": [
+                1522,
+                196
             ]
         },
         {
@@ -535229,7 +536069,14 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Ngush",
+                "Adnicta",
+                "Adnicta Sea",
+                "Cauci Sea",
+                "Strait of Mathaid",
+                "Inis"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -536177,6 +537024,10 @@
                     94635,
                     94636
                 ]
+            ],
+            "label_pos": [
+                1783,
+                2036
             ]
         },
         {
@@ -536185,7 +537036,21 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sorgsted",
+                "Langtill",
+                "Zrok",
+                "Bujar",
+                "Ngush",
+                "Cylcho",
+                "Gveilgi",
+                "Gahluri",
+                "Hirgron",
+                "Adnicta",
+                "Adrian Ocean",
+                "Green Sea",
+                "West Passage"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -538077,6 +538942,10 @@
                     96521,
                     96522
                 ]
+            ],
+            "label_pos": [
+                1779,
+                1556
             ]
         },
         {
@@ -538085,7 +538954,14 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Langtill",
+                "Cavrotier",
+                "Chapisa",
+                "Cylcho",
+                "Strait of Mathaid",
+                "East Passage"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -538829,6 +539705,10 @@
                     98235,
                     98236
                 ]
+            ],
+            "label_pos": [
+                2068,
+                1290
             ]
         },
         {
@@ -538837,7 +539717,13 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Vottra",
+                "Ceteve",
+                "Cavrotier",
+                "West Passage",
+                "Vottra Sound"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -539605,6 +540491,10 @@
                     98996,
                     98997
                 ]
+            ],
+            "label_pos": [
+                2265,
+                1165
             ]
         },
         {
@@ -539613,7 +540503,10 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Vottra",
+                "East Passage"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -540155,6 +541048,10 @@
                     99532,
                     99533
                 ]
+            ],
+            "label_pos": [
+                2198,
+                1018
             ]
         },
         {
@@ -540163,7 +541060,11 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Agyonis",
+                "Adnicta",
+                "Adrian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -540793,6 +541694,10 @@
                     100154,
                     100155
                 ]
+            ],
+            "label_pos": [
+                2257,
+                2101
             ]
         },
         {
@@ -540801,7 +541706,12 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Travoda",
+                "Calrinde",
+                "Thetorum",
+                "South Bogtha"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -541961,6 +542871,10 @@
                     101308,
                     101309
                 ]
+            ],
+            "label_pos": [
+                2905,
+                2049
             ]
         },
         {
@@ -541969,7 +542883,14 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Maduo",
+                "Askalai",
+                "Travodium",
+                "Travoda",
+                "North Bogtha",
+                "West Bogtha"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -542943,6 +543864,10 @@
                     102276,
                     102277
                 ]
+            ],
+            "label_pos": [
+                3505,
+                1922
             ]
         },
         {
@@ -542951,7 +543876,11 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Maduo",
+                "Somme",
+                "South Bogtha"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -543377,6 +544306,10 @@
                     102696,
                     102697
                 ]
+            ],
+            "label_pos": [
+                3654,
+                1505
             ]
         },
         {
@@ -543385,7 +544318,14 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Konigsburg",
+                "Motten",
+                "Vottra",
+                "North Sea",
+                "Black Passage",
+                "East Havenar Sea"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -544701,18 +545641,11 @@
                     92718,
                     92719
                 ]
+            ],
+            "label_pos": [
+                2105,
+                305
             ]
-        },
-        {
-            "name": "Province 23",
-            "abbr": "P23",
-            "owner": "",
-            "land": true,
-            "supply_center": false,
-            "adjacents": [],
-            "north_coast": [],
-            "south_coast": [],
-            "polygons": []
         },
         {
             "name": "West Heibhirmanian Sea",
@@ -544720,7 +545653,12 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sintula",
+                "Biskia",
+                "Penosola",
+                "East Heibhirmanian Sea"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -546924,6 +547862,10 @@
                     87363,
                     87751
                 ]
+            ],
+            "label_pos": [
+                196,
+                540
             ]
         },
         {
@@ -546932,7 +547874,14 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Norst Aln",
+                "Palvo",
+                "Levant",
+                "Sintula",
+                "West Heibhirmanian Sea",
+                "North Sea"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -548882,6 +549831,10 @@
                     31142,
                     31143
                 ]
+            ],
+            "label_pos": [
+                662,
+                189
             ]
         },
         {
@@ -548890,7 +549843,14 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Norst Aln",
+                "Sorgsted",
+                "Abiso",
+                "Palvo",
+                "Levant",
+                "Black Passage"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -549886,6 +550846,10 @@
                     113145,
                     15249
                 ]
+            ],
+            "label_pos": [
+                1292,
+                687
             ]
         },
         {
@@ -549894,7 +550858,14 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Norst Aln",
+                "Sorgsted",
+                "Langtill",
+                "North Sea",
+                "Havenar Sea",
+                "Gulf of Triyer"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -551098,6 +552069,10 @@
                     113967,
                     17156
                 ]
+            ],
+            "label_pos": [
+                1647,
+                585
             ]
         },
         {
@@ -551106,7 +552081,13 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Zrok",
+                "Fieldgug",
+                "Bujar",
+                "Sugrod",
+                "Strait of Mathaid"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -552118,6 +553099,10 @@
                     96749,
                     96750
                 ]
+            ],
+            "label_pos": [
+                1471,
+                1342
             ]
         },
         {
@@ -552126,7 +553111,12 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Motten",
+                "Sibirenn",
+                "Havenar Sea",
+                "North Drakonian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -553036,6 +554026,10 @@
                     114792,
                     114793
                 ]
+            ],
+            "label_pos": [
+                2545,
+                187
             ]
         },
         {
@@ -553044,7 +554038,12 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Sibirenn",
+                "Kobota",
+                "East Havenar Sea",
+                "Drakonian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -554232,6 +555231,10 @@
                     115952,
                     115953
                 ]
+            ],
+            "label_pos": [
+                3381,
+                236
             ]
         },
         {
@@ -554240,7 +555243,18 @@
             "owner": "",
             "land": false,
             "supply_center": false,
-            "adjacents": [],
+            "adjacents": [
+                "Kobota",
+                "Masuah",
+                "Moskil",
+                "Sibhil",
+                "Tonmg",
+                "Mabate",
+                "Sojen",
+                "Maduo",
+                "Somme",
+                "North Drakonian Ocean"
+            ],
             "north_coast": [],
             "south_coast": [],
             "polygons": [
@@ -556402,6 +557416,10 @@
                     109470,
                     66573
                 ]
+            ],
+            "label_pos": [
+                3504,
+                1036
             ]
         }
     ]
